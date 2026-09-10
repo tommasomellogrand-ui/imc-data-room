@@ -1,0 +1,1010 @@
+CASE_ID: IMC-INTEL-001
+DOC_TYPE: RESPONSE
+AREA: INTEL
+DATE: 2026-09-10
+TOPIC: SOCCER_MANAGER_INTELLIGENCE_LANDSCAPE
+STATUS: COMPLETED
+
+IMC | SOCCER MANAGER INTELLIGENCE
+SOCCER MANAGER INTELLIGENCE REPORT #001 · ECOSYSTEM & KNOWLEDGE LANDSCAPE
+
+============================================================
+0. METODO, SCOPO E DISCIPLINA DELLE EVIDENZE
+============================================================
+
+Questo report costituisce la prima ricognizione investigativa permanente dell’Italian Masters Club sul mondo Soccer Manager, con focus principale su Soccer Manager Worlds (SMW), il multiplayer persistente nato come SoccerManager.com e oggi mantenuto da Invincibles Studio / Soccer Manager.
+
+La ricerca è stata condotta esclusivamente su web pubblico, senza autenticazione privata, cookie, sessioni account, bypass, scraping di aree protette o accesso all’account di Tom.
+
+Sono state analizzate fonti ufficiali attive, pagine Help/FAQ, pagine pubbliche del gioco, community longeve, forum generalisti con Game World dedicati, Reddit, blog specialistici e materiale storico. Sono state inoltre cercate fonti internazionali in inglese, spagnolo, turco, macedone e altre lingue.
+
+CLASSIFICAZIONE EVIDENZE USATA NEL REPORT
+- UFFICIALE: dichiarazione diretta di Soccer Manager / Invincibles Studio / Help ufficiale / interfaccia pubblica.
+- VERIFICATA / EVIDENZA FORTE: più fonti coerenti, osservazioni strutturali ripetibili o materiale tecnico/empirico convincente.
+- CONSENSO COMMUNITY: convinzione ricorrente in community indipendenti, non dimostrata dal codice o da fonte primaria.
+- IPOTESI: teoria plausibile ma non sufficientemente provata.
+- CONTRADDITTORIA: fonti o testimonianze incompatibili.
+- OBSOLETA: informazione probabilmente valida per una versione storica ma non necessariamente per il gioco corrente.
+
+NOTA IMPORTANTE SULLA DOCUMENTAZIONE UFFICIALE
+L’Help ufficiale è una miniera di informazioni e contiene molte meccaniche esplicite, ma alcune pagine sono chiaramente stratificate nel tempo. Il fatto che una pagina sia ancora online nel 2026 non dimostra automaticamente che ogni dettaglio numerico sia ancora identico alla versione corrente. Le regole ufficiali vanno quindi considerate di affidabilità molto alta per il modello concettuale, ma i dettagli numerici più sensibili devono essere verificati empiricamente quando diventano oggetto di un CASE specifico.
+
+============================================================
+1. EXECUTIVE OVERVIEW
+============================================================
+
+Soccer Manager Worlds è un gioco manageriale calcistico multiplayer persistente e turn-based. Ogni Game World è un universo separato nel quale club, giocatori, competizioni, manager umani e club controllati dal computer convivono nel tempo. I manager impostano formazione e tattiche, gestiscono la rosa, comprano, vendono e prestano giocatori, amministrano indirettamente le finanze attraverso mercato e monte ingaggi, competono in campionati e coppe e ricevono risultati generati dal motore di simulazione.
+
+La caratteristica fondamentale di SMW è che il database dei calciatori è collegato al calcio reale ma la carriera sportiva dentro ogni Game World è autonoma. Rating, posizioni, età e molti dati anagrafico-tecnici derivano dal database Soccer Wiki / dal mondo reale; risultati, statistiche, trasferimenti, morale, fitness, concerns, classifiche, trofei e storia del Game World dipendono invece dalla simulazione e dall’attività dei manager.
+
+La pagina ufficiale descrive Soccer Manager Worlds come multiplayer in cui contest turn-based mettono manager contro manager. Le pagine Help definiscono un Game World come un’ambientazione fittizia con un numero definito di club gestibili distribuiti in divisioni, mentre tutti gli altri club e giocatori restano interagibili.
+
+TIPI PRINCIPALI DI GAME WORLD
+1. Standard Game World: formati amministrati dalla SMFA, inclusi English Championship, European Championship, World Championship e campionati nazionali specifici.
+2. Custom Game World: mondi creati dalla community con formato e regole configurabili.
+3. Gold Game World / Gold Championship: mondi premium di grande ampiezza, con numerose nazioni e competizioni.
+4. Connect Game Worlds: sistema ufficiale per sfidare manager e squadre provenienti da Game World differenti.
+
+La ricerca 2026 dimostra che SMW è ancora attivo. Nell’agosto 2026 una campagna community su Reddit ha riportato il rilancio di English Championship 169 (Game World ID 947), mondo del 2008 passato da 2 manager a 80/80 manager attivi in circa nove settimane. Questo è un indicatore forte dell’esistenza di una base giocatori ancora capace di mobilitarsi e popolare mondi storici.
+
+Il gioco, tuttavia, porta con sé una lunga storia di fasi di forte sviluppo, stagnazione e rilancio. Fonti storiche indipendenti descrivono un periodo di grave abbandono tra circa 2015 e 2019. Fonti community del 2024-2026 documentano invece aggiornamenti recenti, modifiche alla monetizzazione Gold, introduzione/annuncio di squad caps, player roles, facilities e altri interventi. La situazione corrente non va quindi interpretata usando una sola fotografia storica.
+
+============================================================
+2. GAME SYSTEM MAP
+============================================================
+
+2.1 GAME WORLD E PERSISTENZA
+CLASSIFICAZIONE: UFFICIALE
+
+- Ogni Game World è separato e persistente.
+- Ha un insieme definito di club gestibili, divisioni e competizioni.
+- I club non gestiti sono controllati dal computer (COM).
+- Esistono Standard e Custom Game World; il catalogo pubblico mostra anche Gold Game Worlds.
+- I Custom possono definire formato, club, regole, economia, promozioni/playoff e regole trasferimenti.
+- La storia del Game World registra honours, best managers, tables, player tables e record transfers.
+
+Fonti principali:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=27
+https://www.soccermanager.net/help.php?action=loadarticle&aid=44
+https://www.soccermanager.net/cust-setup.php
+https://www.soccermanager.net/help.php?action=loadarticle&aid=146
+
+2.2 CLUB E ROSE
+CLASSIFICAZIONE: UFFICIALE
+
+Ogni club ha un Chairman. Il Chairman opera come vincolo economico e regolatorio, tutela gli interessi del club e influenza limiti dei trasferimenti, valore dei giocatori, prestiti e sviluppo dello stadio. La rosa è divisa logicamente tra First Team e Youth Team, ma l’Help ufficiale precisa che non esistono partite giovanili dedicate; i giovani possono essere utilizzati nelle normali partite di campionato/coppa o in amichevole.
+
+Domanda investigativa importante per IMC: non è stato trovato in questa prima ricognizione un documento ufficiale che dimostri che la qualità della panchina o dell’intera rosa venga direttamente incorporata nel calcolo del match engine indipendentemente dai giocatori utilizzati. Questa convinzione, quando presente in community, deve essere trattata come IPOTESI fino a test controllati.
+
+Fonti:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=72
+https://www.soccermanager.net/help.php?action=loadarticle&aid=53
+
+2.3 GIOCATORI REALI E RAPPRESENTAZIONE IN-GAME
+CLASSIFICAZIONE: UFFICIALE
+
+Il Player Profile ufficiale mostra nazionalità, posizione, club in-game, club Soccer Wiki, rating corrente e precedente, valore, salario, età, data di nascita, altezza, peso, piede e contratto.
+
+Età e molte caratteristiche seguono la realtà. La posizione attribuita su Soccer Wiki viene trasferita in Soccer Manager. Le posizioni ufficialmente documentate includono GK, D L/R/C, DM L/R/C, M L/R/C, AM L/R/C, F L/R/C.
+
+Fonti:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=31
+https://www.soccermanager.net/help.php?action=loadarticle&aid=137
+
+2.4 RATING E CAMBI RATING
+CLASSIFICAZIONE: UFFICIALE per il principio; TEMPORALMENTE DA VERIFICARE per frequenze storiche
+
+Il rating è su scala 60-99. L’Help ufficiale afferma che le proposte di rating arrivano tramite Soccer Wiki e che la prestazione del giocatore nel proprio Game World NON modifica il rating del giocatore. Il rating dipende dalla valutazione del giocatore reale, non dal rendimento che produce per il manager in SMW.
+
+Una vecchia risposta dell’Answer Centre (2011) descriveva review settimanali per leghe, con un giocatore tipicamente cambiato circa due volte l’anno. Questo dettaglio è OBSOLETO/POTENZIALMENTE OBSOLETO e non va applicato al 2026 senza verifica.
+
+Fonti:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=28
+https://www.soccermanager.net/help.php?action=view&qid=6422
+
+2.5 MATCH ENGINE
+CLASSIFICAZIONE: PARZIALMENTE UFFICIALE, STRUTTURA INTERNA NON PUBBLICA
+
+L’Help documenta input e output del sistema, non la formula del motore.
+
+Input noti ufficialmente rilevanti:
+- formazione;
+- posizione naturale / fuori posizione;
+- team instructions;
+- player instructions / roles nelle versioni aggiornate;
+- condizione/fitness;
+- morale;
+- concerns indirettamente tramite morale;
+- disponibilità per infortuni/squalifiche;
+- selezione titolari e sostituzioni.
+
+L’Help afferma esplicitamente che un giocatore rende meglio nella posizione preferita e subisce penalità crescenti quando viene schierato più lontano dalla posizione naturale. Afferma inoltre che condizione e morale influenzano la prestazione durante una partita.
+
+Il Match Report restituisce: risultato, marcatori, assist, infortuni, rating partita, statistiche, sostituzioni, formazioni, cartellini, MoM e cronaca.
+
+NON noto pubblicamente:
+- formula precisa di conversione rating -> probabilità eventi;
+- peso relativo di tattiche vs rating;
+- eventuale momentum;
+- eventuali modificatori invisibili;
+- influenza della qualità dei non convocati;
+- eventuale home advantage numerico;
+- eventuale effetto di età/esperienza oltre variabili esplicite;
+- RNG e distribuzione degli eventi.
+
+Fonti:
+https://soccermanager.net/help.php?pname=tactics
+https://www.soccermanager.net/help.php?action=loadarticle&aid=140
+https://soccermanager.net/help.php?action=loadarticle&aid=58
+https://www.soccermanager.net/help.php?action=loadarticle&aid=31
+
+2.6 TATTICHE
+CLASSIFICAZIONE: UFFICIALE per le opzioni; EFFETTO QUANTITATIVO NON PUBBLICO
+
+L’Help dichiara esplicitamente che squadre organizzate e preparate possono battere squadre con giocatori apparentemente superiori e che la tattica costituisce parte fondamentale del lavoro del manager.
+
+Sono documentate opzioni come tackling style, attacking style, passing/tempo, pressing/marking e altre istruzioni di squadra. Il glossario descrive per esempio:
+- Attacking Style: orientamento generale della costruzione (es. down both flanks);
+- Counter Attack: ricerca della transizione quando l’avversario perde palla;
+- Tackling Style: livello di aggressività;
+- Tempo: velocità/urgenza, con compromesso tra rapidità e rischio di errore;
+- Tight Marking: marcatura più stretta;
+- Target Man: riferimento offensivo privilegiato.
+
+Le community contengono migliaia di suggerimenti tattici ma raramente test controllati. Molti “winning tactic” post sono contaminati da qualità rosa, avversari e versioni differenti del motore. Vanno trattati prevalentemente come CONSENSO/IPOTESI, non come prova.
+
+Fonti:
+https://soccermanager.net/help.php?pname=tactics
+https://www.soccermanager.net/help.php?action=loadarticle&aid=140
+https://soccermanager.net/help.php?action=glossary
+
+2.7 PLAYER ROLES
+CLASSIFICAZIONE: UFFICIALE COME SISTEMA CORRENTE/RECENTE, DETTAGLIO DA MAPPARE IN CASE DEDICATO
+
+Community longeve nel 2026 riportano un sistema di ruoli per portieri, difensori, centrocampisti e attaccanti, con esempi come Ball-Winning Midfielder, Deep Playmaker, Box-To-Box Midfielder, Advanced Playmaker, Winger, Finisher, Deep Forward e Target Man. La stessa community RedCafe discute i ruoli come elemento introdotto/aggiornato nel nuovo ciclo di sviluppo.
+
+Serve un CASE dedicato per catalogare la lista corrente completa direttamente da fonti ufficiali e, soprattutto, testare l’effetto reale dei ruoli.
+
+Fonte community ad alto valore:
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/page-1374
+
+2.8 FITNESS / CONDITION
+CLASSIFICAZIONE: UFFICIALE
+
+- Condition è una percentuale.
+- Condizione bassa riduce la probabilità che il giocatore renda al massimo.
+- La condizione recupera gradualmente nel tempo.
+- Il riposo e la rotazione sono il metodo ufficialmente consigliato per recuperare fitness.
+- La fitness mostrata nella pagina tattiche è la fitness prevista per la prossima partita, non necessariamente il valore corrente.
+- In alcune competizioni e tipologie di Game World le regole fitness differiscono; ad esempio l’Help distingue SMFA match in Gold Game Worlds da Standard/Custom non-Gold.
+
+Fonti:
+https://soccermanager.net/help.php?action=loadarticle&aid=22
+https://soccermanager.net/help.php?pname=tactics
+https://www.soccermanager.net/help.php?action=loadarticle&aid=76
+https://www.soccermanager.net/help.php?action=loadarticle&aid=47
+
+2.9 MORALE
+CLASSIFICAZIONE: UFFICIALE
+
+L’Help afferma che morale e condition influenzano la performance in partita. Il morale può aumentare quando il giocatore gioca con continuità, viene usato nella posizione corretta, il club ottiene buoni risultati, il giocatore rende bene o firma un nuovo contratto.
+
+Non è stata trovata una formula quantitativa pubblica del morale.
+
+Fonti:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=31
+https://www.soccermanager.net/help.php?action=loadarticle&aid=76
+
+2.10 PLAYER CONCERNS
+CLASSIFICAZIONE: UFFICIALE
+
+Sistema particolarmente ben documentato.
+
+Le concerns sono una forma/estensione del morale. Quattro aree ufficiali:
+- prestito;
+- disputa salariale;
+- mancanza di opportunità al club;
+- mancanza di partite.
+
+Esistono cinque livelli: minor concern, concerned, very concerned, major concern, transfer request. I livelli avanzano gradualmente e persistono tra stagioni. A livello 5 il Chairman può inserire automaticamente il giocatore in transfer list e gestire le offerte.
+
+L’Help utilizza come esempio orientativo una soglia di presenze 65-75% per alcuni giocatori, ma questa non va interpretata come costante universale senza analizzare i parametri per status/età/rating.
+
+Fonte:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=83
+
+2.11 FORMA
+CLASSIFICAZIONE: PARZIALMENTE UFFICIALE, DA SEPARARE TRA REAL-LIFE FORM E IN-GAME PERFORMANCE
+
+La parola “form” appare in più contesti. Per i rating, l’Help parla della forma/capacità nel calcio reale. Per morale e match performance esiste anche il rendimento dentro il Game World. Non è emersa una formula pubblica che dimostri un modificatore separato e persistente di “forma in-game” nel motore oltre morale/condition/rating e dati di selezione.
+
+Tema da investigare specificamente per evitare confusione semantica.
+
+2.12 TRASFERIMENTI
+CLASSIFICAZIONE: UFFICIALE
+
+Sistema centrale di SMW.
+
+- Possibile acquistare giocatori tramite ricerca, club, transfer list e free agents.
+- Non si possono fare trasferimenti con saldo negativo.
+- Il Chairman comunica minimo accettabile / massimo pagabile e partecipa alla negoziazione.
+- Esiste Chairman’s Value.
+- SMFA può bloccare o invertire trasferimenti sospetti/dubbi tramite controlli di fair play e Automated Transfer Monitoring System (ATMS).
+- Un giocatore può rifiutare un trasferimento se il proprio rating è considerevolmente più alto della media rosa del club acquirente.
+- Dopo un trasferimento esiste un transfer ban; l’Help corrente documenta 20 Turns per movimenti interni managed/unmanaged e 2 Turns verso external club.
+
+Fonti:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=125
+https://soccermanager.net/help.php?action=loadarticle&aid=71
+https://www.soccermanager.net/help.php?action=loadarticle&aid=48
+
+2.13 OFFERTE AI / CLUB AI
+CLASSIFICAZIONE: UFFICIALE
+
+Una delle scoperte più rilevanti per future analisi IMC.
+
+L’Help ufficiale dichiara che unmanaged ed external clubs:
+- sono attivi nel mercato;
+- trasferiscono tra loro e interagiscono con manager umani;
+- possono fare offerte per giocatori disponibili;
+- rispettano minimum fee impostate;
+- fanno offerte su giocatori in transfer list, con tempi variabili da pochi giorni a poche settimane;
+- tentano anche di acquistare giocatori che militano nel corrispondente club reale, per ricostruire la rosa reale.
+
+Questa è EVIDENZA UFFICIALE che l’AI di mercato non è puramente casuale: esistono almeno regole di disponibilità, prezzo minimo, transfer list e una preferenza di riallineamento al club reale.
+
+Fonte:
+https://soccermanager.net/help.php?action=loadarticle&aid=110
+
+2.14 PRESTITI
+CLASSIFICAZIONE: UFFICIALE
+
+- Un club può prestare fuori un numero ampio di giocatori, ma il Chairman blocca il prestito di giocatori considerati importanti.
+- L’Help documenta un massimo di tre prestiti in entrata.
+- Prestiti possono essere richiamati/terminati, con eccezioni per prestiti permanenti di stagione esistenti alla nascita del Game World.
+- Un prestito non può essere convertito direttamente in trasferimento mentre il giocatore è ancora in prestito; il trasferimento può essere avviato dopo il rientro.
+
+Fonti:
+https://soccermanager.net/help.php?action=loadarticle&aid=35
+https://www.soccermanager.net/help.php?action=loadarticle&aid=53
+
+2.15 VALORE DI MERCATO / CHAIRMAN’S VALUE
+CLASSIFICAZIONE: UFFICIALE per il concetto; formula esatta NON PUBBLICA
+
+Chairman’s Value dipende dalla rilevanza del giocatore all’interno della rosa. Un giocatore di prima squadra o tra i migliori può essere valutato molto più del suo valore base, e Chairmen differenti possono attribuire valori diversi allo stesso giocatore se cambia club.
+
+Materiale storico nell’Answer Centre sostiene che profondità per posizione, età e rating relativi alla rosa incidano sul valore. È plausibile e coerente con il concetto ufficiale di “significance within the club”, ma il dettaglio va classificato CONSENSO COMMUNITY / EVIDENZA STORICA e richiede verifica moderna.
+
+Fonti:
+https://soccermanager.net/help.php?action=loadarticle&aid=22
+https://www.soccermanager.net/help.php?action=reportabuse&aid=14414&qid=10612
+
+2.16 FINANZE
+CLASSIFICAZIONE: UFFICIALE
+
+Il manager non controlla direttamente ogni voce finanziaria. Gestisce soprattutto mercato e salari, mentre il Chairman e il sistema determinano ricavi e costi.
+
+Entrate documentate: season tickets, gate receipts, merchandise, TV revenue, prize money, transfer money in, cash injection e altre entrate.
+Spese: wages, ground maintenance, transfer money out, altre uscite.
+
+Meccanica notevole: l’Help afferma che il Chairman può fare cash injection per evitare che il net worth (cash + valore giocatori) scenda sotto il 50% della media dei club della lega.
+
+La promozione aumenta progressivamente gate receipts, season tickets, merchandising e TV revenue; la retrocessione produce l’effetto inverso.
+
+Fonti:
+https://soccermanager.net/help.php?action=loadarticle&aid=36
+https://www.soccermanager.net/help.php?action=loadarticle&aid=105
+
+2.17 STADIO E ATTENDANCE
+CLASSIFICAZIONE: UFFICIALE
+
+Il Chairman decide a fine stagione se aumentare la capacità, in funzione di fattori come capacità attuale e divisione. La promozione porta attendance e stadio gradualmente verso la media della nuova divisione; la retrocessione riduce attendance verso quella della categoria inferiore.
+
+Nel ciclo di sviluppo 2025-2026 community molto informate riportano l’introduzione/annuncio di facilities che possono incidere su stadium capacity e fanbase; questo elemento va verificato con documentazione ufficiale aggiornata in un CASE dedicato.
+
+Fonti:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=53
+https://soccermanager.net/help.php?action=loadarticle&aid=105
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/page-1374
+
+2.18 GIOVANI E SVILUPPO
+CLASSIFICAZIONE: CONTROINTUITIVA MA UFFICIALE
+
+Soccer Manager Worlds non funziona come un manageriale tradizionale con training che aumenta il rating in base all’uso interno. L’Help dichiara esplicitamente: “There is no training within Soccer Manager.” Il rating sale/scende in base al calcio reale e al database, non grazie a un sistema di crescita generato dal Game World.
+
+Di conseguenza lo “sviluppo dei giovani” in SMW consiste soprattutto nello scouting di giovani reali destinati a crescere nel calcio reale e quindi potenzialmente a ricevere rating increases, non nel farli allenare internamente per aumentare attributi.
+
+Questa distinzione è fondamentale per IMC.
+
+Fonte:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=76
+
+2.19 ETÀ
+CLASSIFICAZIONE: UFFICIALE
+
+L’età è quella reale e viene aggiornata seguendo la realtà. Influenza sicuramente valore e ruolo economico; non è stato trovato in questa prima ricognizione un documento ufficiale che dimostri un modificatore diretto dell’età sul match engine indipendente da rating, morale e condition.
+
+Fonte:
+https://soccermanager.net/help.php?action=loadarticle&aid=22
+
+2.20 MANAGER
+CLASSIFICAZIONE: UFFICIALE
+
+Il gioco conserva profili, reputazione/manager points e classifiche Best Managers. Il ranking Best Managers richiede almeno 15 partite con il club e separa liste Standard e Custom.
+
+Per la gestione internazionale, l’Help indica 80 associazioni nazionali per Game World e gestione internazionale legata a Gold Management. Il manager nazionale può essere affiancato al club e può essere esonerato dall’associazione.
+
+Fonti:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=61
+https://www.soccermanager.net/help.php?action=loadarticle&aid=116
+
+2.21 CALENDARIO
+CLASSIFICAZIONE: UFFICIALE
+
+Ogni club ha schedule per campionato, coppe domestiche ed eventuali SMFA Cup/Shield. L’Help indica kickoff automatico alle 20:00 Game Time nelle date previste; non serve essere online. Prima della partita è prodotto Match Preview, dopo Match Report.
+
+Questa documentazione conferma l’architettura turn-based del gioco.
+
+Fonte:
+https://soccermanager.net/help.php?action=loadarticle&aid=43
+
+2.22 CLASSIFICHE, PROMOZIONI E RETROCESSIONI
+CLASSIFICAZIONE: UFFICIALE
+
+Promozione/retrocessione dipendono dal formato. Nei Custom il proprietario può scegliere numero divisioni, promozioni/retrocessioni e attivazione playoff. L’Help descrive playoff standard con semifinali secche (esempio 6°-3°, 5°-4°) e finale in campo neutro.
+
+Fonti:
+https://soccermanager.net/help.php?action=loadarticle&aid=105
+https://www.soccermanager.net/help.php?action=loadarticle&aid=30
+
+2.23 COMPETIZIONI
+CLASSIFICAZIONE: UFFICIALE
+
+Sono documentate almeno:
+- League;
+- Domestic Cup;
+- Domestic Shield;
+- Charity Shield;
+- Promotion Play Offs;
+- SMFA Cup / SMFA Champions Cup;
+- SMFA Shield;
+- SMFA Super Cup;
+- SMFA World Cup Qualifiers;
+- SMFA World Cup;
+- Friendlies.
+
+La SMFA Cup è descritta come il trofeo club più prestigioso e la SMFA Shield come il secondo. Nei Gold Championships la qualificazione avviene attraverso le leghe nazionali e i detentori; la struttura e il numero di posti variano in base al formato.
+
+Fonti:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=47
+https://www.soccermanager.net/help.php?action=loadarticle&aid=57
+https://www.soccermanager.net/help.php?action=loadarticle&aid=55
+https://www.soccermanager.net/help.php?action=loadarticle&aid=133
+
+2.24 AMICHEVOLI
+CLASSIFICAZIONE: UFFICIALE + STORICO
+
+Sono pensate per provare giocatori e tattiche. Una vecchia risposta dell’Answer Centre sostiene che le amichevoli non incidessero fisicamente o mentalmente sui giocatori. Essendo risposta community del 2012 va trattata come OBSOLETA/POTENZIALMENTE OBSOLETA finché non viene confermata per il 2026.
+
+Fonte storica:
+https://www.soccermanager.net/help.php?action=voteanswergood&aid=8213&qid=7426
+
+2.25 MECCANICHE NASCOSTE / POCO DOCUMENTATE
+CLASSIFICAZIONE: APERTE
+
+Non è emersa documentazione pubblica affidabile su:
+- formula match engine;
+- peso matematico di rating, morale, condition, posizione, ruolo e tattiche;
+- qualità panchina/rosa completa nel calcolo partita;
+- meccanismo esatto delle offerte AI e distribuzione temporale;
+- algoritmo Chairman’s Value;
+- eventuale algoritmo di “squad average” usato nel rifiuto trasferimenti;
+- RNG, home advantage, momentum;
+- relazione tra average rating della rosa e performance del team;
+- effetto dimensione rosa su simulazione e finanze oltre salari/concerns;
+- eventuali soft caps o diminishing returns;
+- logica esatta di assegnazione MoM e match ratings.
+
+Questi temi sono prioritari per investigazione empirica IMC.
+
+============================================================
+3. PUBLIC SOURCE MAP
+============================================================
+
+VALUTAZIONE PROFONDITÀ: BASSA / MEDIA / ALTA / MOLTO ALTA
+AFFIDABILITÀ: 1-5
+
+S01 · SOCCER MANAGER WORLDS / SOCCERMANAGER.NET
+URL: https://www.soccermanager.net/
+Lingua: multilingua
+Tipologia: ufficiale / accesso pubblico
+Attività: ATTIVA 2026
+Argomenti: login/registrazione, ingresso nel prodotto, lingue, Game World
+Profondità: MEDIA
+Test/discussioni tecniche: no
+Valore futuro: ALTISSIMO come punto di ingresso ufficiale
+Affidabilità: 5/5
+
+S02 · SOCCER MANAGER PUBLIC GAME PAGE
+URL: https://www.soccermanager.net/game.php
+Lingua: inglese
+Tipologia: ufficiale
+Attività: ATTIVA 2026
+Argomenti: SMW multiplayer, Standard/Gold/Connect Game Worlds
+Profondità: MEDIA
+Test tecnici: no
+Valore futuro: ALTO
+Affidabilità: 5/5
+
+S03 · SOCCER MANAGER ONLINE HELP
+URL: https://www.soccermanager.net/help.php?action=loadarticle&catid=1
+Lingua: inglese + infrastruttura multilingua
+Tipologia: ufficiale knowledge base
+Attività: ATTIVA / pagine crawl 2026
+Argomenti: club, giocatori, rating, tattiche, transfers, loans, finance, competitions, SMFA, Game Worlds
+Profondità: MOLTO ALTA
+Test/discussioni tecniche: documentazione funzionale, non formula engine
+Valore futuro: MASSIMO
+Affidabilità: 5/5 per regole concettuali; 4/5 su dettagli numerici antichi da riconfermare
+
+S04 · SOCCER MANAGER ANSWER CENTRE
+URL base: https://www.soccermanager.net/help.php
+Lingua: multilingua/inglese prevalente
+Tipologia: Q&A community ospitata da Soccer Manager
+Attività: ARCHIVIO ancora raggiungibile
+Argomenti: dubbi meccanici, rating, fitness, valori, morale, tattiche
+Profondità: ALTA ma rumorosa
+Test tecnici: occasionali
+Valore futuro: ALTO per scoprire ipotesi e materiale storico
+Affidabilità: 2.5/5 salvo risposte ufficiali/admin
+
+S05 · CUSTOM GAME WORLD SETUP
+URL: https://www.soccermanager.net/cust-setup.php
+Lingua: inglese
+Tipologia: ufficiale / configuratore pubblico
+Attività: ATTIVA 2026
+Argomenti: template, divisioni, club, promozioni/retrocessioni, regole
+Profondità: ALTA
+Test tecnici: struttura di prodotto
+Valore futuro: MASSIMO per mondi custom IMC
+Affidabilità: 5/5
+
+S06 · SELECT GAME WORLD PUBLIC LIST
+URL: https://soccermanager.net/select-gameworld.php?action=nreg
+Lingua: inglese
+Tipologia: ufficiale / directory pubblica
+Attività: ATTIVA 2026
+Argomenti: Standard e Gold Game Worlds, club occupati
+Profondità: MEDIA
+Test tecnici: no
+Valore futuro: ALTO per osservare ecosistema e occupancy
+Affidabilità: 5/5
+
+S07 · INVINCIBLES STUDIO
+URL: https://invinciblesstudio.com/games/
+Lingua: inglese
+Tipologia: sito corporate ufficiale
+Attività: ATTIVA 2026
+Argomenti: portfolio, Soccer Manager Worlds, Soccer Manager 2027 e altri titoli
+Profondità: BASSA per meccaniche, ALTA per stato prodotto
+Test tecnici: no
+Valore futuro: ALTO per roadmap/stato aziendale
+Affidabilità: 5/5
+
+S08 · REDDIT r/Soccermanager
+URL: https://www.reddit.com/r/Soccermanager/
+Lingua: inglese con utenti internazionali
+Tipologia: community pubblica
+Attività: MOLTO ATTIVA 2026
+Argomenti: SM annuale + Soccer Manager Worlds, tattiche, bug, recruitment Game Worlds, domande
+Profondità: MEDIA; alta in thread selezionati
+Test tecnici: sporadici, generalmente non controllati
+Valore futuro: MOLTO ALTO per segnali contemporanei, recruitment, controversie, problemi
+Affidabilità: 2.5/5 generale; 3.5/5 per osservazioni convergenti e fatti verificabili
+
+S09 · REDCAFE · THE SM REDCAFE LEAGUE
+URL: https://www.redcafe.net/threads/the-sm-redcafe-league.349538/
+Lingua: inglese
+Tipologia: forum/community longeva con Game World dedicato
+Attività: ATTIVA 2026
+Argomenti: rating reviews, mercato, squadre, regole, aggiornamenti SMW, player roles, facilities, monetizzazione, match
+Profondità: MOLTO ALTA
+Test tecnici: discussioni empiriche, osservazioni longitudinali
+Valore futuro: MASSIMO come archivio storico e community esperta
+Affidabilità: 3.5/5; alcune informazioni riportano blog ufficiali e aggiornamenti diretti
+
+S10 · TOP 100 SMW BLOG
+URL: https://smtop100.blog/
+Lingua: inglese
+Tipologia: blog ufficiale di community/Game World
+Attività: ATTIVA 2025-2026
+Argomenti: gestione elite Custom GW, regole, stagioni, recruitment, community
+Profondità: ALTA
+Test tecnici: non principalmente
+Valore futuro: MOLTO ALTO per governance e comportamenti manager esperti
+Affidabilità: 4/5 per fatti del proprio Game World; 3/5 per meccaniche generali
+
+S11 · THE SOCCERMANAGER EXPERIENCE
+URL: https://thesoccermanageronline.sport.blog/
+Esempio: https://thesoccermanageronline.sport.blog/2022/08/09/episode-2-team-instructions/
+Lingua: inglese
+Tipologia: blog tattico indipendente
+Attività: materiale soprattutto 2022 e dintorni
+Argomenti: navigazione, tattiche, istruzioni squadra, interpretazione match engine
+Profondità: ALTA
+Test tecnici: analisi qualitativa, esempi
+Valore futuro: ALTO per generare ipotesi tattiche da testare
+Affidabilità: 2.5/5
+
+S12 · FULLER FM · SOCCER MANAGER WORLDS: GAME, NEGLECTED
+URL: https://fullerfm.com/2019/05/10/soccer-manager-worlds-game-neglected/
+Lingua: inglese
+Tipologia: blog/review storico indipendente
+Attività: articolo storico, sito ancora attivo
+Argomenti: storia SMW, community, declino 2014-2019, supporto, multi-account, evoluzione prodotto
+Profondità: ALTA
+Test tecnici: no
+Valore futuro: ALTO per storia e contesto
+Affidabilità: 3.5/5 come testimonianza longitudinale; OBSOLETO per stato corrente
+
+S13 · BOARDS.IE SOCCER MANAGER LEAGUE
+URL: https://www.boards.ie/discussion/2057412083/now-that-the-season-is-nearly-over-heres-a-new-game/
+Lingua: inglese
+Tipologia: forum generalista con Game World community
+Attività: thread storico
+Argomenti: squadre, valori, rating, recruiting, gestione mondo
+Profondità: ALTA su esperienza di community
+Test tecnici: limitati
+Valore futuro: MEDIO-ALTO per storico
+Affidabilità: 3/5
+
+S14 · NEOGAF SOCCER MANAGER OT
+URL: https://www.neogaf.com/threads/soccer-manager-ot-free-in-browser-app-massively-multiplayer-soccer-management-game.820144/
+Lingua: inglese
+Tipologia: forum generalista / storico
+Attività: storico
+Argomenti: descrizione gameplay, Game World, player concerns, wages, multiplayer
+Profondità: MEDIA
+Test tecnici: limitati
+Valore futuro: MEDIO per storia delle percezioni e vecchie meccaniche
+Affidabilità: 2.5/5
+
+S15 · STEAM COMMUNITY · SOCCER MANAGER DISCUSSIONS
+URL: https://steamcommunity.com/app/438600/discussions/
+Lingua: internazionale
+Tipologia: community piattaforma
+Attività: archivio, attività principale storica 2016-2022
+Argomenti: client/app, bug, data packs, SMW, recruiting
+Profondità: MEDIA
+Test tecnici: occasionali
+Valore futuro: MEDIO per storico e bug
+Affidabilità: 2.5/5
+
+S16 · FOROCOCHES · SOCCER MANAGER 2026 DISCUSSION
+URL: https://forocoches.com/foro/showthread.php?t=10683060
+Lingua: spagnolo
+Tipologia: forum generalista
+Attività: ATTIVO, thread maggio 2026
+Argomenti: stato SMW, accesso ai mondi, Gold/paywall, nostalgia utenti storici
+Profondità: MEDIA
+Test tecnici: no
+Valore futuro: ALTO come segnale community spagnola contemporanea
+Affidabilità: 2.5/5
+
+S17 · TECHNOPAT SOSYAL · SOCCER MANAGER WORLDS
+URL: https://www.technopat.net/sosyal/konu/soccer-manager-worlds-tuerkiye-sunucusu-var-mi.2798540/
+Lingua: turco
+Tipologia: forum tecnologico/community
+Attività: thread 2023
+Argomenti: disponibilità community/server turco
+Profondità: BASSA
+Test tecnici: no
+Valore futuro: MEDIO come punto di ingresso turco
+Affidabilità: 2/5
+
+S18 · KAJGANA FORUM · SOCCER MANAGER
+URL: https://forum.kajgana.com/threads/soccer-manager-kajgana-power-cup.86189/
+Lingua: macedone
+Tipologia: forum/community regionale
+Attività: storico
+Argomenti: Game Worlds, Connect Game Worlds, competizioni custom/community
+Profondità: MEDIA
+Test tecnici: no
+Valore futuro: MEDIO per espansione ricerca Balcani
+Affidabilità: 2.5/5
+
+S19 · THE WORLD OUTSIDE THE WINDOW · INTERVISTA SOCCER MANAGER (2014)
+URL: https://theworldoutsidethewindow.com/2014/12/13/soccer-manager-takes-on-the-world/
+Lingua: inglese
+Tipologia: intervista storica
+Attività: storico
+Argomenti: nascita 2005, English Championship 1, crescita community, Gold Championships, rebranding SM Worlds
+Profondità: ALTA per storia
+Test tecnici: no
+Valore futuro: ALTO per timeline
+Affidabilità: 4/5 sulla storia riportata da intervista
+
+S20 · GUMMYSEARCH · r/Soccermanager ANALYTICS
+URL: https://gummysearch.com/r/Soccermanager/
+Lingua: inglese
+Tipologia: aggregatore analytics community
+Attività: ATTIVA 2026
+Argomenti: topic e flair del subreddit, attività tematica
+Profondità: MEDIA
+Test tecnici: no
+Valore futuro: MEDIO per discovery/monitoraggio temi
+Affidabilità: 3/5 come indice, non fonte primaria di meccaniche
+
+S21 · SOCCERMANAGER.COM / UPDATE BLOGS CITATI DALLA COMMUNITY
+URL citati in RedCafe:
+https://www.soccermanager.com/games/soccer-manager-worlds-september-update/
+https://www.soccermanager.com/games/soccer-manager-worlds-october-update/
+Lingua: inglese
+Tipologia: blog ufficiale/aggiornamenti (link riportati in community)
+Attività: ciclo 2024
+Argomenti: major update, backend, Gold, UI, nuove feature
+Profondità: ALTA quando accessibile
+Test tecnici: note prodotto
+Valore futuro: MASSIMO per cronologia cambiamenti
+Affidabilità: 5/5 se recuperato direttamente; 3.5/5 se citato/riportato da forum
+
+S22 · INVINCIBLES STUDIO NEWS
+URL: https://www.invinciblesstudio.com/news/
+Lingua: inglese
+Tipologia: ufficiale corporate news
+Attività: ATTIVA 2026
+Argomenti: release, roadmap generale, prodotti Soccer Manager
+Profondità: MEDIA
+Test tecnici: no
+Valore futuro: ALTO per distinguere SMW dalla serie single-player
+Affidabilità: 5/5
+
+S23 · SOCCERVERSE ABOUT
+URL: https://soccerverse.com/it/about
+Lingua: multilingua
+Tipologia: prodotto distinto ma storicamente collegato
+Attività: ATTIVA 2026
+Argomenti: progetto di uno dei creatori originali di Soccer Manager / SMW
+Profondità: BASSA per SMW, ALTA per genealogia del team
+Test tecnici: no
+Valore futuro: MEDIO per storia degli sviluppatori, NON fonte di meccaniche SMW
+Affidabilità: 4/5 per proprio progetto
+
+S24 · DATA.SOCcerManager.com LEGACY PUBLIC PAGE
+URL: https://data.soccermanager.com/my-home.php
+Lingua: inglese
+Tipologia: legacy/public indexed interface
+Attività: indicizzata, contenuti datati
+Argomenti: home UI, forum/Facebook/Twitter links, multiplayer description
+Profondità: MEDIA
+Test tecnici: no
+Valore futuro: MEDIO per archeologia dell’interfaccia e timeline
+Affidabilità: 4/5 storica; OBSOLETA come UI corrente
+
+============================================================
+4. COMMUNITY MAP
+============================================================
+
+TIER A · MASSIMA PRIORITÀ
+
+1. REDCAFE · THE SM REDCAFE LEAGUE
+Perché: thread ultradecennale, migliaia di pagine, manager esperti, continuità fino al 2026, discussione concreta su mercato, rating, mondi, aggiornamenti, Gold, ruoli e facilities. È probabilmente una delle migliori miniere pubbliche per ricostruire come il gioco cambia nel tempo e quali effetti vengono osservati da utenti di lunga durata.
+
+2. REDDIT r/Soccermanager
+Perché: community viva e indicizzata, include contemporaneamente giocatori della serie single-player e Worlds. Richiede filtraggio, ma nel 2026 produce segnali importanti sulla vitalità dei Game World, sulle restrizioni Gold, recruitment e percezione delle meccaniche.
+
+3. TOP 100
+Perché: community organizzata attorno a uno dei Custom Game World più longevi/competitivi. Utile soprattutto per governance, regole custom, mercato tra manager esperti, gestione della scarsità e meta-game.
+
+TIER B · ALTO VALORE TEMATICO
+
+4. The Soccermanager Experience
+Ottima fonte di ipotesi tattiche e interpretazioni del sistema, da non prendere come prova definitiva.
+
+5. Soccer Manager Answer Centre
+Archivio gigantesco e rumoroso. Straordinario per scoprire quali domande ricorrono da quindici anni e per trovare risposte di admin/community da verificare.
+
+6. Boards.ie / NeoGAF / Steam
+Archivi storici utili per evoluzione del gioco e comportamento dei Game World.
+
+TIER C · ESPANSIONE INTERNAZIONALE
+
+7. ForoCoches (spagnolo)
+8. Technopat Sosyal (turco)
+9. Kajgana (macedone/Balcani)
+
+Queste non sembrano al momento contenere una conoscenza tecnica paragonabile a RedCafe, ma dimostrano che la ricerca futura deve essere multilingua. Query locali possono rivelare blog e forum non indicizzati dalle query inglesi.
+
+OSSERVAZIONE COMMUNITY 2026
+Il rilancio di English Championship 169 su Reddit è un evento particolarmente utile: dimostra che una community pubblica generalista può riportare in poche settimane un mondo storico da quasi vuoto a pieno. È un indicatore della persistenza del capitale sociale di SMW e del fatto che il gioco vive anche attraverso Game World/community autonome, non solo attraverso canali ufficiali.
+
+============================================================
+5. KNOWLEDGE MAP PER ARGOMENTO
+============================================================
+
+ARGOMENTO | STATO CONOSCENZA | MIGLIORI FONTI | PRIORITÀ FUTURA
+
+Game Worlds | MOLTO NOTO / UFFICIALE | Help, Custom setup, public selector | MEDIA
+Competizioni | MOLTO NOTO / UFFICIALE | Help SMFA Cup/Shield/World Cup, schedule | MEDIA
+Club/Rose | NOTO a livello funzionale | Help Club/Chairman | ALTA per influenza rosa completa
+Player representation | MOLTO NOTO | Player Profile, Soccer Wiki integration | MEDIA
+Rating changes | PRINCIPIO NOTO, scheduling non del tutto mappato | Player Ratings, Answer Centre, RedCafe | ALTA
+Match engine | OPACO | Tactics Help, Match Reports, community | MASSIMA
+Titolari/Panchina/Rosa completa | INSUFFICIENTE | nessuna prova ufficiale trovata | MASSIMA
+Tattiche | OPZIONI NOTE, pesi ignoti | Help + RedCafe + Soccermanager Experience | MASSIMA
+Player roles | SISTEMA noto, impatto ignoto | RedCafe + futura fonte ufficiale | ALTA
+Forma | AMBIGUA | Help Players / rating context | ALTA
+Morale | PRINCIPIO UFFICIALE, formula ignota | Player Profile, Players Help | ALTA
+Fitness | BEN DOCUMENTATO | Tactics, Players, SMFA rules | ALTA per recovery timing
+Transfers | BEN DOCUMENTATO | Transfers, Initiating Transfer, SMFA | ALTA
+AI offers | IMPORTANTI REGOLE UFFICIALI GIÀ NOTE | Club AI | MASSIMA per probabilità/timing
+Loans | BEN DOCUMENTATO | Loans, Chairman | MEDIA-ALTA
+Market value | CONCETTO NOTO, formula ignota | Glossary, Chairman, Answer Centre | MASSIMA
+Finances | BEN DOCUMENTATO concettualmente | Finances, promotion/relegation | ALTA
+Youth development | PRINCIPIO CHIARO: no internal training rating growth | Players Help | MEDIA
+Age | DATO reale, effetto engine ignoto | Glossary, value discussions | ALTA
+Managers | ranking e international management documentati | Best Managers, International | MEDIA
+AI behaviour | trasferimenti parzialmente documentati, tattiche COM opache | Club AI | MASSIMA
+Calendars | BEN DOCUMENTATO | Schedule | BASSA-MEDIA
+Standings | strutturali | competitions/promotion | BASSA
+Promotion/Relegation | BEN DOCUMENTATO | Promotion/Relegation, Custom | BASSA-MEDIA
+Hidden mechanics | MOLTO OPACHE | test IMC + longitudinal community evidence | MASSIMA
+
+============================================================
+6. OPEN QUESTIONS
+============================================================
+
+OQ01 · LA ROSA COMPLETA INFLUENZA IL MATCH ENGINE?
+È la domanda più importante emersa anche per l’IMC. Non è stata trovata una fonte ufficiale che affermi che i giocatori fuori dall’XI/panchina abbassino o alzino direttamente la forza calcolata della squadra. Esiste invece prova ufficiale che “squad average rating” può essere usata in trasferimenti. Possibile confusione tra algoritmi diversi. Serve test controllato.
+
+OQ02 · QUAL È LA FORMULA EFFETTIVA DEL MATCH ENGINE?
+Non pubblica. Serve ricostruzione empirica su grandi quantità di match report.
+
+OQ03 · QUANTO PESANO LE TATTICHE?
+Ufficialmente contano; il peso quantitativo è ignoto. Community divisa tra chi le considera decisive e chi percepisce forte RNG/script.
+
+OQ04 · PLAYER ROLES: MODIFICATORI REALI O SOLO LINEE GUIDA?
+Sistema recente e importante, ma mancano test pubblici robusti.
+
+OQ05 · COME FUNZIONA IL CHAIRMAN’S VALUE?
+Significance within club è ufficiale. Formula per rating, età, posizione, depth, valore rosa e domanda è ignota.
+
+OQ06 · COME SCEGLIE L’AI CHI COMPRARE?
+Alcune regole sono ufficiali (availability, min fee, transfer list, real-life club reconstruction), ma ranking dei target, budget allocation, frequenza e probabilità non lo sono.
+
+OQ07 · COME SONO GENERATE LE OFFERTE AI E CON CHE DISTRIBUZIONE TEMPORALE?
+L’Help dice “da pochi giorni a poche settimane” per listed players. Non basta per prevederle.
+
+OQ08 · FITNESS RECOVERY ESATTO
+Recupero graduale è ufficiale; velocità base, modificatori, ruolo facilities e interazione con età/infortuni richiedono misurazione.
+
+OQ09 · MORALE
+Cause qualitative ufficiali, formula e soglie non note.
+
+OQ10 · CONCERNS
+Molto documentate, ma occorre verificare soglie per importanza, rating, età e percentuale partite nel gioco corrente.
+
+OQ11 · HOME ADVANTAGE
+Plausibile in un football sim, ma nessun coefficiente ufficiale trovato.
+
+OQ12 · EFFETTO ETÀ SULLA PARTITA
+Nessuna prova pubblica sufficiente oltre il rating e altri dati.
+
+OQ13 · RATING DI PARTITA / MOM
+Formula ignota. Potrebbe essere utile inferirla statisticamente dai Match Report IMC.
+
+OQ14 · FREE USER VS GOLD NEL 2026
+Le regole sono cambiate sensibilmente nel 2024. Community segnala forti restrizioni su trasferimenti/tattiche per free users. Deve essere ricostruita la policy corrente ufficiale 2026.
+
+OQ15 · FACILITIES
+RedCafe nel 2026 riporta facilities per fitness recovery, injury recovery, TV revenue, stadium capacity e fanbase. Serve fonte primaria e mappa completa dell’implementazione corrente.
+
+OQ16 · SQUAD CAPS E LIMITI TRASFERIMENTI
+Community 2026 discute Game World level squad caps e maximum transfers per season. Va documentato ufficialmente e confrontato tra Custom/Gold.
+
+OQ17 · VERSIONING DEL MATCH ENGINE
+Non è chiaro quali aggiornamenti dal 2024 in poi abbiano modificato il motore o solo UI/backend. Fondamentale per non usare test obsoleti.
+
+============================================================
+7. HISTORICAL KNOWLEDGE
+============================================================
+
+H01 · NASCITA DEL GIOCO
+Una intervista del 2014 riporta che SoccerManager.com fu lanciato nell’estate 2005 e che il primo Game World fu English Championship 1, inizialmente aperto a friends & family. Il successo portò alla creazione di nuovi English, European e World Championships.
+CLASSIFICAZIONE: EVIDENZA STORICA FORTE.
+Fonte: https://theworldoutsidethewindow.com/2014/12/13/soccer-manager-takes-on-the-world/
+
+H02 · ORIGINE GOLD
+La stessa intervista collega Gold Championships e Gold Management alla richiesta della community di contribuire economicamente e giocare in mondi esclusivi.
+CLASSIFICAZIONE: EVIDENZA STORICA FORTE.
+
+H03 · REBRANDING
+Il multiplayer originario “Soccer Manager” fu rinominato “Soccer Manager Worlds” quando il brand iniziò a ospitare anche la serie single-player.
+CLASSIFICAZIONE: EVIDENZA STORICA FORTE/CONSENSO.
+
+H04 · DECLINO 2014-2019
+Fuller FM, autore che dichiara una carriera SM iniziata nel 2007, descrive un progressivo spostamento di risorse verso il single-player, update più rari dal 2015 e assenza di update per lunghi periodi dopo novembre 2016.
+CLASSIFICAZIONE: TESTIMONIANZA STORICA INDIPENDENTE, non stato corrente.
+
+H05 · LONGEVITÀ GAME WORLDS
+English Championship 169 (ID 947) risale secondo la community al 2008 ed è ancora esistente nel 2026. RedCafe mantiene un proprio mondo/thread da oltre un decennio. Questo evidenzia una proprietà peculiare di SMW: la storia sportiva e sociale di un singolo Game World può durare molti anni.
+CLASSIFICAZIONE: EVIDENZA FORTE.
+
+H06 · RATING REVIEW STORICHE
+Materiale Answer Centre 2011 parlava di review settimanali organizzate per leghe e di circa due variazioni rating l’anno come media. Non va assunto valido nel 2026.
+CLASSIFICAZIONE: OBSOLETA/POTENZIALMENTE OBSOLETA.
+
+H07 · FITNESS/AMICHEVOLI STORICHE
+Risposte community 2011-2012 trattavano recovery e friendlies con regole che possono essere cambiate.
+CLASSIFICAZIONE: OBSOLETA/POTENZIALMENTE OBSOLETA.
+
+H08 · CAMBIO DI CICLO 2024+
+RedCafe conserva citazioni/link a blog ufficiali “September Update” e “October Update” 2024, descrivendo un major update, modifiche backend, UI, Gold Membership e basi per nuove feature. Nel 2026 la stessa community discute player roles, squad caps, facilities e roadmap.
+CLASSIFICAZIONE: EVIDENZA FORTE sulla ripresa dello sviluppo; dettaglio feature da verificare caso per caso.
+
+============================================================
+8. SOURCE RANKING
+============================================================
+
+RANK 1 · SOCCER MANAGER ONLINE HELP
+Motivo: unica fonte pubblica sistematica che esplicita regole del gioco. Deve essere il punto di partenza di quasi ogni CASE.
+
+RANK 2 · PAGINE PUBBLICHE LIVE DI SOCCER MANAGER / GAME WORLD / CUSTOM SETUP
+Motivo: fotografano funzioni e strutture effettivamente esposte dal prodotto corrente.
+
+RANK 3 · REDCAFE · THE SM REDCAFE LEAGUE
+Motivo: eccezionale continuità temporale, manager esperti, discussioni 2026, link a update ufficiali, grande quantità di casi reali.
+
+RANK 4 · REDDIT r/Soccermanager
+Motivo: migliore sensore contemporaneo pubblico per vitalità, problemi, recruitment, percezione e discovery di community.
+
+RANK 5 · TOP 100
+Motivo: Game World competitivo longevo con cultura di governance e manager esperti.
+
+RANK 6 · ANSWER CENTRE
+Motivo: archivio storico gigantesco. Va usato come indice di ipotesi, non come verità.
+
+RANK 7 · THE SOCCERMANAGER EXPERIENCE
+Motivo: analisi tattica dettagliata utile per formulare test.
+
+RANK 8 · FULLER FM / ARCHIVI STORICI
+Motivo: fondamentali per capire evoluzione, ma non per assumere regole 2026.
+
+RANK 9 · FORUM INTERNAZIONALI LOCALI
+Motivo: ampliano il campo e possono contenere conoscenze non emerse nella sfera anglofona, ma richiedono ricerca linguistica mirata.
+
+============================================================
+9. RESEARCH BACKLOG
+============================================================
+
+PRIORITÀ P0 · MATCH ENGINE
+1. Test “rosa completa vs XI identico”: verificare se cambiare drasticamente qualità delle riserve/non convocati altera risultati su campione ampio.
+2. Test rating XI: isolare incremento medio rating mantenendo tattica, morale e fitness quanto più costanti possibile.
+3. Home advantage: analisi statistica massiva di risultati IMC e pubblici.
+4. Morale: correlazione tra morale e match rating/risultato.
+5. Fitness: funzione di recovery e impatto sulla performance.
+6. Out-of-position penalty: misurare verde/arancio/rosso.
+7. Player roles: test A/B per ruolo su formazione identica.
+8. Tattiche: matrice controllata formation × mentality × pressing × tempo × attacking style.
+
+PRIORITÀ P0 · TRANSFER INTELLIGENCE
+9. AI offers: probabilità temporale dopo transfer listing.
+10. AI target selection: verificare reale preferenza per giocatori appartenenti al club nella realtà.
+11. Chairman’s Value: regressione su rating, età, posizione, squad depth, ranking interno.
+12. Player refusal: stimare soglia tra player rating e squad average.
+13. Prestiti: condizioni che determinano accettazione/rifiuto AI e ruolo “important player”.
+14. Transfer ban e tempi: confermare regole correnti per tutte le tipologie di trasferimento.
+
+PRIORITÀ P1 · SQUAD MANAGEMENT
+15. Player Concerns: soglie per status, età, rating e percentuale presenze.
+16. Morale: cause e velocità di variazione.
+17. Squad size: costi, concerns e possibili effetti indiretti.
+18. Youth strategy: mappare rating schedule e fonti migliori per anticipare rise/fall.
+
+PRIORITÀ P1 · ECONOMIA
+19. Economy Level Custom: quantificare gate, TV, prize money per livello.
+20. Cash injection: verificare formula 50% net worth nel gioco corrente.
+21. Stadium growth: relazione divisione, attendance, capacità e promozione.
+22. Facilities: catalogo completo 2026, costi, livelli, effetti.
+
+PRIORITÀ P1 · RATING INTELLIGENCE
+23. Ricostruire pipeline Soccer Wiki -> rating change.
+24. Frequenza corrente delle review per campionato.
+25. Correlare performance reale e decisioni di rating.
+26. Individuare community storicamente più accurate nelle predictions.
+
+PRIORITÀ P2 · COMMUNITY / ECOSYSTEM
+27. Catalogo Discord pubblici attivi SMW.
+28. Ricerca YouTube dedicata specificamente a Soccer Manager Worlds, separando SM20xx.
+29. Ricerca Facebook/X/Instagram pubblica su community SMW ancora attive.
+30. Deep search multilingua: portoghese/brasiliano, spagnolo/LatAm, turco, serbo/croato/bosniaco, rumeno, ungherese, bulgaro, arabo.
+31. Web archive dei forum ufficiali storici, soprattutto sezioni match engine/rating/tactics.
+32. Timeline completa di tutte le major release SMW dal 2005 al 2026.
+
+PRIORITÀ P2 · GAME WORLD DESIGN
+33. Limiti e combinazioni Custom Game World 2026.
+34. Squad caps e transfer limits.
+35. Regole internazionali e World Cup.
+36. Differenze Gold vs Standard vs Custom in fitness, injuries, cup-tied e monetizzazione.
+
+============================================================
+10. CONCLUSIONI OPERATIVE
+============================================================
+
+1. Soccer Manager Worlds possiede ancora nel 2026 un ecosistema pubblico sufficiente per costruire una intelligence seria, ma le fonti sono frammentate e mescolano epoche e prodotti diversi.
+
+2. L’Help ufficiale deve diventare il “manuale base” IMC. Contiene molte più regole esplicite di quanto emerga normalmente dalle discussioni community.
+
+3. Il match engine resta la principale black box. Le community possiedono esperienza, ma pochissimi test pubblici sono metodologicamente robusti.
+
+4. Per IMC il vantaggio competitivo maggiore può venire dall’unione di web intelligence e dati proprietari dei propri Game World: grandi quantità di Results, Match Report, Schedule, Player Stats e Transfers consentono test empirici che le community pubbliche raramente possono eseguire.
+
+5. La teoria secondo cui la panchina o l’intera rosa influenzerebbero direttamente la forza del match engine NON è confermata da questa ricognizione. Esiste invece una meccanica ufficiale di squad average in almeno un altro sistema (rifiuto trasferimenti), quindi è possibile che osservazioni community abbiano confuso più algoritmi. È una priorità P0 da testare, non una conclusione.
+
+6. Sul mercato AI abbiamo già una base ufficiale utile: unmanaged/external club seguono regole di availability, minimum fee, transfer list e tentano di ricostruire la rosa reale. Questo apre una linea investigativa concreta e testabile.
+
+7. Rating e sviluppo dei giocatori vanno pensati diversamente da Football Manager: in SMW non esiste training che faccia crescere internamente il rating. Il vantaggio nasce dall’anticipare evoluzioni reali e future rating review.
+
+8. RedCafe emerge come fonte community di qualità eccezionale per profondità storica e continuità fino al 2026. Reddit è il miglior sensore contemporaneo e di discovery. Top 100 è una fonte preziosa per il meta dei Custom Game Worlds competitivi.
+
+9. La documentazione storica non va scartata, ma versionata. Ogni conclusione futura dovrebbe registrare “valida almeno dal/al” quando possibile.
+
+10. La strategia IMC consigliata per i CASE successivi è: fonte ufficiale -> community esperte -> ricerca internazionale -> ipotesi -> test sui dati IMC -> classificazione finale dell’evidenza.
+
+============================================================
+11. BIBLIOGRAFIA / URL PRINCIPALI CONSULTATI
+============================================================
+
+UFFICIALI
+https://www.soccermanager.net/
+https://www.soccermanager.net/game.php
+https://www.soccermanager.net/help.php?action=loadarticle&catid=1
+https://www.soccermanager.net/help.php?action=loadarticle&aid=27
+https://www.soccermanager.net/help.php?action=loadarticle&aid=44
+https://www.soccermanager.net/help.php?action=loadarticle&aid=77
+https://www.soccermanager.net/cust-setup.php
+https://www.soccermanager.net/help.php?action=loadarticle&aid=146
+https://www.soccermanager.net/help.php?action=loadarticle&aid=28
+https://www.soccermanager.net/help.php?action=loadarticle&aid=31
+https://www.soccermanager.net/help.php?action=loadarticle&aid=137
+https://soccermanager.net/help.php?pname=tactics
+https://www.soccermanager.net/help.php?action=loadarticle&aid=140
+https://soccermanager.net/help.php?action=loadarticle&aid=22
+https://www.soccermanager.net/help.php?action=loadarticle&aid=76
+https://www.soccermanager.net/help.php?action=loadarticle&aid=83
+https://www.soccermanager.net/help.php?action=loadarticle&aid=125
+https://soccermanager.net/help.php?action=loadarticle&aid=71
+https://soccermanager.net/help.php?action=loadarticle&aid=110
+https://soccermanager.net/help.php?action=loadarticle&aid=35
+https://soccermanager.net/help.php?action=loadarticle&aid=36
+https://www.soccermanager.net/help.php?action=loadarticle&aid=53
+https://soccermanager.net/help.php?action=loadarticle&aid=43
+https://soccermanager.net/help.php?action=loadarticle&aid=105
+https://www.soccermanager.net/help.php?action=loadarticle&aid=30
+https://www.soccermanager.net/help.php?action=loadarticle&aid=47
+https://www.soccermanager.net/help.php?action=loadarticle&aid=57
+https://www.soccermanager.net/help.php?action=loadarticle&aid=55
+https://www.soccermanager.net/help.php?action=loadarticle&aid=133
+https://www.soccermanager.net/help.php?action=loadarticle&aid=116
+https://www.soccermanager.net/help.php?action=loadarticle&aid=61
+https://www.soccermanager.net/help.php?action=loadarticle&aid=48
+https://soccermanager.net/select-gameworld.php?action=nreg
+https://invinciblesstudio.com/games/
+https://www.invinciblesstudio.com/news/
+
+COMMUNITY / INDIPENDENTI
+https://www.reddit.com/r/Soccermanager/
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/
+https://smtop100.blog/
+https://thesoccermanageronline.sport.blog/
+https://fullerfm.com/2019/05/10/soccer-manager-worlds-game-neglected/
+https://www.boards.ie/discussion/2057412083/now-that-the-season-is-nearly-over-heres-a-new-game/
+https://www.neogaf.com/threads/soccer-manager-ot-free-in-browser-app-massively-multiplayer-soccer-management-game.820144/
+https://steamcommunity.com/app/438600/discussions/
+https://forocoches.com/foro/showthread.php?t=10683060
+https://www.technopat.net/sosyal/konu/soccer-manager-worlds-tuerkiye-sunucusu-var-mi.2798540/
+https://forum.kajgana.com/threads/soccer-manager-kajgana-power-cup.86189/
+https://theworldoutsidethewindow.com/2014/12/13/soccer-manager-takes-on-the-world/
+https://gummysearch.com/r/Soccermanager/
+
+FINE RESPONSE · IMC-INTEL-001
