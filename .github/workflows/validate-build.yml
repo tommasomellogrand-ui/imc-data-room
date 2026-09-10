@@ -1,0 +1,39 @@
+name: IMC Data Room · Validate and Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tickets/**'
+      - 'site/**'
+      - 'tools/**'
+      - '.github/workflows/validate-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: imc-data-room-validate-build
+  cancel-in-progress: true
+
+jobs:
+  validate-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate metadata and build registry/site
+        run: python3 tools/build_data_room.py
+      - name: Verify CASE resolver
+        run: |
+          test -s dist/data/registry.json
+          test -s dist/cases/IMC-ENG-002/request.txt
+          grep -q '^CASE_ID: IMC-ENG-002$' dist/cases/IMC-ENG-002/request.txt
+          grep -q '^TOPIC: IMC_DATA_ROOM_TICKETING_SYSTEM$' dist/cases/IMC-ENG-002/request.txt
+      - name: Upload deployable site
+        uses: actions/upload-artifact@v4
+        with:
+          name: imc-data-room-dist
+          path: dist/
+          retention-days: 7
