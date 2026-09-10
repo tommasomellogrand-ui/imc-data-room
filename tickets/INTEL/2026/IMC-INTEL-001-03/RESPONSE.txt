@@ -1,0 +1,504 @@
+CASE_ID: IMC-INTEL-001-03
+DOC_TYPE: RESPONSE
+AREA: INTEL
+DATE: 2026-09-10
+TOPIC: PLAYER_HISTORY_MATCH_REPORT_JOIN_FEASIBILITY_AUDIT
+STATUS: COMPLETED
+
+IMC | SOCCER MANAGER INTELLIGENCE
+PLAYER HISTORY × MATCH REPORT · JOIN FEASIBILITY AUDIT
+
+============================================================
+0. EXECUTIVE CONCLUSION
+============================================================
+
+RACCOMANDAZIONE FINALE: GO WITH GAPS.
+
+L'architettura dei dati IMC è tecnicamente coerente per costruire un serio dataset player-match e team-match del Match Engine. Il punto decisivo verificato in questo audit è che `players_json[*].sm_player_id` dei Match Report appartiene allo stesso namespace globale usato da `IMC Player Codex Global.id`. La catena di identità è quindi strutturalmente valida.
+
+Il CORE contiene inoltre una vera storia dei rating con `player_id`, `change_date`, `old_rating`, `new_rating`, e strutture snapshot che possono contenere `snapshot_date`, `positions`, `age`, `rating`, `previous_rating`, `value` e `rating_change_date`. Questo corregge una limitazione emersa nel CASE precedente: il rating storico non è concettualmente assente, ma la sua copertura attuale è ancora parziale.
+
+Il limite principale non è la chiave di join. È la copertura temporale delle variabili storiche: 176.687 identità globali esistono nel CORE, ma `IMC Player Codex Global Data` copre oggi 2.297 giocatori, `IMC Player Codex Global Rating History` 2.053 giocatori e `player_codex_player_snapshots` soltanto 108. Di conseguenza, un modello completo su rating e soprattutto posizione naturale storica non è ancora rappresentativo dell'intero universo dei Match Report.
+
+Altro limite tecnico: Database Manager vieta correttamente query SQL cross-database. Il join DB2/DB3 -> CORE non può quindi essere eseguito server-side in una singola query. È comunque tecnicamente realizzabile in analisi read-only a due passaggi/materializzazione lato analitico, usando player_id come chiave.
+
+============================================================
+1. CURRENT MATCH REPORT COUNTS
+============================================================
+
+Fotografia finale dell'audit, ottenuta con COUNT fisiche sulle tabelle Match Report.
+
+GW002 · GOLD/MULTI · Sql1956795_2
+- Match Report: 1.156
+- player-match: 41.616
+- 36 player records per match
+- player-match con sm_player_id valorizzato: 41.616 / 41.616 = 100%
+- match_date: 2026-07-07 -> 2026-09-09
+- ultimo imported_at osservato: 2026-09-10 14:47:37
+- nota: GW002 era in importazione attiva durante l'audit. Sono stati osservati conteggi intermedi di 1.005, 1.070, 1.096 e infine 1.156. Ai fini del report viene fissata la fotografia finale a 1.156.
+
+GW005 · CUSTOM/SINGLE · Sql1956795_3
+- Match Report: 271
+- player-match: 9.756
+- 36 player records per match
+- player-match con sm_player_id valorizzato: 9.756 / 9.756 = 100%
+- player_id distinti: 1.322
+- match_date: 2026-07-19 -> 2026-09-07
+- ultimo imported_at: 2026-09-08 21:08:48
+
+GW001 · CUSTOM/SINGLE · Sql1956795_3
+- Match Report: 73
+- player-match: 2.628
+- 36 player records per match
+- player-match con sm_player_id valorizzato: 2.628 / 2.628 = 100%
+- player_id distinti: 1.107
+- match_date: 2026-07-13 -> 2026-08-31
+- ultimo imported_at: 2026-09-07 23:14:52
+
+============================================================
+2. MATCH REPORT FIELD MAP
+============================================================
+
+Lo schema fisico dei tre repository pilota è omogeneo e contiene 33 colonne:
+
+game_world_id; sm_fixture_id; competition_key; sm_action; sm_country; sm_division; competition_group; competition_stage; competition_round; match_date; home_sm_club_id; home_name; away_sm_club_id; away_name; home_sm_manager_id; home_manager_name; away_sm_manager_id; away_manager_name; home_score; away_score; penalty_home_score; penalty_away_score; aggregate_home_score; aggregate_away_score; stadium_name; attendance; team_stats_json; players_json; events_json; tactics_json; commentary_json; fingerprint; imported_at.
+
+PLAYERS_JSON · diretto per player-match
+- sm_player_id
+- player_name
+- team_side
+- squad_slot
+- starter
+- substitute
+- match rating (`rating` nel Match Report, distinto dal Soccer Manager player rating storico)
+- goals
+- assists
+- captain
+- man_of_match
+- yellow_card / red_card
+- yellow_card_minute / red_card_minute
+- sub_on_minute / sub_off_minute
+
+Nei campioni integrali verificati, gli slot 1-11 sono titolari e 12-18 panchina. Gli unused substitutes possono avere match rating NULL.
+
+TEAM_STATS_JSON · diretto per team-match
+- team_name
+- sm_team_id
+- possession
+- total_shots
+- shots_on_target
+- corners
+- yellow_cards
+- red_cards
+
+TACTICS_JSON · snapshot temporali per team
+Nei campioni reali sono presenti snapshot a minuto 0 e, frequentemente, 45/60/75. I campi osservati includono:
+- snapshot_minute
+- team_side
+- formation
+- mentality
+- passing_style
+- attacking_style
+- tempo
+- pressing
+- tackling_style
+- counter_attack
+- tight_marking
+- defensive_line
+- width
+- fluidity
+- creativity
+- use_playmaker / playmaker_name
+- use_target_man / target_man_name
+- sweeper_keeper
+- men_behind_ball
+- forwards_instruction
+- captain_name
+- corner_taker_name
+- penalty_taker_name
+- free_kick_taker_name
+
+EVENTS_JSON
+- minute
+- team_side
+- event_type
+- event_sequence
+- primary_player_name / primary_sm_player_id
+- secondary_player_name / secondary_sm_player_id
+- event_text
+
+Sono stati osservati kickoff, halftime, goal, save, shot, yellow_card e substitution, con player IDs associabili.
+
+COMMENTARY_JSON
+- minute
+- event_sequence
+- player_ids[]
+- commentary_text
+
+Questo permette una timeline evento-player più ricca degli aggregati finali.
+
+============================================================
+3. CORE PLAYER HISTORY FIELD MAP
+============================================================
+
+A. `IMC Player Codex Global`
+- id bigint PK
+- forename
+- surname
+- image_file
+- image_url
+Copertura: 176.687 identità.
+
+B. `IMC Player Codex Global Data`
+- player_id PK
+- full_name
+- nationality
+- position
+- rating
+- market_value
+- age
+- date_of_birth
+- height_cm
+- weight_kg
+- foot
+- soccerwiki_club_name / soccerwiki_club_id
+- wage
+- updated_at
+Copertura: 2.297 giocatori.
+Questa tabella descrive lo stato corrente/ultimo noto e NON va retroproiettata automaticamente alla data di una partita.
+
+C. `IMC Player Codex Global Rating History`
+- player_id
+- change_date
+- old_rating
+- new_rating
+- imported_at
+Copertura: 11.848 cambi rating, 2.053 giocatori distinti.
+Intervallo osservato: 2009-06-11 -> 2026-09-10.
+
+D. `player_codex_player_snapshots`
+- player_id
+- snapshot_date
+- positions
+- age
+- rating
+- previous_rating
+- value
+- rating_change_date
+- rating_change
+- source metadata
+Copertura attuale: 108 righe / 108 giocatori.
+
+E. `player_codex_observations`
+Contiene player_id, observed_date, effective_change_date, change_type, rating_change e payload JSON, utile come ulteriore prova temporale/source lineage.
+
+F. `player_codex_rating_history`
+Vecchia/ulteriore struttura rating: 247 righe per 44 giocatori. Non è la fonte principale rispetto alla nuova `IMC Player Codex Global Rating History`, ma conferma la presenza di una pipeline storica.
+
+============================================================
+4. JOIN KEY MAP
+============================================================
+
+Join canonico proposto:
+
+Match Report.players_json[*].sm_player_id
+-> IMC Player Codex Global.id
+-> IMC Player Codex Global Data.player_id
+-> IMC Player Codex Global Rating History.player_id
+-> player_codex_player_snapshots.player_id
+
+Chiave temporale:
+Match Report.match_date
+<-> Rating History.change_date
+<-> snapshot_date / rating_change_date, quando disponibili.
+
+Club/team context:
+players_json[*].team_side
+-> home_sm_club_id / away_sm_club_id
+-> team_stats_json.home|away
+-> tactics_json.team_side
+
+Manager context:
+team_side
+-> home_sm_manager_id / away_sm_manager_id
+Manager ID può essere NULL per club senza manager umano/COM o quando non acquisito.
+
+Fixture context:
+sm_fixture_id è la chiave naturale per collegare risultato, player rows, stats, tactics, events e commentary della stessa gara.
+
+============================================================
+5. JOIN SUCCESS RATE
+============================================================
+
+PLAYER ID NEL MATCH REPORT
+- GW002: 41.616/41.616 nella fotografia finale = 100%.
+- GW005: 9.756/9.756 = 100%.
+- GW001: 2.628/2.628 = 100%.
+
+GLOBAL IDENTITY JOIN
+Database Manager blocca i join cross-database, quindi non è stato possibile calcolare in una singola query la percentuale esatta sull'intero dataset.
+
+È stato eseguito un controllo deterministico separato su 100 player_id distinti per ciascun GW:
+- GW002 sample: 100/100 trovati in `IMC Player Codex Global`.
+- GW005 sample: 100/100.
+- GW001 sample: 100/100.
+- Totale sample: 300/300 = 100%.
+
+Conclusione: la chiave `sm_player_id -> Global.id` è VERIFIED / STRONGLY FEASIBLE. L'esatto full-dataset global join rate resta tecnicamente da materializzare fuori dalla singola query cross-DB, ma non è emerso alcun mismatch nel campione verificato.
+
+============================================================
+6. HISTORICAL RATING RECONSTRUCTION RATE
+============================================================
+
+Il rating storico è concettualmente ricostruibile quando la timeline del giocatore copre la match_date.
+
+Regola temporale raccomandata:
+- usare il `new_rating` dell'ultimo change_date <= match_date;
+- oppure, quando la prima variazione nota è successiva alla match_date e la continuità della storia è documentata, l'`old_rating` di quella prima variazione può rappresentare l'intervallo precedente;
+- non usare il rating corrente della Global Data come proxy se la validità temporale non è dimostrata.
+
+Disponibilità di almeno una riga Rating History nei campioni da 100 player distinti:
+- GW002: 53/100 = 53%
+- GW005: 51/100 = 51%
+- GW001: 90/100 = 90%
+
+ATTENZIONE: queste percentuali misurano `player has rating history`, NON la percentuale esatta di player-match con rating ricostruibile alla specifica match_date. Per ottenere quest'ultima serve materializzare il join dei player-match con tutta la timeline CORE e applicare l'intervallo temporale per ogni riga.
+
+Classificazione attuale:
+- Rating history architecture: DIRECT / TEMPORALLY USABLE.
+- Exact full player-match reconstruction rate: NOT YET MEASURED per vincolo cross-DB del Gateway.
+- Copertura: parziale e fortemente variabile per GW.
+
+============================================================
+7. POSITION RECONSTRUCTION RATE
+============================================================
+
+POSIZIONE NATURALE CORRENTE
+`IMC Player Codex Global Data.position`: DIRECT quando il giocatore è coperto, ma è stato corrente/ultimo noto, non necessariamente storico.
+
+POSIZIONE NATURALE ALLA MATCH_DATE
+La struttura migliore è `player_codex_player_snapshots.positions` con `snapshot_date`. Copertura attuale globale: soltanto 108 giocatori.
+Nel campione di 100 player per ciascuno dei tre GW: 0/100 avevano una riga in questa snapshot table.
+
+Classificazione: storico naturale = DIRECT quando esiste snapshot temporalmente valido; copertura attuale molto insufficiente.
+
+POSIZIONE GIOCATA NEL MATCH REPORT
+Il Match Report NON espone un campo diretto `played_position` o coordinate tattiche del singolo calciatore.
+
+Sono disponibili `formation`, `squad_slot`, starter/substitute e snapshots tattici. Per i titolari l'ordine 1-11 è strutturato, con slot 1 coerente con il portiere nei campioni. Tuttavia non è stata trovata nel repository una mappa autoritativa universale `formation + squad_slot -> coordinate/ruolo giocato`.
+
+Classificazione:
+- played_position DIRECT: NOT AVAILABLE.
+- formation + squad_slot derivation: PARTIAL/AMBIGUOUS.
+- substitute played position dopo ingresso: PARTIAL/AMBIGUOUS, perché minuto di ingresso è disponibile ma non il ruolo/slot tattico occupato in modo esplicito.
+
+Quindi oggi non è metodologicamente sicuro etichettare automaticamente un giocatore come “fuori ruolo” solo da formation + ordine senza una mappa di slot validata.
+
+============================================================
+8. PLAYER-MATCH DATASET SCHEMA PROPOSTO
+============================================================
+
+Chiavi/context:
+- game_world_id
+- sm_fixture_id
+- match_date
+- competition_key/action/country/division/group/stage/round
+- team_side / home_flag
+- sm_club_id
+- sm_manager_id
+- opponent_club_id / opponent_manager_id
+
+Player identity:
+- sm_player_id
+- global_player_id
+- player_name
+
+Match usage/performance:
+- starter
+- substitute
+- squad_slot
+- sub_on_minute
+- sub_off_minute
+- captain
+- match_rating
+- goals
+- assists
+- man_of_match
+- yellow_card / yellow_card_minute
+- red_card / red_card_minute
+
+Historical player state, sempre con provenance/confidence:
+- rating_at_match
+- rating_source_date
+- rating_reconstruction_method
+- natural_positions_at_match
+- position_source_date
+- age_at_match
+- market_value_at_match
+- current-data fields solo quando temporalmente validi
+
+Team context:
+- team_score / opponent_score / result
+- possession
+- shots
+- shots_on_target
+- corners
+- team cards
+- formation_initial
+- tactic fields at minute 0
+- tactical snapshots after 45/60/75 etc.
+
+Derived, solo quando input completi:
+- XI_avg_rating
+- XI_median_rating
+- rating_by_department
+- team_rating_gap
+- bench_avg_rating
+- bench_used_avg_rating
+- player_rating_minus_XI_avg
+- player_rating_minus_opponent_department
+- natural_vs_played_position flag, solo se played position viene reso affidabile.
+
+============================================================
+9. TEAM-MATCH DATASET SCHEMA PROPOSTO
+============================================================
+
+Una riga per team per fixture:
+- game_world_id, fixture_id, match_date
+- club_id, manager_id, opponent IDs
+- home_flag
+- competition dimensions
+- goals_for/goals_against/result
+- possession/shots/SOT/corners/cards
+- initial formation and full initial tactic vector
+- tactical change count / snapshot sequence
+- XI player IDs
+- XI historical ratings
+- XI average/median/min/max rating
+- rating by GK/DEF/MID/ATT when played department becomes reliable
+- bench IDs and historical ratings
+- substitutions and minutes
+- opponent equivalent features
+- rating gap, department gaps
+- provenance/completeness flags for every historical aggregate.
+
+============================================================
+10. ANALYSES ALREADY POSSIBLE
+============================================================
+
+Già possibili con buona coerenza:
+- player match rating -> goals/assists/MoM/cards;
+- starters vs substitutes e performance;
+- substitution timing e output osservati;
+- player involvement negli eventi/commentary;
+- team tactics -> possession/shots/SOT/result, con opportuni controlli;
+- tactical snapshots/change patterns;
+- team statistics e result;
+- home/away effects;
+- manager/club context quando manager ID è presente;
+- analisi rating limitate al sottoinsieme di player-match per cui la storia temporale può essere ricostruita correttamente.
+
+Possibili ma da trattare come osservazionali, non causali:
+- relazione rating storico -> match rating;
+- rating -> goal/assist/MoM;
+- XI strength -> shots/possession/result sul sottoinsieme coperto.
+
+============================================================
+11. ANALYSES POSSIBLE AFTER FULL IMPORT / HISTORY COVERAGE
+============================================================
+
+Con copertura storica player completa e mapping posizione giocata affidabile diventano realistiche:
+- 94 vs 93 vs 92 a parità di contesto;
+- impatto marginale del rating singolo;
+- XI average/median rating;
+- rating gap tra squadre;
+- forza per reparto;
+- interazioni tra più giocatori forti nello stesso reparto;
+- diminishing returns del rating;
+- differenze per ruolo e formazione;
+- naturale vs fuori ruolo;
+- tactics x player quality interaction;
+- player quality x teammate quality;
+- qualità della panchina e sua eventuale influenza diretta/indiretta;
+- sostituzioni con delta di rating entrante/uscente;
+- confronti tra manager controllando qualità effettiva dell'XI.
+
+============================================================
+12. MISSING DATA / BLOCKERS
+============================================================
+
+1. CROSS-DB SERVER JOIN
+Il Database Manager rifiuta query cross-database (`Cross-database SQL is forbidden`). Non è un problema di coerenza delle chiavi, ma impedisce il calcolo server-side in un'unica query. Serve materializzazione read-only lato analisi o un percorso analytics autorizzato in futuro.
+
+2. GLOBAL DATA COVERAGE
+2.297 record arricchiti su 176.687 identità globali: copertura ancora piccola.
+
+3. RATING HISTORY COVERAGE
+2.053 player con rating history. Buona profondità storica per questi giocatori, ma copertura ancora parziale.
+
+4. HISTORICAL POSITION COVERAGE
+Solo 108 player snapshot globali con `positions`: insufficiente per un modello generalizzato sul fuori ruolo.
+
+5. PLAYED POSITION
+Non esiste un campo diretto nel Match Report. Formation + squad_slot non è ancora una derivazione validata universalmente.
+
+6. CONDITION / MORALE
+Non presenti nei record Match Report analizzati come snapshot pre-match individuali.
+
+7. MANAGER MISSINGNESS
+Manager IDs possono essere null, coerentemente con COM/non-managed o acquisizione incompleta.
+
+8. DYNAMIC IMPORTS
+GW002 era in caricamento durante l'audit. Ogni analisi futura deve congelare un cutoff/import_run o timestamp della fotografia analitica.
+
+============================================================
+13. CAMPI DA PRESERVARE / ACQUISIRE NEGLI IMPORTER FUTURI
+============================================================
+
+Senza modificare nulla in questo CASE, per massimizzare il valore investigativo futuro è utile preservare/acquisire, se la fonte li espone:
+- played_position esplicita;
+- coordinate/slot tattico esplicito per ogni formazione;
+- player role assegnato;
+- rating pre-match timestamped;
+- natural positions pre-match timestamped;
+- condition pre-match;
+- morale pre-match;
+- age/value/wage pre-match quando rilevanti;
+- roster completo e disponibilità pre-match;
+- bench quality con stato temporale corretto;
+- tactical snapshots con minuto e formazione/ruolo dopo sostituzioni;
+- manager/COM flag esplicito;
+- source capture timestamp, source version e import_run/cutoff;
+- eventuali facilities/club modifiers se diventano investigativamente pertinenti.
+
+============================================================
+14. FINAL FEASIBILITY RATING
+============================================================
+
+IDENTITY JOIN: GO.
+- Chiave diretta player_id.
+- 100% sm_player_id nei player-match misurati.
+- 300/300 player distinti del campione trovati nel Global Codex.
+
+RATING HISTORY JOIN: GO WITH GAPS.
+- Struttura temporale corretta esiste.
+- Copertura ancora parziale.
+- Serve materializzare join e intervalli temporali per calcolare l'esatta reconstruction rate per player-match.
+
+NATURAL POSITION HISTORY: NOT YET per analisi generalizzata.
+- Struttura snapshot esiste, ma copertura 108 player.
+
+PLAYED POSITION / OUT-OF-POSITION: NOT YET per inferenza robusta.
+- Match Report non espone played_position diretto.
+- Formation + squad_slot è oggi PARTIAL/AMBIGUOUS.
+
+TACTICS / MATCH EVENTS / PERFORMANCE: GO.
+- Il Match Report è ricco, strutturato e temporale.
+
+FULL MATCH ENGINE MODEL: GO WITH GAPS.
+
+La risposta alla domanda centrale del CASE è quindi:
+
+SÌ, IL DATASET IMC È TECNICAMENTE E CONCETTUALMENTE COERENTE PER COSTRUIRE UN MODELLO SERIO DEL MATCH ENGINE, ma non è ancora temporalmente completo per tutte le variabili player-level. L'identità e il Match Report sono già solidi. Il rating storico è parzialmente utilizzabile. La posizione naturale storica e soprattutto la posizione effettivamente giocata sono i due gap principali per le analisi sul fuori ruolo. Condition e morale restano assenti come stato pre-match.
+
+La priorità non è ridisegnare l'architettura. È completare la copertura storica e preservare in modo esplicito gli stati pre-match e la posizione giocata. Una volta fatto, il patrimonio IMC è sufficientemente granulare per affrontare analisi realmente sofisticate su rating, XI, reparti, tattiche, panchina, sostituzioni e interazioni tra qualità dei giocatori e contesto di squadra.
