@@ -1,0 +1,450 @@
+CASE_ID: IMC-ENG-009-01
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: MINISITE_REPOSITORY_STRUCTURE_PROPOSAL
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+IMC MINISITE CORE · REPOSITORY STRUCTURE PROPOSAL
+
+1. EXECUTIVE VERDICT
+
+Partendo da IMC-ENG-009, la struttura repository raccomandata è una struttura a tre livelli netti:
+
+A. PLATFORM SHARED
+- Core runtime e contratti condivisi;
+- componenti semantici condivisi;
+- feature modules condivisi;
+- data access condiviso;
+- CSS foundation/token contracts condivisi.
+
+B. GAME WORLD PACKAGE
+- config dichiarativa;
+- theme autonomo;
+- composition/layout specifici;
+- asset proprietari;
+- moduli opzionali abilitati;
+- override locali consentiti solo attraverso extension points dichiarati.
+
+C. PUBLIC ENTRYPOINT
+- shell HTML minima del GW;
+- bootstrap della config del GW;
+- caricamento del Core e del package del GW.
+
+La struttura NON deve creare due alberi MULTI e SINGLE. MULTI/SINGLE sono modalità di configurazione/context del medesimo Core.
+
+La struttura NON deve centralizzare i CSS visuali dei nove GW in un unico file e NON deve spostare nel Core le composizioni editoriali di GW001 o territoriali di GW007.
+
+Principio:
+
+CORE OWNS BEHAVIOR AND CONTRACTS
+GW PACKAGE OWNS IDENTITY AND COMPOSITION
+FEATURES OWN OPTIONAL DOMAIN CAPABILITIES
+
+2. AS-IS SINTETICO
+
+Il repository corrente mostra tre forme sovrapposte:
+
+1. site-assets/gameworld/app-core.js
+Renderer condiviso elementare che conosce direttamente i GW e sceglie shell visuali per numero. È una prova di condivisione, non una base adeguata al Core futuro.
+
+2. minisite/GW001..GW009
+Ogni GW contiene oggi una quantità significativa di logica locale: app.js/exploration.js, CSS/theme, pagine HTML, dati demo/snapshot, asset e route. Le exploration migliori implementano localmente comportamenti che dovrebbero diventare contratti/core o feature condivise.
+
+3. riferimenti a /minisite/shared/app-core.js
+Diversi minisiti e workflow fanno riferimento a un shared app-core che non risulta presente nel main analizzato in IMC-ENG-009. Prima dell'implementazione occorrerà quindi stabilire una sola source-of-truth del Core e rimuovere progressivamente i riferimenti ambigui/legacy.
+
+Esempi di capability oggi locali:
+- GW001: competition-first hierarchy, Match Center, archive, division filters, editorial composition;
+- GW002/GW003: multi-country/division context, persistence, matrix/comparison;
+- GW004: division/rank/pressure;
+- GW005: profiles/records/honours;
+- GW006: progression/playoff;
+- GW007: Kingdom/Territory context, map, rivalry/territorial composition;
+- GW009: visual dialect radicalmente specifico sopra semantica sportiva convenzionale.
+
+3. TO-BE PROPOSTO
+
+Root raccomandata:
+
+minisite/
+  platform/
+  worlds/
+  public/
+
+Non raccomando di continuare con codice condiviso dentro una directory denominata shared/ senza distinguere runtime, components e features. "shared" tende rapidamente a diventare il cassetto dove finisce tutto ciò che nessuno sa classificare.
+
+3.1 minisite/platform/
+
+Contiene la piattaforma riutilizzabile e non conosce alcun GW concreto.
+
+Sottolayer:
+- core/
+- data/
+- components/
+- features/
+- styles/
+- utilities/
+
+Regola assoluta: nessun file sotto platform/ deve contenere branching del tipo if (GW === 'GW001') o mappe di comportamento per GW001..GW009.
+
+3.2 minisite/worlds/
+
+Contiene i package specifici dei Game World.
+
+Ogni package può contenere:
+- config.js;
+- theme.css;
+- composition.js o compositions/;
+- assets/;
+- optional local extensions dichiarate;
+- eventuali route composition specifiche.
+
+Non contiene copie del router, data client, Match contract, standings behavior, loading/error/empty state, focus handling o altri comportamenti condivisi.
+
+3.3 minisite/public/
+
+Contiene gli entrypoint pubblicabili. Ogni GW ha una shell minima che carica il proprio package e il runtime comune.
+
+In alternativa, se gli URL pubblici esistenti /minisite/GW001/ devono essere preservati fisicamente durante la migrazione, gli entrypoint possono restare temporaneamente nelle directory attuali e diventare progressivamente shell sottili. Non è necessario rompere URL per ottenere una nuova architettura interna.
+
+4. ALBERO DIRECTORY COMPLETO PROPOSTO
+
+minisite/
+├── platform/
+│   ├── core/
+│   │   ├── bootstrap.js
+│   │   ├── router.js
+│   │   ├── navigation.js
+│   │   ├── context-engine.js
+│   │   ├── state.js
+│   │   ├── capability-registry.js
+│   │   ├── lifecycle.js
+│   │   └── errors.js
+│   │
+│   ├── data/
+│   │   ├── client.js
+│   │   ├── contracts.js
+│   │   ├── resources.js
+│   │   ├── cache.js
+│   │   ├── pagination.js
+│   │   └── adapters/
+│   │       └── imc-minisite-data.js
+│   │
+│   ├── components/
+│   │   ├── match/
+│   │   │   ├── contract.js
+│   │   │   ├── match-object.js
+│   │   │   └── score-plate.js
+│   │   ├── standings/
+│   │   │   ├── contract.js
+│   │   │   └── standings-table.js
+│   │   ├── competition/
+│   │   │   ├── contract.js
+│   │   │   └── competition-header.js
+│   │   ├── profiles/
+│   │   │   ├── manager-profile.js
+│   │   │   ├── player-profile.js
+│   │   │   └── club-profile.js
+│   │   ├── transfer/
+│   │   │   └── transfer-object.js
+│   │   ├── context/
+│   │   │   ├── context-selector.js
+│   │   │   ├── breadcrumb.js
+│   │   │   └── context-bar.js
+│   │   └── states/
+│   │       ├── loading-state.js
+│   │       ├── error-state.js
+│   │       └── empty-state.js
+│   │
+│   ├── features/
+│   │   ├── archive/
+│   │   ├── reports/
+│   │   ├── records-honours/
+│   │   ├── promotion-relegation/
+│   │   ├── position-history/
+│   │   ├── playoffs/
+│   │   ├── progression/
+│   │   ├── comparison/
+│   │   ├── territory-map/
+│   │   ├── rivalries/
+│   │   └── cup-bracket/
+│   │
+│   ├── styles/
+│   │   ├── reset.css
+│   │   ├── foundation.css
+│   │   ├── tokens.css
+│   │   ├── accessibility.css
+│   │   └── responsive-contracts.css
+│   │
+│   └── utilities/
+│       ├── dom.js
+│       ├── format.js
+│       ├── url.js
+│       └── accessibility.js
+│
+├── worlds/
+│   ├── GW001/
+│   │   ├── config.js
+│   │   ├── theme.css
+│   │   ├── compositions/
+│   │   │   ├── home.js
+│   │   │   ├── competition.js
+│   │   │   ├── match.js
+│   │   │   └── archive.js
+│   │   ├── extensions/
+│   │   │   └── road-chronicle.js
+│   │   └── assets/
+│   │
+│   ├── GW002/
+│   │   ├── config.js
+│   │   ├── theme.css
+│   │   ├── compositions/
+│   │   └── assets/
+│   │
+│   ├── GW003/
+│   ├── GW004/
+│   ├── GW005/
+│   ├── GW006/
+│   ├── GW007/
+│   │   ├── config.js
+│   │   ├── theme.css
+│   │   ├── compositions/
+│   │   │   ├── home.js
+│   │   │   ├── kingdom.js
+│   │   │   └── territory.js
+│   │   ├── extensions/
+│   │   │   └── four-kingdoms-language.js
+│   │   └── assets/
+│   ├── GW008/
+│   └── GW009/
+│
+└── public/
+    ├── GW001/
+    │   ├── index.html
+    │   └── .htaccess
+    ├── GW002/
+    ├── GW003/
+    ├── GW004/
+    ├── GW005/
+    ├── GW006/
+    ├── GW007/
+    ├── GW008/
+    └── GW009/
+
+Nota: public/ è il target logico TO-BE. Durante la migrazione gli entrypoint esistenti minisite/GWXXX possono essere mantenuti per evitare modifiche URL/deploy premature. La separazione fisica public/ può essere introdotta solo quando i workflow e gli URL sono pronti.
+
+5. RESPONSABILITÀ DEI LAYER
+
+5.1 PLATFORM / CORE
+
+Possiede:
+- bootstrap;
+- route registry e route resolution;
+- navigation semantics;
+- URL serialization/parsing;
+- context persistence;
+- responsive navigation behavior;
+- lifecycle pagina;
+- loading/error/not-found handling;
+- capability activation;
+- focus restoration/accessibility navigation;
+- state boundaries.
+
+Non possiede:
+- palette;
+- font GW;
+- hero composition;
+- copy editoriale specifico;
+- mappe GW-specifiche;
+- immagini;
+- markup cinematografico specifico di Road To History;
+- metafora Four Kingdoms.
+
+5.2 PLATFORM / DATA
+
+Possiede:
+- unico accesso al contratto window.IMC_MINISITE_DATA o suo successore autorizzato;
+- resource contracts;
+- normalization tecnica dei response envelope;
+- pagination/caching/cancellation;
+- error model;
+- typed/schema-like contracts documentati.
+
+Il singolo GW non deve fare fetch diretti al Gateway/MySQL e non deve duplicare waitApi/read/rows/error handling.
+
+5.3 PLATFORM / COMPONENTS
+
+I componenti sono semantici.
+
+Esempio MatchObject contract:
+- fixture id;
+- competition/context;
+- home entity;
+- away entity;
+- status;
+- score;
+- date/time;
+- navigation target;
+- optional report metadata.
+
+Il componente NON decide titanium, CRT, graphite o territorial color. Il rendering visuale viene skinning/theme/composition.
+
+Non tutti i componenti devono imporre markup identico. Dove la libertà creativa richiede composizioni radicali, il Core deve offrire controller/model + render slot, non una card HTML rigida.
+
+5.4 PLATFORM / FEATURES
+
+Una feature è una capability sportiva/editoriale opzionale riutilizzabile.
+
+Esempi:
+- playoffs;
+- promotion/relegation;
+- records/honours;
+- territory map;
+- rivalries;
+- archive;
+- cup bracket.
+
+Una feature possiede:
+- capability id;
+- eventuali route;
+- data requirements;
+- state/behavior;
+- component contracts;
+- default accessible behavior.
+
+Può offrire una presentazione default minima, ma il GW può fornirne composition/skin attraverso extension points dichiarati.
+
+5.5 PLATFORM / STYLES
+
+Deve contenere soltanto foundation realmente condivisa:
+- box sizing/reset;
+- accessibility primitives;
+- focus behavior;
+- semantic token contract;
+- layout constraints minimi;
+- responsive behavior necessario ai componenti shared.
+
+Non deve contenere una "grafica IMC universale" che appiattisca i GW.
+
+5.6 WORLDS / GWXXX / CONFIG
+
+La config è dichiarativa e valida contro un contract comune.
+
+Esempio concettuale, non implementativo:
+
+id: GW007
+mode: MULTI
+context:
+  hierarchy: [WORLD, TERRITORY, DIVISION, COMPETITION]
+  territoryModel: KINGDOM
+features:
+  territory-map: true
+  rivalries: true
+  archive: false
+navigation:
+  primary: [home, competitions, results, schedule, standings]
+  secondary: [managers, players, clubs, transfers, rivalries]
+compositionProfile: four-kingdoms
+
+La config non deve contenere funzioni applicative o SQL/data logic.
+
+5.7 WORLDS / THEME
+
+Ogni GW possiede il proprio theme.css.
+
+Può definire:
+- semantic token values;
+- typography;
+- palette;
+- surfaces/materials;
+- borders/radii;
+- shadows;
+- density;
+- icon/micrographic language;
+- motion variables;
+- component skins.
+
+Può essere radicalmente diverso tra GW001 e GW009.
+
+Non può ridefinire routing, data loading o business behavior tramite CSS/JS laterale.
+
+5.8 WORLDS / COMPOSITIONS
+
+È il layer fondamentale per evitare che shared core significhi shared design.
+
+Una composition decide:
+- quali componenti/feature appaiono nella pagina;
+- ordine;
+- grouping;
+- hero/editorial rhythm;
+- slot assignment;
+- presenza/assenza right rail;
+- densità della pagina.
+
+GW001 può quindi mantenere home, competition e archive molto editoriali senza forkare il Core.
+GW007 può costruire home/kingdom/territory intorno al proprio linguaggio territoriale usando lo stesso router/context/data layer.
+
+5.9 WORLDS / EXTENSIONS
+
+Cartella da usare con forte disciplina.
+
+Consentita solo quando una capability non è abbastanza generale per diventare feature condivisa ma è realmente parte del prodotto GW.
+
+Un extension deve usare hook pubblici del Core. Non può monkey-patchare funzioni interne, leggere DOM privato o sostituire moduli shared copiandoli.
+
+6. COSA NON DEVE MAI ESSERE DUPLICATO
+
+Tra GW non devono essere duplicati:
+- API/data client;
+- parsing envelope;
+- retry/timeout/cancellation policy;
+- router;
+- URL/context parser;
+- focus restoration;
+- navigation state;
+- loading/error/empty/not-found logic;
+- pagination primitives;
+- accessibility keyboard contracts;
+- status normalization match;
+- fixture/result domain normalization;
+- standings semantic contract;
+- manager/player/club identity contract;
+- feature behavior quando la capability è condivisa.
+
+Se due GW copiano lo stesso comportamento e cambiano soltanto classi/CSS/composizione, quel comportamento appartiene alla piattaforma.
+
+7. REGOLE SHARED FEATURES E LOCAL OVERRIDES
+
+7.1 Override consentiti
+
+Il GW può:
+- cambiare token;
+- applicare classi/theme scope;
+- fornire renderer/composition per slot documentati;
+- cambiare ordine dei moduli;
+- nascondere feature non abilitate;
+- fornire copy/labels contestuali;
+- aggiungere asset;
+- registrare extension point GW-specifico autorizzato.
+
+7.2 Override vietati
+
+Il GW non può:
+- copiare router.js per modificarlo;
+- copiare data/client.js;
+- sostituire un shared component modificandone una copia locale;
+- interrogare direttamente infrastruttura dati bypassando il data layer;
+- modificare state globale tramite variabili DOM implicite;
+- aggiungere if(GWxxx) nel Core;
+- ridefinire un context type esistente soltanto cambiandone il nome.
+
+7.3 Regola di escalation
+
+Se un override locale richiede di cambiare comportamento shared:
+1. verificare se è una configurazione;
+2. verificare se è una nuova capability/feature;
+3. verificare se serve un extension point generale;
+4. solo se è veramente unico, implementarlo come local extension.
+
+Mai partire copiando il componente shared.
