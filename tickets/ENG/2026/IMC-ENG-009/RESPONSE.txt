@@ -1,0 +1,1056 @@
+CASE_ID: IMC-ENG-009
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: IMC_MINISITE_CORE_TECHNICAL_ARCHITECTURE
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+IMC MINISITE CORE · TECHNICAL ARCHITECTURE REVIEW
+
+1. EXECUTIVE VERDICT
+
+La direzione approvata in IMC-CREATIVE-001 è tecnicamente realizzabile e, alla luce del codice attuale, è anche la direzione raccomandata.
+
+La soluzione corretta NON è:
+- mantenere nove applicazioni frontend indipendenti;
+- creare due codebase separate MULTI e SINGLE;
+- sostituire le Visual Design Exploration con una shell grafica uniforme;
+- costruire un nuovo mega-app.js che contenga condizioni if(GW001), if(GW002), ecc.
+
+La soluzione raccomandata è:
+
+IMC MINISITE CORE
++ ROUTER / NAVIGATION KERNEL
++ CONTEXT ENGINE
++ DATA ACCESS LAYER
++ SHARED COMPONENT CONTRACTS
++ FEATURE MODULE REGISTRY
++ GW CONFIGURATION
++ GW THEME / COMPOSITION LAYER
+
+Il Core deve centralizzare comportamento, semantica e contratti.
+Il singolo Game World deve continuare a possedere identità visuale, composizione editoriale, ritmo, materiali, tipografia e moduli caratterizzanti.
+
+Principio tecnico guida:
+
+SHARED BEHAVIOR
+!=
+SHARED MARKUP
+!=
+SHARED DESIGN
+
+GW001 e GW007 confermano che il Core deve essere abbastanza flessibile da sostenere esperienze fortemente caratterizzate senza normalizzarle.
+
+2. FONTI ANALIZZATE
+
+Sono stati analizzati come input autoritativi e/o tecnici:
+- IMC-CREATIVE-001 / RESPONSE.txt;
+- repository tommasomellogrand-ui/imc-website;
+- site-assets/gameworld/app-core.js;
+- struttura minisite/GW001..GW009;
+- GW001 exploration-manifest.txt ed exploration.js;
+- GW002 app.js;
+- GW003 app.js;
+- GW004 app.js;
+- GW005 app.js;
+- GW007 app.js;
+- imc-universal-gateway/minisite.php;
+- riferimenti dei workflow minisite al presunto /minisite/shared/app-core.js.
+
+Non è stato modificato alcun minisito, CSS, route, componente, gateway o workflow.
+
+3. AS-IS TECNICO
+
+3.1 Esistono oggi più concetti di "core"
+
+Nel repository è presente site-assets/gameworld/app-core.js.
+Questo file è un renderer molto semplice che:
+- risolve il GW dal path/config;
+- definisce una lista fissa di moduli;
+- genera shell visuali differenti in base al numero GW;
+- genera subpage placeholder.
+
+È utile come prova di condivisione elementare, ma NON rappresenta il Core richiesto da IMC-CREATIVE-001 perché:
+- miscela routing, contenuto e presentazione;
+- contiene branching visuale per singolo GW;
+- non ha context model;
+- non ha data contracts;
+- non ha feature registry;
+- non ha state model consistente;
+- non ha capability MULTI/SINGLE reali;
+- non preserva la profondità di GW001 o il territory model di GW007.
+
+3.2 I minisiti più maturi hanno logica applicativa locale
+
+GW001 exploration.js implementa direttamente:
+- navigation semantica;
+- page routing via document/body page + query string;
+- Match Center;
+- risultati e calendario;
+- division context;
+- drilldown club;
+- standings patterns;
+- archive/editorial composition;
+- rendering dei componenti.
+
+GW002 app.js implementa localmente:
+- boot asincrono;
+- lettura di più resource;
+- hydration di club/manager/player codex;
+- hash routing;
+- competition detail;
+- club detail;
+- manager detail;
+- scores/fixtures/transfers/reports;
+- navigation/drawer.
+
+GW003 app.js implementa localmente:
+- state object del contesto;
+- Country + Division persistence dentro URL hash/query;
+- route parsing;
+- Structure Index;
+- context selector;
+- left rail / right rail;
+- mobile navigation;
+- matrix/comparison;
+- binding eventi e focus.
+
+GW004 implementa localmente:
+- division routing tramite query d;
+- division tabs;
+- standings table;
+- promotion/relegation pressure modules;
+- position-history visual component;
+- match routing.
+
+GW005 implementa localmente:
+- hash routing;
+- arena/legacy profile modes;
+- record/honours modules;
+- profile composition;
+- match/results/standings objects.
+
+GW007 implementa localmente:
+- Kingdom model;
+- Kingdom selector via ?k=;
+- Territory Map;
+- territory-aware colors;
+- territory-aware result filtering;
+- Kingdom page;
+- world/territory drilldown;
+- Match Center;
+- rivalry/territory semantics.
+
+Conclusione AS-IS:
+le capability che il futuro Core deve offrire ESISTONO già in forma frammentata, ma sono replicate nei singoli minisiti.
+
+3.3 Shared data access incompleto / non consolidato
+
+Diversi minisiti e workflow fanno riferimento a:
+/minisite/shared/app-core.js
+
+Nel branch main analizzato, tale file non risulta presente nel path atteso.
+Questo indica che il concetto di shared core è già stato introdotto nel modello di deploy, ma non è oggi una dipendenza repository completa e affidabile.
+
+È quindi sconsigliato costruire il nuovo Core sopra questa dipendenza implicita senza prima chiarirne la source-of-truth.
+
+3.4 Universal Gateway minisite
+
+imc-universal-gateway/minisite.php espone già un set tipizzato di resource CORE, fra cui:
+- game_world_codex;
+- game_world_club_mapping;
+- competition_codex;
+- country_codex;
+- national_team_codex;
+- club_codex;
+- manager_codex;
+- manager_assignments;
+- player_codex;
+- player_data;
+- rating_history.
+
+Il gateway applica:
+- validazione channel MINISITE;
+- validazione GW;
+- paginazione;
+- search controllata;
+- resource allowlist;
+- output rows/meta coerente.
+
+Questo è già un buon punto di partenza per il Data Access Layer, ma il frontend attuale mostra anche aspettative su resource sportive come results, schedule, transfers, stats e match_report. La loro disponibilità deve essere verificata e normalizzata prima che il Core dipenda da esse come contract stabile.
+
+4. PROBLEMA ARCHITETTURALE ATTUALE
+
+Il problema non è la duplicazione CSS. La duplicazione più rischiosa è comportamentale.
+
+Oggi ogni minisito tende a ridefinire localmente:
+- come interpreta la route;
+- come persiste country/division/territory/competition;
+- come costruisce back link e breadcrumb;
+- come carica dati;
+- come gestisce loading/error/empty;
+- come modella score, fixture, club, manager, player;
+- come decide mobile vs desktop navigation;
+- come collega hub e detail pages.
+
+Questo crea regressioni invisibili: due pagine visivamente corrette possono avere semantica, URL e stato differenti.
+
+Il futuro Core deve centralizzare precisamente queste aree, non la creatività visiva.
+
+5. TO-BE · STRUTTURA DEL MINISITE CORE
+
+Struttura logica raccomandata:
+
+/minisite/core/
+  runtime/
+    bootstrap
+    router
+    navigation
+    context-engine
+    state-store
+    responsive-runtime
+  data/
+    gateway-client
+    repositories
+    normalizers
+    cache
+  contracts/
+    match
+    fixture
+    competition
+    standings
+    club
+    manager
+    player
+    transfer
+  components/
+    semantic component controllers
+  features/
+    playoffs
+    promotion-relegation
+    records-honours
+    archive
+    reports
+    matrix-comparison
+    territory-map
+    rivalries
+    progression
+    cup-bracket
+  config/
+    schema
+    validators
+  accessibility/
+    focus
+    announcements
+    keyboard
+
+/minisite/GWxxx/
+  config.js/json
+  theme.css
+  composition.js
+  assets/
+  optional local feature views
+
+Nota:
+la struttura sopra è un modello architetturale, NON una richiesta di creare ora tali file.
+
+6. CONFIGURATION MODEL
+
+Ogni GW deve dichiarare esplicitamente il proprio comportamento.
+
+Schema concettuale raccomandato:
+
+{
+  id: "GW001",
+  name: "Road To History",
+  mode: "SINGLE",
+  contextModel: {...},
+  navigation: {...},
+  features: [...],
+  layout: {...},
+  routes: {...},
+  theme: {...},
+  data: {...}
+}
+
+Campi fondamentali:
+
+mode:
+- SINGLE
+- MULTI
+
+contextModel.type:
+- none
+- division
+- country-division
+- territory-division
+- competition
+- custom-hierarchy
+
+contextModel.levels:
+array ordinato di livelli semantici.
+
+Esempio MULTI normale:
+WORLD > COUNTRY > DIVISION > COMPETITION
+
+Esempio GW007:
+WORLD > KINGDOM/TERRITORY > DIVISION > COMPETITION
+
+Esempio SINGLE:
+WORLD > COMPETITION/DIVISION
+
+Importante:
+NON usare una proprietà generica countryLabel="Kingdom" per GW007.
+Kingdom deve essere un tipo di contesto reale, perché può avere:
+- id;
+- title;
+- visual token;
+- territorio;
+- club membership;
+- map data;
+- rivalry relationships;
+- filtering rules.
+
+7. CONTEXT ENGINE
+
+Il Context Engine è il cuore del Core.
+
+Responsabilità:
+- parse URL;
+- validare il contesto;
+- normalizzare default;
+- persistere context durante la navigazione;
+- generare URL;
+- fornire breadcrumb;
+- notificare componenti quando cambia context;
+- separare context globale da detail entity.
+
+State concettuale:
+
+context = {
+  gameWorldId,
+  mode,
+  countryId?,
+  territoryId?,
+  division?,
+  competitionKey?,
+  clubId?,
+  managerId?,
+  playerId?,
+  fixtureId?
+}
+
+Regola:
+clubId, managerId, playerId e fixtureId sono ENTITY SELECTION, non livelli obbligatori della gerarchia primaria.
+
+GW003 dimostra già correttamente la persistenza Country + Division nell'URL.
+GW007 dimostra già la necessità di territory/kingdom come context reale.
+GW001 dimostra che il Core deve poter funzionare senza country.
+
+8. ROUTING MODEL
+
+Raccomandazione: route semantiche stabili indipendenti dal tema.
+
+Route primarie:
+/home
+/competitions
+/results
+/schedule
+/standings
+/clubs
+/managers
+/players
+/transfers
+/archive
+
+Detail route:
+/competition/:competitionKey
+/match/:fixtureId
+/club/:clubId
+/manager/:managerId
+/player/:playerId
+
+Feature route opzionali:
+/playoffs
+/records
+/rivalries
+/map
+/data
+/reports
+/cup
+
+Il Core deve supportare due modalità di URL deployment:
+- history/path routing quando il server lo consente;
+- hash routing compatibility durante la migrazione.
+
+Raccomandazione di lungo periodo:
+preferire path + query context, per esempio:
+
+/minisite/GW002/results?country=ITA&division=2
+/minisite/GW007/results?territory=ENG&division=1
+/minisite/GW001/competition/league-d1
+/minisite/GW001/match/367418672
+
+Durante migrazione, il Router deve poter leggere anche URL legacy hash/query e redirigere/normalizzare senza spezzare link esistenti.
+
+9. NAVIGATION MODEL
+
+Il Core deve definire navigation semantics e interaction behavior, non HTML/CSS rigidi.
+
+Contratto navigation item:
+
+{
+  id,
+  label,
+  route,
+  iconKey,
+  visibility,
+  preserveContext,
+  priority,
+  mobileSlot?
+}
+
+Desktop behavior condiviso:
+- primary rail/nav persistente;
+- context/breadcrumb raggiungibile;
+- active route consistente;
+- optional right contextual rail.
+
+Mobile behavior condiviso:
+- Home;
+- Results;
+- Schedule;
+- Standings;
+- More.
+
+Il singolo GW può renderizzare queste capability con grammatica visuale completamente diversa.
+GW009 può sembrare una UI CRT/pixel.
+GW001 può mantenere il proprio ritmo editoriale.
+Il comportamento resta prevedibile.
+
+10. DATA ACCESS LAYER
+
+Raccomandazione: nessun view component deve chiamare direttamente il gateway.
+
+Il Core deve esporre repository semantici, per esempio:
+
+GameWorldRepository
+CompetitionRepository
+MatchRepository
+ScheduleRepository
+ClubRepository
+ManagerRepository
+PlayerRepository
+TransferRepository
+ReportRepository
+
+Esempio:
+MatchRepository.listResults(context, filters)
+ScheduleRepository.list(context, filters)
+CompetitionRepository.get(key)
+ClubRepository.get(id)
+
+Il repository:
+- chiama il gateway;
+- normalizza naming legacy;
+- applica paginazione;
+- gestisce cache;
+- produce errori tipizzati;
+- restituisce contratti frontend stabili.
+
+Questo evita che ogni GW contenga oggi pattern come:
+get(o,['field_a','field_b','field_c'])
+oppure normalizzazioni locali dei nomi.
+
+11. SHARED DATA CONTRACTS
+
+I contratti devono essere frontend-stable anche se il backend evolve.
+
+Match:
+- fixtureId
+- date
+- status
+- competition
+- context
+- homeClub
+- awayClub
+- score
+- penalties?
+- aggregate?
+- reportAvailability
+
+Competition:
+- key
+- action
+- customName?
+- actionGroup
+- country?
+- territory?
+- division?
+- teamsCount
+- expectedMatches
+
+Club:
+- id
+- smClubId?
+- name
+- image
+- context membership
+- activeManager?
+
+Manager:
+- id
+- name
+- smManagerId?
+- assignments[]
+
+Player:
+- id
+- name
+- image
+- currentClub?
+- football data?
+- world stats?
+
+Transfer:
+- player
+- fromClub
+- toClub
+- date
+- amount/status se disponibili
+
+I componenti devono leggere questi contratti, non colonne DB grezze.
+
+12. COMPONENT CONTRACTS
+
+I componenti condivisi devono essere headless/semantic-first quanto possibile.
+
+Esempio MatchObject:
+input:
+- match
+- density
+- href
+- context
+- variant token
+
+output behavior:
+- status semantic;
+- team navigation;
+- score formatting;
+- penalties/aggregate handling;
+- accessibility text;
+- click target.
+
+Il tema decide:
+- cornice;
+- typography;
+- dimensione;
+- materiali;
+- animazione;
+- disposizione.
+
+Component contracts prioritari:
+- ContextSelector
+- Breadcrumb
+- CompetitionHeader
+- MatchObject
+- ScorePlate
+- FixtureObject
+- StandingsTable
+- FormStrip
+- StatusBadge
+- EntityLink
+- ManagerProfileShell
+- PlayerProfileShell
+- ClubProfileShell
+- TransferObject
+- RankingObject
+- EmptyState
+- LoadingState
+- ErrorState
+
+13. THEME LAYER
+
+Il Theme Layer non deve essere ridotto a una palette CSS.
+
+Deve supportare:
+- design tokens;
+- typography tokens;
+- spacing scale;
+- radii/border grammar;
+- surface/material tokens;
+- icon set;
+- motion tokens;
+- density profile;
+- semantic component variants;
+- page composition hooks.
+
+Esempio concettuale:
+
+GW001 theme:
+- archive/titanium/ivory language;
+- cinematic editorial spacing;
+- Match Center monumental;
+- narrative chapters.
+
+GW009 theme:
+- CRT/pixel/sprite language;
+- retro interaction feedback;
+- same route/component semantics underneath.
+
+Conclusione:
+Theme Layer = visual system + composition hooks, non solo CSS variables.
+
+14. FEATURE MODULE MODEL
+
+I moduli non devono essere if sparsi nel Core.
+Devono essere registrati.
+
+Feature interface concettuale:
+
+{
+  id,
+  routes,
+  navItems,
+  dataDependencies,
+  contextCapabilities,
+  components,
+  hooks
+}
+
+Moduli raccomandati:
+
+COMMON OPTIONAL
+- archive
+- reports
+- data
+
+SINGLE SPECIALISTS
+- promotion-relegation
+- position-history
+- playoffs
+- progression
+- records-honours
+- cup-bracket
+
+MULTI SPECIALISTS
+- matrix-comparison
+- structure-index
+
+GW007 SPECIALISTS
+- territory-map
+- rivalries
+- kingdom-profile
+
+Il modulo territory-map deve dipendere dalla capability territory, non dal literal GW007.
+
+15. MULTI VS SINGLE
+
+NON creare due runtime.
+
+Creare un solo runtime con context capabilities differenti.
+
+MULTI:
+- context hierarchy almeno world > country/territory > division;
+- context selector persistente;
+- context-preserved navigation;
+- macro-to-micro browsing;
+- comparison/matrix capability opzionale.
+
+SINGLE:
+- nessun country layer artificiale;
+- context più corto;
+- competition/division come asse principale;
+- forte supporto competition-first;
+- feature sportive verticali opzionali.
+
+mode serve a fornire default intelligenti, non a forkare il codice.
+
+16. PRESERVATION STRATEGY · GW001
+
+GW001 deve essere il pilot SINGLE, ma NON il template grafico del Core.
+
+Elementi da preservare come acceptance criteria:
+- hierarchy sportiva competition-first;
+- Competition Hub;
+- Results → Match Center drilldown;
+- Match Center come pagina ricca, non modal generica;
+- archive come dimensione narrativa;
+- chapter/editorial rhythm;
+- ranking spine;
+- club/manager/player dossier;
+- distinzione calendario → evento → archivio.
+
+Strategia:
+1. estrarre dal suo exploration.js i contratti e comportamenti;
+2. mantenere composition GW001 locale;
+3. sostituire progressivamente solo router/context/data/component logic;
+4. fare visual parity review pagina per pagina;
+5. nessun cutover finché la nuova versione non conserva hierarchy e pacing.
+
+Il Core deve consentire a GW001 di avere pagine con composizioni diverse fra loro. Una shell uniforme a card sarebbe una regressione.
+
+17. PRESERVATION STRATEGY · GW007
+
+GW007 deve essere il pilot della capability territory.
+
+Elementi da preservare:
+- Four Kingdoms concept;
+- Territory Map;
+- Kingdom profile;
+- color/context territoriale;
+- filtering per Kingdom;
+- world → territory → competition/content;
+- club nodes nel territorio;
+- rivalries;
+- linguaggio territoriale.
+
+Requisito architetturale:
+territory è un domain object del context engine.
+
+Il Core deve poter chiedere:
+context.currentTerritory
+context.availableTerritories
+context.belongsTo(entity, territory)
+
+Non deve chiedere:
+if (GW === 'GW007').
+
+Questo è il test più importante per evitare un Core solo apparentemente generico.
+
+18. RESPONSIVE BEHAVIOR
+
+Il Core deve standardizzare breakpoint behavior funzionale, non dimensioni estetiche rigide.
+
+Standardizzare:
+- quando la navigation rail diventa mobile nav;
+- come More apre il menu completo;
+- come context selector resta disponibile;
+- come tabelle diventano scroll/condensed;
+- come chart ricevono width responsiva;
+- come focus viene riposizionato dopo route change;
+- touch target minimi;
+- dialog semantics;
+- safe areas mobile.
+
+Lasciare al theme:
+- dimensioni decorative;
+- densità;
+- breakpoint compositivi aggiuntivi;
+- ordine visuale non semantico.
+
+19. STATE E CONTEXT PERSISTENCE
+
+Ordine raccomandato delle fonti di stato:
+
+1. URL
+2. route defaults/config
+3. session preference opzionale
+
+L'URL deve sempre poter ricostruire la pagina.
+
+NON fare affidamento su localStorage per il context necessario a condividere un link.
+
+localStorage/sessionStorage può mantenere preferenze secondarie, per esempio:
+- ultimo territory selezionato nella home;
+- density preference;
+- dismissed hints.
+
+Ma una URL Results deve dichiarare il proprio country/territory/division se necessario.
+
+20. LOADING / ERROR / EMPTY
+
+Questi stati devono diventare Core-level.
+
+Ogni repository restituisce:
+- pending;
+- ready;
+- empty;
+- error.
+
+Ogni view usa componenti condivisi semanticamente.
+
+Il tema può cambiare radicalmente l'aspetto.
+Questo elimina casi in cui un GW mostra "No data", un altro resta vuoto e un altro rompe il layout.
+
+21. ACCESSIBILITY
+
+Centralizzare:
+- focus management al cambio route;
+- skip-to-content;
+- aria-current navigation;
+- dialog focus trap;
+- status announcements per filtri dinamici;
+- accessible score text;
+- keyboard support dei selector;
+- reduced motion;
+- contrast tokens minimi.
+
+GW003 mostra già alcuni pattern utili: skip link, focus sul contenuto, aria-pressed, menu dialog.
+Questi comportamenti devono diventare runtime comuni.
+
+22. CACHE E PERFORMANCE
+
+Raccomandazione:
+- request deduplication nel Data Layer;
+- cache per resource stabile codex;
+- cache breve per results/schedule;
+- hydration lazy per entity detail;
+- route-level module lazy loading;
+- immagini lazy eccetto hero;
+- evitare GW app che idratano decine/centinaia di club e manager prima di sapere quale route verrà aperta.
+
+Il pattern GW002 di hydrateClubs/hydrateManagers/hydratePlayers in boot è utile come prova funzionale, ma non è il modello ideale per il Core finale perché anticipa molte richieste.
+
+Meglio:
+- home carica home dependencies;
+- club detail carica club dependencies;
+- directory carica paginata.
+
+23. BUILD E DEPLOY MODEL
+
+Il Core deve avere una source-of-truth unica nel repository.
+
+Ogni deploy GW deve dichiarare quale Core revision usa.
+
+Raccomandazione:
+- core version manifest;
+- config schema version;
+- validation in GitHub Actions;
+- build check per route/config/features;
+- smoke test per GW001 e GW007 ad ogni modifica Core;
+- deploy separato del Core solo quando backward compatible oppure coordinato con GW migration.
+
+Il riferimento attuale a /minisite/shared/app-core.js senza file disponibile nel main è precisamente il tipo di ambiguità da eliminare.
+
+24. MIGRATION STRATEGY
+
+Non fare una big-bang migration dei nove GW.
+
+Fase 0 · Contract freeze
+- inventario route;
+- inventario context;
+- inventario resource backend;
+- definizione config schema;
+- definizione data contracts;
+- definizione acceptance visual/UX.
+
+Fase 1 · Core kernel isolato
+- Router;
+- Context Engine;
+- Navigation contracts;
+- Data Client;
+- State/error/loading primitives.
+
+Nessun GW cutover.
+
+Fase 2 · GW001 pilot SINGLE
+Obiettivo:
+dimostrare che il Core può preservare il prodotto più importante della famiglia SINGLE.
+
+Migrare solo comportamento:
+- route;
+- context;
+- match/fixture contracts;
+- navigation state.
+
+Mantenere theme/composition.
+
+Fase 3 · GW002 oppure GW003 pilot MULTI
+Raccomandazione: GW002 come pilot prodotto, usando GW003 come benchmark del context engine.
+
+Verificare:
+- Country/Division persistence;
+- competition drilldown;
+- directory entity;
+- mobile navigation;
+- right rail opzionale.
+
+Fase 4 · GW007 capability test
+Implementare territory/kingdom come capability nativa.
+
+Questa fase è gate architetturale.
+Se per migrare GW007 servono numerosi if(GW007), il Core va corretto prima di proseguire.
+
+Fase 5 · feature extraction
+- GW004 promotion/relegation/position history;
+- GW005 records/honours;
+- GW006 playoffs/progression;
+- GW003 matrix/comparison;
+- GW009 cup/retro theme stress test;
+- GW008 ranking/listing clarity.
+
+Fase 6 · remaining GW cutover
+Migrazione uno per volta con parity review.
+
+Fase 7 · legacy cleanup
+Solo dopo tutti i cutover:
+- rimuovere duplicate routers;
+- rimuovere duplicate data adapters;
+- eliminare shared core legacy non usati;
+- consolidare workflow.
+
+25. ORDINE CONSIGLIATO DI IMPLEMENTAZIONE
+
+1. Configuration schema + validator.
+2. Canonical route model.
+3. Context Engine.
+4. Gateway/Data Repository layer.
+5. Match/Fixture/Competition contracts.
+6. Navigation runtime desktop/mobile.
+7. Loading/Error/Empty/A11y primitives.
+8. GW001 pilot.
+9. MULTI pilot GW002.
+10. Territory capability GW007.
+11. Entity profiles/contracts.
+12. Optional feature registry.
+13. Remaining GW.
+14. Cleanup legacy.
+
+26. PRINCIPALI RISCHI
+
+RISCHIO 1 · Core troppo visuale
+Se componenti condivisi impongono markup rigido, GW001/GW007/GW009 perderanno identità.
+Mitigazione: semantic/headless contracts + theme composition hooks.
+
+RISCHIO 2 · if per GW
+Un Core pieno di eccezioni per id GW diventa nove app nello stesso file.
+Mitigazione: capability-based configuration e feature registry.
+
+RISCHIO 3 · context non URL-safe
+Perdita di country/division/territory quando si naviga.
+Mitigazione: Context Engine + URL source-of-truth.
+
+RISCHIO 4 · backend contracts instabili
+Frontend dipendente da colonne/alias grezzi.
+Mitigazione: repositories + normalizers.
+
+RISCHIO 5 · regressione GW001
+Unificazione può appiattire Match Center e ritmo editoriale.
+Mitigazione: pilot + visual parity acceptance.
+
+RISCHIO 6 · regressione GW007
+Kingdom trattato come country rinominato.
+Mitigazione: territory domain capability nativa.
+
+RISCHIO 7 · big-bang deploy
+Una modifica Core potrebbe rompere molti GW.
+Mitigazione: versioning, staged migration, smoke tests per GW.
+
+RISCHIO 8 · duplicazione transitoria
+Durante la migrazione convivranno legacy e Core.
+Mitigazione: matrice di ownership e cutover esplicito per route/GW.
+
+RISCHIO 9 · current shared-core ambiguity
+I riferimenti workflow a /minisite/shared/app-core.js non risultano sostenuti da un file main corrispondente nell'audit effettuato.
+Mitigazione: definire una sola source-of-truth del nuovo Core prima del primo pilot.
+
+27. VERIFICHE NECESSARIE PRIMA DI IMPLEMENTARE
+
+Prima dell'autorizzazione a scrivere codice raccomando una fase tecnica breve di specification con:
+- matrice route attuali GW001-GW009;
+- matrice context per GW;
+- inventario resource gateway realmente disponibili in produzione;
+- data contract per Results/Schedule/Match Report/Transfers/Stats;
+- matrice feature per GW;
+- lista acceptance criteria visuali di GW001;
+- lista acceptance criteria territory di GW007;
+- inventario workflow/deploy e shared assets;
+- decisione canonical URL format;
+- decisione versioning Core/config.
+
+28. TARGET CONFIG ESEMPLIFICATO PER I GW
+
+GW001
+mode=SINGLE
+context=division + competition
+features=archive,reports
+composition=RTH custom
+
+GW002
+mode=MULTI
+context=country + division + competition
+features=data,transfers
+rightRail=contextual
+
+GW003
+mode=MULTI
+context=country + division + competition
+features=matrix,comparison,structure-index
+rightRail=contextual
+
+GW004
+mode=SINGLE
+context=division + competition
+features=promotion,relegation,position-history
+
+GW005
+mode=SINGLE
+context=division/competition
+features=records,honours,archive
+
+GW006
+mode=SINGLE
+context=division + competition
+features=playoffs,progression
+
+GW007
+mode=MULTI
+context=territory + division + competition
+features=territory-map,rivalries,kingdom-profile
+
+GW008
+mode=MULTI
+context=country + division + competition
+features=ranking
+
+GW009
+mode=SINGLE
+context=competition
+features=cup-bracket,archive
+composition=CRT/pixel custom
+
+Questi esempi sono architetturali e devono essere validati contro il perimetro dati definitivo prima dell'implementazione.
+
+29. DECISIONE RACCOMANDATA ALLA DIREZIONE
+
+APPROVARE la costruzione futura di UN SOLO IMC MINISITE CORE CONFIGURABILE.
+
+NON approvare:
+- due Core distinti MULTI/SINGLE;
+- template visuale unico;
+- migrazione simultanea dei nove GW;
+- branching per GW dentro il runtime.
+
+APPROVARE come principi obbligatori:
+- capability-based architecture;
+- URL-driven context;
+- repository/data contracts;
+- headless semantic component contracts;
+- feature modules registrati;
+- theme + composition locale per GW;
+- GW001 come pilot SINGLE e quality gate;
+- GW002 come pilot MULTI;
+- GW007 come architectural stress test del Context Engine;
+- staged migration con parity verification.
+
+30. RISULTATO FINALE
+
+Il repository attuale dimostra già tre cose:
+
+1. È possibile condividere infrastruttura tra i minisiti.
+2. Le migliori UX oggi esistono, ma sono implementate localmente e quindi duplicate.
+3. La diversità visuale non richiede codebase indipendenti.
+
+Il futuro IMC Minisite Core deve quindi essere una piattaforma di comportamenti e capability, non una collezione di pagine standard.
+
+Formula finale raccomandata:
+
+ONE CORE
+TWO CONTEXT MODES
+MANY CAPABILITIES
+NINE VISUAL IDENTITIES
+
+Stato incarico:
+AUDIT E PROPOSTA COMPLETATI.
+NESSUNA MODIFICA OPERATIVA ESEGUITA SU MINISITI, ROUTING, CSS, GATEWAY, BUILD O DEPLOY.
