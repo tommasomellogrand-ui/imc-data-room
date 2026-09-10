@@ -1,0 +1,946 @@
+CASE_ID: IMC-DB-001-02
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-10
+TOPIC: CORE_TARGET_AUDIT_3
+STATUS: COMPLETED
+MODE: READ_ONLY_AUDIT_AND_PLAN
+MYSQL_TARGET: Sql1956795_1
+
+IMC | DATABASE MANAGER · CORE TARGET AUDIT 3
+
+======================================================================
+0. VINCOLI E METODO
+======================================================================
+
+Il CASE è stato eseguito esclusivamente come AUDIT e PIANO.
+Nessuna modifica è stata eseguita su MySQL Aruba o sul codice.
+
+NON eseguiti:
+- CREATE / ALTER / RENAME / DROP;
+- INSERT / UPDATE / DELETE / backfill;
+- modifiche FK o trigger;
+- modifiche a importer, API, gateway o sito.
+
+Fonti usate:
+1. REQUEST autoritativo del CASE;
+2. RESPONSE autoritative IMC-DB-001 e IMC-DB-001-01;
+3. lettura live MySQL Aruba CORE Sql1956795_1 tramite bridge Supabase;
+4. repository GitHub autoritativo tommasomellogrand-ui/imc-website per le dipendenze codice.
+
+Fotografia live confermata:
+- 49 tabelle base;
+- 405 colonne;
+- 93 indici;
+- 10 foreign key;
+- 0 trigger;
+- 0 view;
+- 11 tabelle IMC* Global esistenti, autoritative e INTOCCABILI;
+- 38 tabelle non-IMC.
+
+Principio target adottato:
+- le 11 IMC* Global restano il nucleo canonico;
+- nessuna doppia fonte canonica deve sopravvivere;
+- le informazioni one-to-many, storiche o di configurazione vanno in IMC Child;
+- gli identificativi esterni/locali e le relazioni vanno in IMC Mapping;
+- le source raw/provenance possono restare tecniche, anche non-IMC, se non sono fonti canoniche e se cambiarne nome non porta valore funzionale;
+- le proiezioni canoniche intermedie vanno eliminate quando la Global IMC o la source tecnica coprono completamente il caso d'uso.
+
+======================================================================
+1. AS-IS · TUTTE LE 49 TABELLE
+======================================================================
+
+Formato per ogni voce:
+CONTENUTO/PERCHÉ · LETTORI · SCRITTORI · DIPENDENZE · TARGET · DATI DA PRESERVARE · MIGRAZIONE CODICE · RETIREMENT PROOF.
+
+01. IMC Club Codex Global | 7.072 righe
+CONTENUTO/PERCHÉ: identità globale club IMC, name, image_file, image_url.
+LETTORI: imc-universal-gateway/minisite.php; site-assets/master/api.php; api/imc-data/v1/site-ready.php e componenti sito che risolvono club.
+SCRITTORI: nessun writer runtime diretto identificato nell'audit GitHub corrente; alimentazione trattata come amministrativa/import autoritativa.
+DIPENDENZE DB: nessuna FK in ingresso/uscita rilevata.
+TARGET: RIMANE, autoritativa; estensione futura per assorbire clubs.
+DATI DA PRESERVARE: tutti gli attuali campi/valori IMC, in particolare image_file/image_url che NON devono essere sovrascritti dagli asset canonici esterni.
+MIGRAZIONE CODICE: canonical rebuild e consumer di clubs devono convergere qui.
+RETIREMENT PROOF: non eliminabile per vincolo; verifica futura = 100% copertura ID e consumer.
+
+02. IMC Competition Codex Global | 326
+CONTENUTO/PERCHÉ: matrice operativa per GW di sm_action/custom competition, group, country, division, teams_count, expected_match.
+LETTORI: componenti competition/site e percorsi di normalizzazione/report; riferimento business IMC.
+SCRITTORI: writer runtime diretto non univocamente identificato nel repo corrente; alimentazione amministrativa/import.
+DIPENDENZE DB: nessuna FK rilevata.
+TARGET: RIMANE intatta; NON assorbe direttamente master/rules astratti.
+PRESERVARE: tutte le 326 configurazioni e semantica per-GW.
+MIGRAZIONE CODICE: i nuovi IMC Competition Definition/Rule dovranno essere consumati come meta-layer, senza duplicare questa matrice.
+RETIREMENT PROOF: mai candidata.
+
+03. IMC Country Codex Global | 37
+CONTENUTO/PERCHÉ: codex country/scope IMC.
+LETTORI: componenti/codex e mapping competition.
+SCRITTORI: nessun writer runtime diretto rilevato; riferimento amministrativo/import.
+DIPENDENZE: nessuna FK rilevata.
+TARGET: RIMANE.
+PRESERVARE: ID e name esistenti.
+MIGRAZIONE CODICE: usare questa come identità country IMC dove applicabile; non confonderla con national team.
+RETIREMENT PROOF: mai candidata.
+
+04. IMC Game World Club Mapping | 1.434
+CONTENUTO/PERCHÉ: membership club globale nei GW, oggi Club ID/Name, Game World, SM Club ID.
+LETTORI: imc-universal-gateway/minisite.php; servizi minisite; consumer CORE.
+SCRITTORI: writer runtime diretto non rilevato; alimentazione amministrativa/import.
+DIPENDENZE DB: FK Game World -> IMC Game World Codex Global.IMC GW.
+TARGET: RIMANE ed ESTENDE il modello con world_club_id (attuale clubs_game_world_id.club_gw_id).
+PRESERVARE: 1.434 righe IMC attuali, nomi IMC, SM Club ID; aggiungere 996 membership mancanti GW007+GW008 e tutti i 2.430 world-local IDs.
+MIGRAZIONE CODICE: api/imc-data/v1, team-hub, site-ready e resolver devono leggere solo questa mapping.
+RETIREMENT PROOF: dopo match 2.430/2.430 con clubs_game_world_id, copertura 9 GW, zero consumer lowercase.
+
+05. IMC Game World Codex Global | 10
+CONTENUTO/PERCHÉ: registro autoritativo GW; include GW010, assente da imc_game_worlds.
+LETTORI: site-assets/master/api.php; api/imc-data/v1/site-ready.php; minisite/gateway; sito ufficiale.
+SCRITTORI: writer runtime diretto non rilevato; amministrazione/import.
+DIPENDENZE DB: parent di IMC Game World Club Mapping.
+TARGET: RIMANE ed ESTENDE con game_world_type, soccer_manager_name/type/owner/creator. La stagione va in child dedicata.
+PRESERVARE: 10 GW e tutti i campi esistenti; mai sostituire i valori IMC con lowercase senza confronto.
+MIGRAZIONE CODICE: tutti i reader/writer di imc_game_worlds devono puntare qui + IMC Game World Season.
+RETIREMENT PROOF: Global non eliminabile; retirement di imc_game_worlds solo con parity 9/9 + GW010 gestito + zero refs.
+
+06. IMC Manager Assignment Global | 272
+CONTENUTO/PERCHÉ: assegnazioni manager-club/nazionale con storico date.
+LETTORI: sito/master data e consumer IMC; destinazione naturale dei consumer gw_manager_assignments.
+SCRITTORI: writer runtime diretto non rilevato nella Global; oggi ingestion scrive la lowercase.
+DIPENDENZE DB: nessuna FK fisica rilevata.
+TARGET: RIMANE ed ESTENDE con source_season_id e, quando determinabile, imc_season.
+PRESERVARE: tutte le 272 assegnazioni, full_name e dati attuali; non usare l'id surrogate lowercase come identità semantica.
+MIGRAZIONE CODICE: ingestion, managers-live, API, manager labels/entities e match-report devono migrare qui.
+RETIREMENT PROOF: 272/272 match logico, season metadata preservato, zero writer/reader su gw_manager_assignments.
+
+07. IMC Manager Codex Global | 60
+CONTENUTO/PERCHÉ: registro manager IMC.
+LETTORI: imc-universal-gateway/minisite.php; site-assets/master/api.php; site-ready; sito.
+SCRITTORI: writer runtime Global diretto non rilevato; oggi ingestion scrive imc_managers.
+DIPENDENZE: nessuna FK fisica.
+TARGET: RIMANE; opzionale estensione sm_username, created_at, updated_at per parity tecnica.
+PRESERVARE: 60 manager e valori IMC. Attualmente imc_managers coincide 60/60 nei campi comuni; sm_username lowercase è nullo su 60/60.
+MIGRAZIONE CODICE: ingestion e tutti i reader lowercase migrano qui.
+RETIREMENT PROOF: 60/60 parity, zero refs imc_managers.
+
+08. IMC National Team Codex Global | 80
+CONTENUTO/PERCHÉ: identità nazionali IMC con asset bandiera locali.
+LETTORI: imc-universal-gateway/minisite.php e consumer nazionali.
+SCRITTORI: writer runtime diretto non rilevato.
+DIPENDENZE: nessuna FK fisica attuale.
+TARGET: RIMANE; diventa parent di IMC Game World National Team Mapping e IMC National Team External Mapping.
+PRESERVARE: tutti gli 80 ID/nome/asset. Non sostituire asset IMC con URL SoccerWiki.
+MIGRAZIONE CODICE: team-hub/API devono usare IMC Global + mapping anziché national_teams/nations_game_world_id.
+RETIREMENT PROOF: Global non eliminabile; per national_teams servono crosswalk e zero refs.
+
+09. IMC Player Codex Global | 176.687
+CONTENUTO/PERCHÉ: identità giocatori IMC e asset immagini.
+LETTORI: minisite/gateway, sito e resolver player.
+SCRITTORI: writer runtime diretto non univocamente rilevato; alimentazione import/amministrativa.
+DIPENDENZE DB: parent di IMC Player Codex Global Rating History.
+TARGET: RIMANE ed ESTENDE con metadata canonici oggi in players: canonical_source, present_in_sm, present_in_soccerwiki, source_conflict, first_seen_date, last_seen_date, is_active e, se utile, external_source_image_url separato dall'image_url IMC.
+PRESERVARE: 176.687 identità; 14 differenze nome e 113.861 differenze image_url rispetto a players devono essere riconciliate senza sovrascrivere IMC alla cieca.
+MIGRAZIONE CODICE: canonical.php, player-global, player-codex handler, transfers e consumer players devono convergere qui.
+RETIREMENT PROOF: 176.687/176.687 ID, source flags ricostruibili, zero FK/consumer players.
+
+10. IMC Player Codex Global Data | 2.297
+CONTENUTO/PERCHÉ: profilo arricchito player: nationality, position, rating, market value, bio, club SW, wage.
+LETTORI: imc-universal-gateway/minisite.php e UI Player Codex nuova.
+SCRITTORI: writer runtime diretto non chiaramente identificato nel repo applicativo corrente; dataset aggiornato nel giorno del CASE.
+DIPENDENZE DB: nessuna FK fisica rilevata.
+TARGET: RIMANE; assorbe la parte business di player_codex_global.
+PRESERVARE/ESTENDERE: previous_rating, date_of_birth_raw se realmente necessario, nation_code, value_label, wage_label, contract, first_observed_date, first_seen_as_new_date, last_change_date, last_observed_at, created_at; non duplicare history JSON se ricostruibile dalla history normalizzata.
+MIGRAZIONE CODICE: frontend legacy player_codex_global e handler player-global devono passare alla Global Data.
+RETIREMENT PROOF: tutti i 108 record legacy rappresentabili + parity funzionale UI/import + history riconciliata.
+
+11. IMC Player Codex Global Rating History | 11.848
+CONTENUTO/PERCHÉ: storico normalizzato rating player.
+LETTORI: imc-universal-gateway/minisite.php e UI Codex.
+SCRITTORI: writer runtime diretto non chiaramente identificato nel repo corrente; aggiornato al 2026-09-10.
+DIPENDENZE DB: FK player_id -> IMC Player Codex Global.id.
+TARGET: RIMANE; assorbe player_codex_rating_history.
+PRESERVARE: tutti gli 11.848 + 237 eventi legacy oggi non presenti; imported_at deve conservare provenance dell'evento migrato. date_label è derivabile da change_date e non richiede duplicazione permanente.
+MIGRAZIONE CODICE: handler player-global deve scrivere qui, frontend legacy leggere qui.
+RETIREMENT PROOF: 247/247 eventi legacy rappresentati, zero refs lowercase.
+
+12. awards | 4
+CONTENUTO/PERCHÉ: proiezione canonica SoccerWiki awards.
+LETTORI: nessun consumer business diretto forte rilevato; canonical pipeline la conteggia/gestisce.
+SCRITTORI: ops/sm-master/admin/canonical.php da sw_awards_source.
+DIPENDENZE DB: nessuna FK.
+TARGET: ELIMINARE; usare sw_awards_source come source tecnica se serve il catalogo esterno. Non esiste una Global IMC corretta per awards.
+PRESERVARE: nessun dato business esclusivo; i 4 record coincidono con source nei campi applicativi.
+MIGRAZIONE CODICE: rimuovere la proiezione dal canonical rebuild e migrare eventuali reader residui alla source.
+RETIREMENT PROOF: 4/4 source parity + GitHub zero-reference + nessuna query runtime.
+
+13. clubs | 7.072
+CONTENUTO/PERCHÉ: canonical merge SM+SoccerWiki con short_name, canonical_source, presence flags, conflict e lifecycle.
+LETTORI: api/imc-gateway/team-hub.php; api/imc-data/v1; altre API/asset resolver.
+SCRITTORI: canonical.php; player/global/import pipeline può contribuire indirettamente.
+DIPENDENZE DB: nessuna FK in ingresso fisica rilevata, ma forte dependency codice.
+TARGET: CONFLUIRE in IMC Club Codex Global estesa.
+PRESERVARE: short_name, canonical_source, present_in_sm, present_in_soccerwiki, source_conflict, first/last_seen, is_active; asset esterno separato dagli asset IMC.
+MIGRAZIONE CODICE: canonical.php scrive Global, API leggono Global.
+RETIREMENT PROOF: 7.072/7.072 parity campi canonici, 16 conflitti preservati, zero refs.
+
+14. clubs_game_world_id | 2.430
+CONTENUTO/PERCHÉ: mapping global club_id -> world-local club_gw_id per GW.
+LETTORI: team-hub.php, api/imc-data/v1, site-ready.php e resolver.
+SCRITTORI: migration/import mapping dedicato; nessun writer continuo rilevato nell'audit corrente.
+DIPENDENZE: nessuna FK fisica.
+TARGET: CONFLUIRE in IMC Game World Club Mapping estesa con world_club_id.
+PRESERVARE: 2.430 club_gw_id; copertura GW001-009 completa.
+MIGRAZIONE CODICE: tutti i reader mapping passano alla IMC mapping.
+RETIREMENT PROOF: exact 2.430/2.430 e 9 GW, inclusi 996 record GW007+GW008 aggiunti alla Global mapping, zero refs.
+
+15. cups | 235
+CONTENUTO/PERCHÉ: proiezione canonica SoccerWiki cups.
+LETTORI: nessun reader business forte distinto rilevato; può servire catalogo tecnico.
+SCRITTORI: canonical.php da sw_cups_source.
+DIPENDENZE: nessuna FK.
+TARGET: ELIMINARE proiezione; source sw_cups_source resta tecnica. Non migrare in IMC Competition Codex Global perché dominio diverso.
+PRESERVARE: 235/235 sono già in source.
+MIGRAZIONE CODICE: eventuali reader -> source o futuro servizio esterno.
+RETIREMENT PROOF: parity 235/235 + zero refs.
+
+16. football_managers | 12.435
+CONTENUTO/PERCHÉ: catalogo allenatori SoccerWiki esterni, NON manager IMC.
+LETTORI: possibili viste external manager; nessuna equivalenza con roster IMC.
+SCRITTORI: canonical.php da sw_football_managers_source.
+DIPENDENZE: nessuna FK.
+TARGET: ELIMINARE proiezione quando i consumer leggono sw_football_managers_source; NON confluire in IMC Manager Codex Global.
+PRESERVARE: 12.435 record già presenti 1:1 nella source tecnica.
+MIGRAZIONE CODICE: external manager reader -> source/service dedicato.
+RETIREMENT PROOF: parity 12.435/12.435 + zero refs.
+
+17. gw_manager_assignments | 272
+CONTENUTO/PERCHÉ: assegnazioni manager; replica semantica forte della IMC Global con season_id aggiuntivo.
+LETTORI: site-assets/js/managers-live.js; api/imc-data/v1; nexus manager labels/entities; match-report ingestion.
+SCRITTORI: ops/__imc-sm-master/admin/ingestion.php e flussi ingestion equivalenti.
+DIPENDENZE: nessuna FK fisica, ma dependency applicativa alta.
+TARGET: CONFLUIRE in IMC Manager Assignment Global estesa.
+PRESERVARE: 272/272 match logico; season_id su 270/272. Non trattare season_id come imc_season: valori osservati sono identificativi tecnici eterogenei e non equivalgono alla stagione IMC.
+MIGRAZIONE CODICE: writer/reader -> Global; source_season_id preservato; imc_season valorizzato solo con regola/crosswalk deterministico.
+RETIREMENT PROOF: 272/272 parity logica + season metadata + zero refs.
+
+18. imc_competition_master | 10
+CONTENUTO/PERCHÉ: definizioni astratte di competizione, famiglia, scope, struttura e feature.
+LETTORI: api/imc-data/v1 e resolution competition.
+SCRITTORI: migration/seed database; non writer runtime ordinario.
+DIPENDENZE DB: parent FK di imc_competition_rules.
+TARGET: SOSTITUIRE con nuova IMC Competition Definition (Child/reference IMC, non Global), preservando tutti i 16 campi.
+PRESERVARE: 10 definizioni, codici unici, hierarchy_path e flags.
+MIGRAZIONE CODICE: API/gw_competitions join -> nuova tabella.
+RETIREMENT PROOF: 10/10 parity + FK regole migrata + zero refs.
+
+19. imc_competition_rules | 15
+CONTENUTO/PERCHÉ: regole/override con world_structure, priority, ranges, JSON config.
+LETTORI: rule resolution e API competition.
+SCRITTORI: migration/seed; non writer runtime ordinario.
+DIPENDENZE DB: FK -> imc_competition_master.
+TARGET: SOSTITUIRE con IMC Competition Rule child di IMC Competition Definition.
+PRESERVARE: tutte le 15 regole, config_json, eccezioni GW007/GW008, ranges e priority.
+MIGRAZIONE CODICE: resolver/importer/normalizer devono usare nuova tabella.
+RETIREMENT PROOF: 15/15 exact semantic parity + FK nuova + zero refs.
+
+20. imc_game_world_seasons | 10
+CONTENUTO/PERCHÉ: one-to-many GW -> stagione IMC/SM + date; GW008 ha S1 e S2.
+LETTORI: site-assets/master/api.php; api/imc-data/v1; ingestion context/schedule.
+SCRITTORI: ingestion.php upsert_game_world_seasons.
+DIPENDENZE: nessuna FK fisica attuale.
+TARGET: SOSTITUIRE con nuova IMC Game World Season child di IMC Game World Codex Global.
+PRESERVARE: 10 righe e chiave (game_world_id, imc_season).
+MIGRAZIONE CODICE: ingestion e API -> child IMC.
+RETIREMENT PROOF: 10/10 parity, GW008 doppia stagione verificata, zero refs.
+
+21. imc_game_worlds | 9
+CONTENUTO/PERCHÉ: registry runtime GW con metadata SM e struttura SINGLE/MULTI.
+LETTORI: js/site*.js; api/imc-data/v1; ingestion handlers transfers/schedule; competition UI.
+SCRITTORI: ingestion.php upsert_game_world_settings.
+DIPENDENZE: nessuna FK fisica.
+TARGET: CONFLUIRE in IMC Game World Codex Global + IMC Game World Season.
+PRESERVARE: game_world_type, soccer_manager_name/type/owner/creator, countries; 9/9 campi comuni già allineati; Global contiene anche GW010.
+MIGRAZIONE CODICE: writer/reader -> Global/Season.
+RETIREMENT PROOF: parity completa GW001-009, metadata GW010 gestita, zero refs.
+
+22. imc_managers | 60
+CONTENUTO/PERCHÉ: manager IMC runtime con sm_username/timestamps.
+LETTORI: js/site*.js; managers-live; api/imc-data/v1; manager-scan; Nexus.
+SCRITTORI: ingestion.php upsert_imc_managers.
+DIPENDENZE: nessuna FK fisica.
+TARGET: CONFLUIRE in IMC Manager Codex Global.
+PRESERVARE: sm_username (oggi nullo 60/60) e timestamp tecnici se la Direzione vuole audit storico.
+MIGRAZIONE CODICE: ingestion writer e tutti i reader -> Global.
+RETIREMENT PROOF: 60/60 parity + zero refs.
+
+23. import_errors | 0
+CONTENUTO/PERCHÉ: error log source import.
+LETTORI: audit/ops; nessun reader business.
+SCRITTORI: ops/sm-master/admin/core.php in smm_fail_snapshot().
+DIPENDENZE: logical snapshot_id; nessuna FK fisica rilevata.
+TARGET: RIMANE INFRASTRUTTURA TECNICA. Rinominare in IMC Source Import Error è opzionale e non necessario alla rimozione delle doppie canoniche.
+PRESERVARE: schema/error history.
+MIGRAZIONE CODICE: nessuna necessaria nel target minimo; se namespace IMC viene imposto, rinomina coordinata con core.php.
+RETIREMENT PROOF: NON eliminare finché esiste source import; COUNT=0 non prova inutilità.
+
+24. ingestion_errors | 0
+CONTENUTO/PERCHÉ: error log per ingestion run.
+LETTORI: audit/ops.
+SCRITTORI: ingestion.php.
+DIPENDENZE DB: FK run_id -> ingestion_runs ON DELETE SET NULL.
+TARGET: RIMANE TECNICA; eventuale namespace IMC opzionale.
+PRESERVARE: relazione run/error e schema.
+MIGRAZIONE CODICE: solo se rinominata insieme a ingestion_runs.
+RETIREMENT PROOF: non eliminabile finché esiste ingestion framework.
+
+25. ingestion_runs | 4
+CONTENUTO/PERCHÉ: audit/idempotency dei run ingestion.
+LETTORI: ingestion/admin audit.
+SCRITTORI: ingestion.php.
+DIPENDENZE DB: parent di ingestion_errors.
+TARGET: RIMANE TECNICA; eventuale namespace IMC opzionale.
+PRESERVARE: request_id/action/status/counts/timestamps e unique idempotency semantics.
+MIGRAZIONE CODICE: nessuna nel target minimo.
+RETIREMENT PROOF: non eliminabile senza sostituire audit + idempotency.
+
+26. international_cups | 10
+CONTENUTO/PERCHÉ: proiezione canonica SoccerWiki international cups.
+LETTORI: nessun consumer business forte distinto individuato.
+SCRITTORI: canonical.php da sw_international_cups_source.
+DIPENDENZE: nessuna FK.
+TARGET: ELIMINARE proiezione; source resta tecnica.
+PRESERVARE: 10/10 già nella source.
+MIGRAZIONE CODICE: eventuali reader -> source.
+RETIREMENT PROOF: 10/10 parity + zero refs.
+
+27. leagues | 405
+CONTENUTO/PERCHÉ: proiezione canonica SoccerWiki leagues.
+LETTORI: eventuali cataloghi esterni; non va confusa con IMC competition instances.
+SCRITTORI: canonical.php da sw_leagues_source.
+DIPENDENZE: nessuna FK.
+TARGET: ELIMINARE proiezione, source tecnica resta.
+PRESERVARE: 405/405 già nella source.
+MIGRAZIONE CODICE: eventuali reader -> source.
+RETIREMENT PROOF: parity + zero refs.
+
+28. national_teams | 100
+CONTENUTO/PERCHÉ: proiezione SoccerWiki di 100 nazionali con codice stringa e image_url.
+LETTORI: api/imc-gateway/team-hub.php e servizi nazionali/external.
+SCRITTORI: canonical.php da sw_national_teams_source.
+DIPENDENZE: nessuna FK.
+TARGET: ELIMINARE proiezione; usare IMC National Team Codex Global per identità IMC + nuova IMC National Team External Mapping; mantenere sw_national_teams_source per le identità esterne non ancora IMC.
+PRESERVARE: 100 codici/nome/image; audit corrente: 65 match per nome con gli 80 IMC, 15 IMC senza match, 35 SoccerWiki senza match.
+MIGRAZIONE CODICE: team-hub e API devono risolvere tramite mapping, non nome libero.
+RETIREMENT PROOF: crosswalk completo per tutte le nazionali IMC utilizzate, consumer migrati, 100/100 source disponibile.
+
+29. nations_game_world_id | 720
+CONTENUTO/PERCHÉ: 80 nazionali x 9 GW, mapping nation_id -> nation_gw_id.
+LETTORI: team-hub.php; api/imc-data/v1.
+SCRITTORI: migration/import mapping dedicato; nessun writer continuo rilevato.
+DIPENDENZE: nessuna FK fisica.
+TARGET: SOSTITUIRE con nuova IMC Game World National Team Mapping, parent IMC National Team Codex Global + IMC Game World Codex Global.
+PRESERVARE: tutte le 720 righe; 720/720 nation_id corrispondono agli ID IMC Global.
+MIGRAZIONE CODICE: reader -> nuova mapping.
+RETIREMENT PROOF: exact 720/720 + 9 GW + zero refs.
+
+30. player_codex_global | 108
+CONTENUTO/PERCHÉ: vecchio player-global applicativo con 29 colonne, profilo+rating+market+contract+metadata osservazione+history JSON.
+LETTORI: nexus/js/imc-player-codex-global.js, detail.js e componenti legacy.
+SCRITTORI: __imc-sm-master/admin/ingestion/handlers/player-global.php.
+DIPENDENZE DB: FK player_id -> players.
+TARGET: CONFLUIRE in IMC Player Codex Global Data + IMC Player Codex Global + IMC Player Codex Global Rating History + nuovi IMC Player Observation/Snapshot per metadata temporali.
+PRESERVARE: contract presente 77/108; first/last observed 108/108; rating_history_json 108/108; date/raw labels e source image dove non derivabili.
+MIGRAZIONE CODICE: handler e frontend legacy -> nuovo modello.
+RETIREMENT PROOF: 108/108 record ricostruibili, UI parity, history parity, zero refs/FK.
+
+31. player_codex_observations | 112
+CONTENUTO/PERCHÉ: osservazioni changes/new, change_type, effective date, rating delta, payload_json.
+LETTORI: audit/player-global logic; nessun frontend diretto principale rilevato.
+SCRITTORI: player-global.php.
+DIPENDENZE DB: FK player_id -> players; FK source_snapshot_id -> source_snapshots.
+TARGET: SOSTITUIRE con IMC Player Observation child di IMC Player Codex Global; mantenere linkage a source_snapshots tecnica.
+PRESERVARE: 112/112, source_type/change_type/effective_date/payload_json.
+MIGRAZIONE CODICE: player-global writer -> child IMC.
+RETIREMENT PROOF: 112/112 parity + FKs nuove + zero refs.
+
+32. player_codex_player_snapshots | 108
+CONTENUTO/PERCHÉ: snapshot puntuali per player con rating/value/positions/source/change metadata.
+LETTORI: audit/player-global.
+SCRITTORI: player-global.php.
+DIPENDENZE DB: FK player_id -> players; FK source_snapshot_id -> source_snapshots.
+TARGET: SOSTITUIRE con IMC Player Snapshot child.
+PRESERVARE: 108/108 e tutti i campi snapshot.
+MIGRAZIONE CODICE: writer -> child IMC; FK player -> IMC Player Codex Global.
+RETIREMENT PROOF: 108/108 parity + zero refs.
+
+33. player_codex_rating_history | 247
+CONTENUTO/PERCHÉ: storico rating vecchio player-global con date_label e created_at.
+LETTORI: gateway/config e vecchio Codex.
+SCRITTORI: player-global.php.
+DIPENDENZE DB: FK player_id -> players.
+TARGET: CONFLUIRE in IMC Player Codex Global Rating History.
+PRESERVARE: 247 eventi; oggi solo 10 exact-match esistono nella Global, quindi 237 eventi richiedono migrazione/reconciliation. date_label è derivabile; created_at -> imported_at/source timestamp.
+MIGRAZIONE CODICE: writer/reader -> Global history.
+RETIREMENT PROOF: 247/247 coperti e zero refs.
+
+34. player_images | 238
+CONTENUTO/PERCHÉ: proiezione canonica degli asset action/peak/youth SoccerWiki.
+LETTORI: asset/team UI quando richiesti.
+SCRITTORI: canonical.php da sw_player_images_source.
+DIPENDENZE: nessuna FK.
+TARGET: SOSTITUIRE con nuova IMC Player Image child di IMC Player Codex Global, oppure estensione equivalente; preferita child per separare asset multipli dal profilo business.
+PRESERVARE: 238 righe, 4 URL variant, first/last_seen, is_active.
+MIGRAZIONE CODICE: canonical writer e asset readers -> IMC Player Image.
+RETIREMENT PROOF: 238/238 parity + zero refs.
+
+35. players | 176.687
+CONTENUTO/PERCHÉ: canonical merge SM/SoccerWiki player.
+LETTORI: handlers transfers.php e player-codex.php; API/resolver; player-global.
+SCRITTORI: canonical.php; player-global.php può upsertare record SM.
+DIPENDENZE DB: parent FK di player_codex_global, observations, snapshots, rating_history.
+TARGET: CONFLUIRE in IMC Player Codex Global estesa.
+PRESERVARE: canonical_source, presence flags, source_conflict (9), first/last_seen, is_active, source-derived image separata dagli asset IMC.
+MIGRAZIONE CODICE: prima migrare tutte le FK figlie e writer, poi readers.
+RETIREMENT PROOF: 176.687/176.687, 4 FK legacy rimosse/migrate, zero refs.
+
+36. sm_clubs_source | 7.072
+CONTENUTO/PERCHÉ: source Soccer Manager club + snapshot lineage.
+LETTORI: canonical.php.
+SCRITTORI: ops/sm-master/admin/import-sm.php.
+DIPENDENZE: first/last_snapshot_id logici verso source_snapshots, nessuna FK fisica.
+TARGET: RIMANE TECNICA SOURCE. Non è doppia canonica.
+PRESERVARE: tutti i 7.072 e lineage.
+MIGRAZIONE CODICE: canonical output cambia da clubs a IMC Club Codex Global, source resta invariata.
+RETIREMENT PROOF: non eliminabile finché Soccer Manager è una source autoritativa.
+
+37. sm_players_source | 176.687
+CONTENUTO/PERCHÉ: source Soccer Manager player + lineage.
+LETTORI: canonical.php; player-global pipeline.
+SCRITTORI: import-sm.php e player-global per aggiornamenti globali.
+DIPENDENZE: snapshot IDs logici.
+TARGET: RIMANE TECNICA SOURCE.
+PRESERVARE: 176.687 e lineage.
+MIGRAZIONE CODICE: output canonical -> IMC Player Codex Global.
+RETIREMENT PROOF: non eliminabile finché source SM attiva.
+
+38. source_snapshots | 10
+CONTENUTO/PERCHÉ: provenance file/snapshot con SHA, status, counts/error.
+LETTORI: ops core, player-global, audit.
+SCRITTORI: import-sm.php/import-sw.php via core.php; player-global crea snapshot SM_PLAYER_GLOBAL.
+DIPENDENZE DB: parent di player_codex_observations e player_codex_player_snapshots.
+TARGET: RIMANE TECNICA PROVENANCE. Eventuale rinomina IMC Source Snapshot è cosmetica, non necessaria.
+PRESERVARE: tutti i 10 snapshot e chiave unique source+sha.
+MIGRAZIONE CODICE: aggiorna solo le FK dei nuovi IMC Player Observation/Snapshot verso questa tabella.
+RETIREMENT PROOF: non eliminabile finché esistono import source.
+
+39. stadiums | 6.187
+CONTENUTO/PERCHÉ: proiezione canonica SoccerWiki stadiums.
+LETTORI: eventuali consumer catalogo; nessun reader business forte separato individuato.
+SCRITTORI: canonical.php da sw_stadiums_source.
+DIPENDENZE: nessuna FK.
+TARGET: ELIMINARE proiezione; source resta tecnica.
+PRESERVARE: 6.187/6.187 già in source.
+MIGRAZIONE CODICE: eventuali reader -> sw_stadiums_source.
+RETIREMENT PROOF: parity + zero refs.
+
+40. sw_awards_source | 4
+CONTENUTO/PERCHÉ: source SoccerWiki awards + lineage.
+LETTORI: canonical.php.
+SCRITTORI: import-sw.php.
+DIPENDENZE: snapshot IDs logici.
+TARGET: RIMANE TECNICA SOURCE.
+PRESERVARE: 4 e lineage.
+MIGRAZIONE CODICE: dopo retirement awards, eventuali consumer esterni possono leggere via servizio source controllato.
+RETIREMENT PROOF: non eliminabile finché AwardData serve.
+
+41. sw_clubs_source | 7.072
+CONTENUTO/PERCHÉ: source SoccerWiki club + short_name/image/lineage.
+LETTORI: canonical.php.
+SCRITTORI: import-sw.php.
+DIPENDENZE: snapshot IDs logici.
+TARGET: RIMANE TECNICA SOURCE.
+PRESERVARE: 7.072; 16 nomi differiscono dalla source SM e alimentano source_conflict.
+MIGRAZIONE CODICE: canonical output -> IMC Club Codex Global.
+RETIREMENT PROOF: non eliminabile finché SoccerWiki è source.
+
+42. sw_cups_source | 235
+CONTENUTO/PERCHÉ: source SoccerWiki cups + lineage.
+LETTORI: canonical.php.
+SCRITTORI: import-sw.php.
+DIPENDENZE: snapshot IDs logici.
+TARGET: RIMANE TECNICA SOURCE.
+PRESERVARE: 235.
+MIGRAZIONE CODICE: può diventare sorgente diretta controllata dopo retirement cups.
+RETIREMENT PROOF: non eliminabile finché CupData serve.
+
+43. sw_football_managers_source | 12.435
+CONTENUTO/PERCHÉ: source SoccerWiki allenatori esterni + lineage.
+LETTORI: canonical.php.
+SCRITTORI: import-sw.php.
+DIPENDENZE: snapshot IDs logici.
+TARGET: RIMANE TECNICA SOURCE; fonte esterna, distinta dai manager IMC.
+PRESERVARE: 12.435.
+MIGRAZIONE CODICE: external managers consumer -> questa source/service.
+RETIREMENT PROOF: non eliminabile se si conserva catalogo esterno.
+
+44. sw_international_cups_source | 10
+CONTENUTO/PERCHÉ: source SoccerWiki international cups + lineage.
+LETTORI: canonical.php.
+SCRITTORI: import-sw.php.
+DIPENDENZE: snapshot IDs logici.
+TARGET: RIMANE TECNICA SOURCE.
+PRESERVARE: 10.
+MIGRAZIONE CODICE: eventuali reader -> source.
+RETIREMENT PROOF: non eliminabile finché source richiesta.
+
+45. sw_leagues_source | 405
+CONTENUTO/PERCHÉ: source SoccerWiki leagues + lineage.
+LETTORI: canonical.php.
+SCRITTORI: import-sw.php.
+DIPENDENZE: snapshot IDs logici.
+TARGET: RIMANE TECNICA SOURCE.
+PRESERVARE: 405.
+MIGRAZIONE CODICE: eventuali reader -> source.
+RETIREMENT PROOF: non eliminabile finché LeagueData serve.
+
+46. sw_national_teams_source | 100
+CONTENUTO/PERCHÉ: source SoccerWiki nazionali + code/name/image/lineage.
+LETTORI: canonical.php; futuro crosswalk IMC.
+SCRITTORI: import-sw.php.
+DIPENDENZE: snapshot IDs logici.
+TARGET: RIMANE TECNICA SOURCE; supporta IMC National Team External Mapping.
+PRESERVARE: tutti i 100 record.
+MIGRAZIONE CODICE: smettere di usare national_teams projection; risolvere IMC via mapping.
+RETIREMENT PROOF: non eliminabile finché SoccerWiki InternationalData serve.
+
+47. sw_player_images_source | 238
+CONTENUTO/PERCHÉ: source SoccerWiki immagini player varianti + lineage.
+LETTORI: canonical.php.
+SCRITTORI: import-sw.php.
+DIPENDENZE: snapshot IDs logici.
+TARGET: RIMANE TECNICA SOURCE; alimenta IMC Player Image.
+PRESERVARE: 238 e 4 variant URL.
+MIGRAZIONE CODICE: canonical output -> IMC Player Image.
+RETIREMENT PROOF: non eliminabile finché PlayerImages source serve.
+
+48. sw_players_source | 105.138
+CONTENUTO/PERCHÉ: source SoccerWiki player + image/lineage.
+LETTORI: canonical.php.
+SCRITTORI: import-sw.php.
+DIPENDENZE: snapshot IDs logici.
+TARGET: RIMANE TECNICA SOURCE.
+PRESERVARE: 105.138; 9 differenze nome rispetto a canonical players osservate nel precedente audit.
+MIGRAZIONE CODICE: canonical output -> IMC Player Codex Global.
+RETIREMENT PROOF: non eliminabile finché SoccerWiki player source attiva.
+
+49. sw_stadiums_source | 6.187
+CONTENUTO/PERCHÉ: source SoccerWiki stadiums + lineage.
+LETTORI: canonical.php.
+SCRITTORI: import-sw.php.
+DIPENDENZE: snapshot IDs logici.
+TARGET: RIMANE TECNICA SOURCE.
+PRESERVARE: 6.187.
+MIGRAZIONE CODICE: eventuali reader -> source.
+RETIREMENT PROOF: non eliminabile finché StadiumData serve.
+
+CHECK MATEMATICO AS-IS: 49/49 tabelle classificate.
+
+======================================================================
+2. TO-BE · CORE DEFINITIVO PROPOSTO
+======================================================================
+
+A. GLOBAL IMC ESISTENTI · RESTANO AUTORITATIVE (11)
+01 IMC Club Codex Global
+02 IMC Competition Codex Global
+03 IMC Country Codex Global
+04 IMC Game World Club Mapping
+05 IMC Game World Codex Global
+06 IMC Manager Assignment Global
+07 IMC Manager Codex Global
+08 IMC National Team Codex Global
+09 IMC Player Codex Global
+10 IMC Player Codex Global Data
+11 IMC Player Codex Global Rating History
+
+B. NUOVE IMC CHILD / MAPPING / DEFINITION NECESSARIE (8)
+12 IMC Game World Season
+- child one-to-many del Game World; sostituisce imc_game_world_seasons.
+
+13 IMC Game World National Team Mapping
+- mapping national_team_id IMC + game_world_id + world_national_team_id; sostituisce nations_game_world_id.
+
+14 IMC National Team External Mapping
+- mapping national_team_id IMC + source_code + external_id + alias/canonical match status; risolve codici SoccerWiki senza contaminare il Codex.
+
+15 IMC Competition Definition
+- master astratto delle competizioni; sostituisce imc_competition_master.
+
+16 IMC Competition Rule
+- child delle Definition; sostituisce imc_competition_rules.
+
+17 IMC Player Observation
+- child storico/eventi; sostituisce player_codex_observations.
+
+18 IMC Player Snapshot
+- child snapshot; sostituisce player_codex_player_snapshots.
+
+19 IMC Player Image
+- child asset multi-variante; sostituisce player_images come proiezione canonica.
+
+C. INFRASTRUTTURA TECNICA CHE RESTA NON-CANONICA (16)
+20 source_snapshots
+21 import_errors
+22 ingestion_runs
+23 ingestion_errors
+24 sm_clubs_source
+25 sm_players_source
+26 sw_awards_source
+27 sw_clubs_source
+28 sw_cups_source
+29 sw_football_managers_source
+30 sw_international_cups_source
+31 sw_leagues_source
+32 sw_national_teams_source
+33 sw_player_images_source
+34 sw_players_source
+35 sw_stadiums_source
+
+TOTALE TO-BE PROPOSTO: 35 tabelle.
+- 19 IMC business/canonical/child/mapping;
+- 16 tecniche source/audit non canoniche.
+
+La scelta di lasciare le 16 tecniche con nome non-IMC è intenzionale: sono infrastruttura, non una seconda fonte canonica. Un futuro rename cosmetico può essere eseguito separatamente, ma non è requisito funzionale della consolidazione e aumenterebbe inutilmente il rischio.
+
+======================================================================
+3. ESTENSIONI NECESSARIE DELLE GLOBAL ESISTENTI
+======================================================================
+
+3.1 IMC Club Codex Global
+Aggiunte proposte, senza alterare i campi IMC esistenti:
+- short_name
+- canonical_source
+- present_in_sm
+- present_in_soccerwiki
+- source_conflict
+- first_seen_date
+- last_seen_date
+- is_active
+- external_image_url oppure source_image_url separato da image_url IMC
+
+3.2 IMC Game World Club Mapping
+Aggiunta indispensabile:
+- world_club_id / club_gw_id
+Backfill necessario:
+- 1.434 local IDs sulle righe già IMC
+- 996 righe GW007/GW008 oggi mancanti
+
+3.3 IMC Game World Codex Global
+Aggiunte proposte:
+- game_world_type
+- soccer_manager_name
+- soccer_manager_type
+- soccer_manager_owner
+- soccer_manager_creator
+Non aggiungere soccer_manager_season qui come unica verità: va nel child IMC Game World Season.
+
+3.4 IMC Manager Assignment Global
+Aggiunte proposte:
+- source_season_id per preservare i valori tecnici legacy
+- imc_season solo quando determinabile in modo certo
+Non usare il vecchio season_id come sinonimo automatico di imc_season.
+
+3.5 IMC Manager Codex Global
+Aggiunte opzionali per parity tecnica:
+- sm_username
+- created_at
+- updated_at
+Nota: sm_username è nullo su 60/60 nel dataset attuale.
+
+3.6 IMC Player Codex Global
+Aggiunte proposte:
+- canonical_source
+- present_in_sm
+- present_in_soccerwiki
+- source_conflict
+- first_seen_date
+- last_seen_date
+- is_active
+- external/source image URL separata dall'asset IMC
+
+3.7 IMC Player Codex Global Data
+Aggiunte necessarie per assorbire il vecchio player_codex_global senza perdita:
+- previous_rating
+- nation_code
+- date_of_birth_raw, solo se serve preservare il valore sorgente non normalizzato
+- market_value_label
+- wage_label
+- contract
+- first_observed_date
+- first_seen_as_new_date
+- last_change_date
+- last_observed_at
+- created_at
+- eventuale source_image_url
+Il vecchio rating_history_json NON deve diventare una seconda history canonica: va migrato/validato contro IMC Player Codex Global Rating History e poi trattato come dato derivabile/legacy.
+
+======================================================================
+4. MIGRATION MAP · AS-IS -> TO-BE
+======================================================================
+
+IMC Club Codex Global -> stessa Global, estesa.
+IMC Competition Codex Global -> stessa Global.
+IMC Country Codex Global -> stessa Global.
+IMC Game World Club Mapping -> stessa Mapping, estesa.
+IMC Game World Codex Global -> stessa Global, estesa.
+IMC Manager Assignment Global -> stessa Global, estesa.
+IMC Manager Codex Global -> stessa Global, estesa opzionalmente.
+IMC National Team Codex Global -> stessa Global + External Mapping.
+IMC Player Codex Global -> stessa Global, estesa.
+IMC Player Codex Global Data -> stessa Global Data, estesa.
+IMC Player Codex Global Rating History -> stessa Global History.
+
+awards -> sw_awards_source, proiezione eliminata.
+clubs -> IMC Club Codex Global.
+clubs_game_world_id -> IMC Game World Club Mapping.
+cups -> sw_cups_source, proiezione eliminata.
+football_managers -> sw_football_managers_source, proiezione eliminata.
+gw_manager_assignments -> IMC Manager Assignment Global.
+imc_competition_master -> IMC Competition Definition.
+imc_competition_rules -> IMC Competition Rule.
+imc_game_world_seasons -> IMC Game World Season.
+imc_game_worlds -> IMC Game World Codex Global + IMC Game World Season.
+imc_managers -> IMC Manager Codex Global.
+import_errors -> resta import_errors tecnica.
+ingestion_errors -> resta ingestion_errors tecnica.
+ingestion_runs -> resta ingestion_runs tecnica.
+international_cups -> sw_international_cups_source, proiezione eliminata.
+leagues -> sw_leagues_source, proiezione eliminata.
+national_teams -> IMC National Team Codex Global + IMC National Team External Mapping; external-only resta in sw_national_teams_source.
+nations_game_world_id -> IMC Game World National Team Mapping.
+player_codex_global -> IMC Player Codex Global Data + Global + Rating History + Player Observation/Snapshot.
+player_codex_observations -> IMC Player Observation.
+player_codex_player_snapshots -> IMC Player Snapshot.
+player_codex_rating_history -> IMC Player Codex Global Rating History.
+player_images -> IMC Player Image.
+players -> IMC Player Codex Global.
+sm_clubs_source -> resta source tecnica.
+sm_players_source -> resta source tecnica.
+source_snapshots -> resta provenance tecnica.
+stadiums -> sw_stadiums_source, proiezione eliminata.
+sw_awards_source -> resta source tecnica.
+sw_clubs_source -> resta source tecnica.
+sw_cups_source -> resta source tecnica.
+sw_football_managers_source -> resta source tecnica.
+sw_international_cups_source -> resta source tecnica.
+sw_leagues_source -> resta source tecnica.
+sw_national_teams_source -> resta source tecnica.
+sw_player_images_source -> resta source tecnica.
+sw_players_source -> resta source tecnica.
+sw_stadiums_source -> resta source tecnica.
+
+CHECK MATEMATICO MIGRATION MAP: 49/49 AS-IS hanno destinazione/permanenza esplicita.
+
+======================================================================
+5. RETIREMENT MAP
+======================================================================
+
+ELIMINABILI DOPO MIGRAZIONE + ZERO-REFERENCE:
+1 awards
+2 clubs
+3 clubs_game_world_id
+4 cups
+5 football_managers
+6 gw_manager_assignments
+7 imc_competition_master
+8 imc_competition_rules
+9 imc_game_world_seasons
+10 imc_game_worlds
+11 imc_managers
+12 international_cups
+13 leagues
+14 national_teams
+15 nations_game_world_id
+16 player_codex_global
+17 player_codex_observations
+18 player_codex_player_snapshots
+19 player_codex_rating_history
+20 player_images
+21 players
+22 stadiums
+
+TOTALE candidati retirement: 22.
+
+CONDIZIONE COMUNE OBBLIGATORIA PER OGNI DROP FUTURO:
+- backfill completato;
+- COUNT e chiavi confrontati;
+- field-by-field parity sui campi da preservare;
+- writer migrati;
+- reader migrati;
+- FK spostate;
+- GitHub search zero riferimenti runtime alla vecchia tabella, esclusi migration/backups/documentazione;
+- test API/importer positivo;
+- finestra shadow senza divergenze;
+- solo dopo CASE DELETE/DROP separato.
+
+NON CANDIDATE AL RETIREMENT NEL TARGET:
+- 11 IMC* Global;
+- source_snapshots, import_errors, ingestion_runs, ingestion_errors;
+- sm_clubs_source, sm_players_source;
+- 10 sw_*_source;
+- le 8 nuove IMC child/mapping/definition.
+
+======================================================================
+6. DEPENDENCY MAP · CODICE DA MIGRARE
+======================================================================
+
+A. SOURCE / CANONICAL PIPELINE
+- ops/sm-master/admin/import-sm.php
+  scrive sm_players_source, sm_clubs_source.
+- ops/sm-master/admin/import-sw.php
+  scrive tutte le sw_*_source.
+- ops/sm-master/admin/canonical.php
+  oggi materializza players, clubs, leagues, cups, stadiums, football_managers, national_teams, international_cups, awards, player_images.
+  TO-BE: deve materializzare solo le vere IMC destinazioni necessarie (Club/Player Global, Player Image) e smettere di creare proiezioni inutili.
+- ops/sm-master/admin/core.php
+  gestisce source_snapshots/import_errors.
+
+B. CORE INGESTION
+- ops/sm-master/admin/ingestion.php e __imc-sm-master/admin/ingestion.php
+  creano/scrivono imc_managers, imc_game_worlds, imc_game_world_seasons, gw_manager_assignments, ingestion_runs/errors.
+  TO-BE: writer manager/GW/season/assignment devono puntare a IMC Global/Child.
+
+C. PLAYER GLOBAL LEGACY
+- __imc-sm-master/admin/ingestion/handlers/player-global.php
+  scrive players, sm_players_source, source_snapshots, player_codex_global, player_codex_observations, player_codex_player_snapshots, player_codex_rating_history.
+  TO-BE: source SM resta; dati business/storici vanno alle IMC Player*.
+- __imc-sm-master/admin/ingestion/handlers/player-codex.php
+  legge players per identity resolution; deve passare a IMC Player Codex Global.
+- transfers.php
+  legge players; deve passare a IMC Player Codex Global.
+
+D. GAME WORLD / MANAGER CONSUMERS
+- js/site.js, site-v7.js, site-v8.js
+  leggono imc_managers/imc_game_worlds.
+- site-assets/js/managers-live.js
+  legge imc_managers/gw_manager_assignments.
+- api/imc-data/v1/index.php
+  legge imc_game_worlds, imc_game_world_seasons, imc_managers, gw_manager_assignments, clubs_game_world_id, nations_game_world_id, clubs.
+- api/imc-data/v1/site-ready.php
+  usa già diverse IMC Global ma dipende ancora da clubs_game_world_id.
+- api/imc-gateway/team-hub.php
+  legge clubs_game_world_id, clubs, nations_game_world_id, national_teams.
+- api/imc-gateway/index.php
+  espone dataset CORE legacy e deve essere riallineato.
+- nexus/js/imc-gw001-competition-manager-labels.js e imc-entities-current-manager-gw008.js
+  leggono gw_manager_assignments/imc_managers.
+- __imc-sm-master/admin/ingestion/handlers/manager-scan.php, match-report.php, schedule.php, transfers.php
+  dipendono dal context/registry lowercase e/o assignments.
+
+E. IMC GLOBAL CONSUMERS GIÀ CORRETTI
+- imc-universal-gateway/minisite.php legge IMC Club/Manager/National Team/Player/Rating Global e IMC Game World Club Mapping.
+- site-assets/master/api.php usa già IMC Game World/Manager/Club Global in più percorsi.
+Questi sono il pattern da estendere, non da riportare indietro alle lowercase.
+
+======================================================================
+7. ORDER OF EXECUTION · FUTURA ESECUZIONE AUTORIZZATA
+======================================================================
+
+FASE 0 · FREEZE LOGICO E BASELINE
+1. catturare schema/COUNT/hash di controllo delle 49 tabelle;
+2. censire GitHub references runtime con lista file+query;
+3. definire test automatici parity per ogni dominio.
+
+FASE 1 · CREARE SOLO LE DESTINAZIONI MANCANTI
+4. estendere le Global esistenti senza modificare/riciclare i campi autoritativi;
+5. creare IMC Game World Season;
+6. creare IMC Game World National Team Mapping;
+7. creare IMC National Team External Mapping;
+8. creare IMC Competition Definition + IMC Competition Rule;
+9. creare IMC Player Observation + IMC Player Snapshot + IMC Player Image.
+
+FASE 2 · GAME WORLD / MANAGER, RISCHIO CONTROLLABILE
+10. backfill imc_managers -> IMC Manager Codex Global;
+11. backfill imc_game_worlds metadata -> IMC Game World Codex Global;
+12. backfill imc_game_world_seasons -> IMC Game World Season;
+13. backfill gw_manager_assignments -> IMC Manager Assignment Global preservando source_season_id;
+14. migrare ingestion writer;
+15. migrare API/frontend reader;
+16. shadow compare.
+
+FASE 3 · CLUB + WORLD MAPPING
+17. estendere IMC Club Codex Global con metadata canonical;
+18. backfill clubs -> Global senza sovrascrivere asset IMC;
+19. estendere IMC Game World Club Mapping con world_club_id;
+20. backfill 1.434 mapping esistenti;
+21. aggiungere 996 membership GW007/GW008;
+22. verificare 2.430/2.430;
+23. migrare team-hub/api/site-ready/canonical writer.
+
+FASE 4 · PLAYER CORE
+24. estendere IMC Player Codex Global con metadata canonical;
+25. backfill players -> Global senza sovrascrivere asset IMC;
+26. creare/popolarne IMC Player Image da player_images/source;
+27. migrare handler transfers/player-codex/canonical;
+28. spostare le FK del vecchio player subsystem verso Global/Child.
+
+FASE 5 · PLAYER CODEX LEGACY
+29. estendere IMC Player Codex Global Data per i campi business legacy necessari;
+30. riconciliare i 108 player_codex_global;
+31. migrare 112 observations -> IMC Player Observation;
+32. migrare 108 player snapshots -> IMC Player Snapshot;
+33. migrare i 237 eventi rating legacy mancanti nella Global Rating History;
+34. validare rating_history_json come derivabile dalla history normalizzata;
+35. migrare player-global writer e frontend;
+36. shadow parity.
+
+FASE 6 · NATIONAL TEAM
+37. creare crosswalk IMC <-> SoccerWiki per national teams;
+38. migrare 720 nations_game_world_id -> IMC Game World National Team Mapping;
+39. migrare team-hub/API a Global + mapping;
+40. usare sw_national_teams_source solo come external source, non canonical IMC.
+
+FASE 7 · COMPETITION META-LAYER
+41. migrare 10 master -> IMC Competition Definition;
+42. migrare 15 rules -> IMC Competition Rule;
+43. spostare FK e resolver/API;
+44. verificare che IMC Competition Codex Global resti invariata e operativa.
+
+FASE 8 · RIMUOVERE LE PROIEZIONI SOCCERWIKI SUPERFLUE
+45. migrare eventuali reader di awards/cups/football_managers/international_cups/leagues/stadiums alla source tecnica;
+46. verificare parity con sw_* source;
+47. bloccare canonical.php dal rigenerare le vecchie proiezioni.
+
+FASE 9 · RETIREMENT, SOLO CASE SEPARATO
+48. per ciascuna delle 22 candidate eseguire zero-reference + parity + smoke test;
+49. disabilitare prima writer, poi reader;
+50. osservare shadow window;
+51. DROP solo con autorizzazione esplicita e per gruppi piccoli, con verifica dopo ogni gruppo.
+
+======================================================================
+8. RISULTATO DEFINITIVO
+======================================================================
+
+AS-IS: 49 tabelle.
+TO-BE proposto: 35 tabelle.
+- 11 IMC Global esistenti, autoritative e intoccabili;
+- 8 IMC Child/Mapping/Definition nuove;
+- 16 tabelle tecniche source/provenance/audit che restano non-canoniche.
+
+Retirement potenziale: 22 tabelle AS-IS.
+Nuove tabelle IMC necessarie: 8.
+Bilancio netto: 49 - 22 + 8 = 35.
+
+La riduzione è matematicamente completa e non lascia tabelle senza destinazione:
+- 11 Global -> restano;
+- 16 tecniche -> restano per funzione distinta;
+- 22 -> migrano e diventano eliminabili;
+- 8 nuove -> ricevono le informazioni subordinate/mapping oggi senza casa IMC corretta.
+
+Il CORE finale avrebbe UNA sola fonte canonica per manager, Game World, club, player, assignments, national teams IMC e competition configuration: le IMC*.
+Le source SM/SoccerWiki resterebbero esclusivamente source/provenance e non sarebbero più consumate come seconde canoniche applicative, salvo cataloghi esterni esplicitamente richiesti.
+
+AUDIT RESULT: COMPLETE
+AS_IS_TABLES_ACCOUNTED: 49/49
+DB_WRITES_EXECUTED: 0
+CODE_WRITES_EXECUTED: 0
+MYSQL_TARGET: Sql1956795_1
