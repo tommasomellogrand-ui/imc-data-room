@@ -1,0 +1,586 @@
+CASE_ID: IMC-CREATIVE-001
+DOC_TYPE: RESPONSE
+AREA: CREATIVE
+DATE: 2026-09-10
+TOPIC: GAME_WORLD_CREATIVE_UX_DIRECTION_REVIEW
+
+IMC | CREATIVE DIRECTOR
+GAME WORLD CREATIVE & UX DIRECTION REVIEW
+
+1. EXECUTIVE VERDICT
+
+Dall'audit del codice e delle Visual Design Exploration attualmente presenti nel repository autoritativo tommasomellogrand-ui/imc-website emerge una conclusione netta:
+
+- NON conviene mantenere nove minisiti con logiche UX, menu, route e comportamenti strutturalmente differenti;
+- NON conviene però nemmeno imporre una stessa composizione visiva a tutti i Game World;
+- la soluzione raccomandata è un unico IMC MINISITE CORE configurabile, con due profili informativi principali, MULTI e SINGLE, più moduli speciali attivabili per singolo GW.
+
+La distinzione fra famiglie deve quindi vivere nella CONFIGURAZIONE E NELLA GERARCHIA DEL CONTESTO, non in due codebase indipendenti.
+
+Formula consigliata:
+
+IMC MINISITE CORE
++ context model
++ feature modules
++ GW theme layer
+
+Il core governa comportamento, semantica, navigation e component contracts.
+Il Game World governa identità, art direction e composizione espressiva.
+
+2. AUDIT SINTETICO DEL LAVORO ESISTENTE
+
+GW001 · ROAD TO HISTORY
+
+È oggi il riferimento più forte per la famiglia SINGLE sul piano editoriale e della gerarchia dei contenuti.
+
+L'esplorazione usa un'architettura molto leggibile: Il mondo, Competizioni, Risultati, Calendario, Match Center, Classifiche, Manager, Player, Club, Archivio. Il sistema tratta il match come evento e memoria, non come semplice riga di tabella. Sono particolarmente riusciti Competition Hub, score plate, ranking spine, dossier manager/player, capitoli editoriali e passaggio LIVE NOW → ARCHIVED FOREVER.
+
+Il materiale corrente dimostra inoltre che GW001 può sostenere una struttura più production-oriented con Competitions, Clubs, Managers, Scores, Fixtures, Players, Transfers e Reports, con drilldown verso competition, club e manager.
+
+PUNTI DA TRASFERIRE AL SISTEMA:
+- hierarchy sportiva molto chiara;
+- competition-first thinking;
+- match come storia e non solo dato;
+- separazione netta tra hub e detail pages;
+- forte ritmo editoriale;
+- archive come profondità, non come semplice deposito.
+
+DA NON COPIARE SUGLI ALTRI:
+- titanium, chrome, archive styling;
+- specifica composizione cinematografica;
+- ritmo monumentale in ogni GW.
+
+GW002 · GOLD 558
+
+È il miglior riferimento attuale per la UX della famiglia GOLD/MULTI.
+
+La sua architettura è la più convincente nel rendere navigabile un mondo multi-country: Overview, World, Countries, Division hub, Results, Fixtures, Match Center, Rankings, Manager, Player, Club, Transfers, Data.
+
+La soluzione più importante è la persistenza del contesto COUNTRY + DIVISION, con breadcrumb/context bar, left rail desktop, right Global Pulse rail e bottom navigation mobile con accesso rapido + menu completo.
+
+PUNTI DA TRASFERIRE AL SISTEMA MULTI:
+- World → Country → Division come gerarchia primaria;
+- context selector persistente;
+- context preservation durante la navigazione;
+- left navigation rail desktop;
+- right contextual rail opzionale;
+- bottom nav mobile + More;
+- country/division filters come infrastruttura, non accessori.
+
+DA NON STANDARDIZZARE:
+- estetica graphite/emerald;
+- Global Pulse come obbligo su ogni pagina;
+- densità elevata su GW che non la richiedono.
+
+GW003 · GOLD 557
+
+È il riferimento più forte per struttura, confronto e macro→micro.
+
+La Visual Exploration dispone di 18 viste e organizza esplicitamente World Grid → Country → Division → Competition → contenuti. Il suo Structure Index, la matrice, i context selector e il right context rail sono eccellenti per comprendere grandi quantità di contenuto senza perdere posizione nel sistema.
+
+PUNTI DA TRASFERIRE:
+- hierarchy/context rigorosa;
+- matrix e comparison patterns;
+- macro → micro transition;
+- Structure Index come principio;
+- chiarezza nel mostrare la posizione corrente nel sistema.
+
+LIMITI COME BASE UNICA:
+- più freddo/editoriale-systemic di quanto serva a tutti i MULTI;
+- non ha il ritmo sportivo/editoriale di GW002;
+- grande quantità di dati demo nell'esplorazione.
+
+È importante anche come prova architetturale: usa già un app-core condiviso prima del layer specifico del GW, dimostrando concretamente la fattibilità di core comune + theme/app specifico.
+
+GW004 · WORLD LEAGUE
+
+È il miglior laboratorio esistente per DIVISION, STANDINGS e PRESSURE UX.
+
+La sua piramide a quattro divisioni, il rail verticale D1-D4, le standings con toggle forma/movimento, le zone promotion/relegation, il position history e i pressure panels sono componenti molto forti.
+
+PUNTI DA TRASFERIRE COME MODULI:
+- division switcher;
+- rank spine;
+- promotion/relegation thresholds;
+- form/movement toggle;
+- position history;
+- match impact context.
+
+NON deve diventare la shell comune SINGLE: è troppo specificamente costruito intorno alla gerarchia verticale delle divisioni.
+
+GW005 · HALL OF FAMERS
+
+È il riferimento più forte per profili, recognition, records e alternanza editoriale.
+
+Arena × Gallery, portrait stage, grandi numeri, Record/Honour objects e passaggio tra performance corrente e legacy sono territori molto riusciti.
+
+PUNTI DA TRASFERIRE COME MODULI:
+- profile storytelling;
+- portrait-led profile mode;
+- records/honours objects;
+- large-number editorial hierarchy;
+- separazione current performance / legacy.
+
+NON deve diventare shell comune: la sua grammatica è intenzionalmente person-centric e celebrativa.
+
+Anche GW005 utilizza app-core condiviso, altro segnale concreto che una base tecnica comune è già praticabile.
+
+GW006 · MASTERS OF THE WORLD
+
+La nuova Visual Exploration è presente e introduce una struttura molto utile per competition progression e playoff.
+
+La navigazione comprende Home, Competitions, League, Results, Schedule, Match Center, Standings, Managers, Manager Profile, Players, Player Profile, Club, Transfers, Playoffs, Data, Archive. Il sistema D1-D5, i division tabs, la Progression Rail e Final Gate sono ottimi moduli SINGLE quando esiste struttura a livelli/playoff.
+
+PUNTI DA TRASFERIRE COME MODULI:
+- competition progression;
+- stage/status progression;
+- division tabs D1-D5;
+- playoff path / Final Gate;
+- clear mobile bottom navigation;
+- desktop left rail.
+
+NON deve imporre la propria metafora Backstage × World Stage agli altri GW.
+
+GW007 · THE FOUR KINGDOMS
+
+GW007 è volutamente un'eccezione creativa e UX all'interno dei MULTI.
+
+La struttura ha Four Kingdoms, Territory Map, Kingdom context, Competitions, Results, Schedule, Power Rankings, Manager, Player, Club, Transfers, Rivalries.
+
+La sua differenza non va eliminata: il livello COUNTRY della famiglia MULTI qui può diventare KINGDOM/TERRITORY. Il concetto territoriale deve vivere come context model speciale sopra lo stesso core sportivo.
+
+PUNTI DA TRASFERIRE:
+- contextual identity selector;
+- territory-aware filters;
+- specialist map/network modules;
+- contextual color without changing core semantics.
+
+RACCOMANDAZIONE:
+GW007 non deve avere un motore separato. Deve usare MULTI core con contextModel = kingdoms/territories e moduli map/rivalry opzionali.
+
+GW008 · GOLD 1
+
+È il riferimento migliore per chiarezza, listing e status-at-a-glance.
+
+Il sistema è più leggero di GW002/GW003: board rows, filtri chiari, ranking leggibile, profili lineari, alternanza navy/white e forte disciplina visiva.
+
+PUNTI DA TRASFERIRE:
+- leggibilità di standings e listing;
+- compact rank/status object;
+- clean profile structure;
+- white-space discipline;
+- filtri molto immediati.
+
+È particolarmente utile come correttivo alla densità di GW002/GW003.
+
+GW009 · KICK OFF
+
+GW009 dimostra un principio strategico fondamentale: una UX coerente può sostenere un'identità visuale radicalmente diversa.
+
+La navigazione sottostante è convenzionale e comprensibile: Home, Competizioni, Risultati, Calendario, Match Center, Classifica, Manager, Giocatore, Trasferimenti, Archivio, Cup Bracket, Sistema. Desktop utilizza left rail + workspace + right contextual rail; mobile mantiene Home, Risultati, Calendario e Classifica nella bottom nav.
+
+PUNTO PRINCIPALE:
+Il layer CRT/pixel/sprite cambia radicalmente la percezione senza richiedere una diversa semantica di navigazione. Questo è il miglior stress-test dell'idea core comune + theme layer.
+
+3. MIGLIOR RIFERIMENTO PER FAMIGLIA
+
+GOLD / MULTI
+
+RIFERIMENTO PRINCIPALE: GW002 · GOLD 558
+
+Motivo:
+è la soluzione che oggi organizza meglio il problema tipico MULTI: passare dal mondo globale al paese, poi alla divisione, e da lì ai contenuti sportivi, mantenendo il contesto visibile.
+
+INTEGRAZIONI RACCOMANDATE:
+- GW003 per structure index, matrix, comparison e macro→micro;
+- GW008 per leggibilità, listing, standings e disciplina del dato;
+- GW007 come variante specialistica del context layer.
+
+La soluzione definitiva MULTI NON deve essere una copia di GW002. Deve essere una sintesi:
+
+GW002 navigation/context
++ GW003 information architecture/comparison
++ GW008 clarity
++ GW007 optional territory modules.
+
+SINGLE LEAGUE
+
+RIFERIMENTO PRINCIPALE: GW001 · ROAD TO HISTORY
+
+Motivo:
+è il lavoro che meglio trasforma un minisito da elenco di dati a prodotto sportivo-editoriale. Possiede la migliore combinazione fra navigazione chiara, competition hub, match storytelling, drilldown e ritmo.
+
+La preferenza espressa da Tom per GW001 trova quindi un riscontro tecnico/creativo reale, ma la raccomandazione NON è copiarne lo stile.
+
+INTEGRAZIONI RACCOMANDATE:
+- GW004 per division/rank/pressure;
+- GW006 per competition progression/playoffs;
+- GW005 per profiles/records/honours;
+- GW009 come prova di libertà grafica estrema sullo stesso scheletro UX.
+
+4. INFORMATION ARCHITECTURE RACCOMANDATA
+
+A. CORE SEMANTICO COMUNE A TUTTI I GW
+
+Le principali destinazioni devono avere nomi, significato e posizione prevedibili:
+
+HOME
+COMPETITIONS
+RESULTS
+SCHEDULE
+STANDINGS
+CLUBS
+MANAGERS
+PLAYERS
+TRANSFERS
+MORE / DATA / ARCHIVE / REPORTS
+
+MATCH CENTER, CLUB PROFILE, MANAGER PROFILE, PLAYER PROFILE e COMPETITION DETAIL sono drilldown, non devono necessariamente occupare spazio nella primary navigation.
+
+Questo evita menu con 15-18 voci allo stesso livello, oggi presenti in alcune exploration e utili come laboratorio ma troppo pesanti come prodotto definitivo.
+
+B. MULTI CONTEXT HIERARCHY
+
+WORLD
+→ COUNTRY / TERRITORY
+→ DIVISION
+→ COMPETITION
+→ CONTENT
+
+Country e Division devono essere context selectors persistenti e URL-preserved.
+
+GW007 sostituisce COUNTRY con KINGDOM/TERRITORY senza rompere il resto del sistema.
+
+C. SINGLE CONTEXT HIERARCHY
+
+GAME WORLD
+→ COMPETITION / DIVISION
+→ CONTENT
+
+Nessun layer Country artificiale.
+Division compare solo nei GW in cui è realmente significativo.
+Playoff/Promotion/Relegation sono moduli, non nuove shell.
+
+5. NAVIGATION MODEL RACCOMANDATO
+
+MOBILE
+
+Bottom navigation comune con quattro azioni primarie:
+
+HOME
+RESULTS
+SCHEDULE
+STANDINGS
+
++ MORE
+
+MORE apre sheet/dialog/menu con:
+Competitions, Clubs, Managers, Players, Transfers, Data/Archive/Reports e moduli speciali.
+
+Nei MULTI, il context selector Country/Territory + Division deve essere sempre raggiungibile in modo visibile e non dipendere da gesture nascoste.
+
+DESKTOP
+
+Struttura raccomandata:
+
+TOP BRAND / CONTEXT BAR
+LEFT PERSISTENT NAVIGATION RAIL
+CENTER CONTENT STAGE
+OPTIONAL RIGHT CONTEXT RAIL
+
+Il right rail è configurabile. È utile in GW002, GW003, GW009, ma non deve essere imposto a pagine o GW che richiedono maggiore respiro editoriale.
+
+Il context bar deve poter contenere:
+- world;
+- country/territory;
+- division;
+- competition;
+- breadcrumb/back hierarchy.
+
+6. COSA STANDARDIZZARE A LIVELLO UX
+
+Standardizzare:
+
+- semantic route names;
+- primary navigation order;
+- mobile bottom navigation behavior;
+- desktop left rail behavior;
+- breadcrumb/back hierarchy;
+- context selectors;
+- URL persistence di country/division/competition;
+- Results / Schedule / Match semantic model;
+- score status: LIVE / FT / SCHEDULED;
+- filter behavior;
+- loading state;
+- error state;
+- empty state;
+- responsive table behavior;
+- chart responsiveness;
+- focus/keyboard behavior;
+- touch targets;
+- accessibility labels;
+- shared data contracts;
+- drilldown patterns;
+- component API.
+
+Componenti semantici consigliati:
+
+ContextSelector
+CompetitionHeader
+MatchObject
+ScorePlate
+FixtureObject
+StandingsTable
+FormStrip
+ManagerProfile
+PlayerProfile
+ClubProfile
+TransferObject
+RankingObject
+DataFigure
+EmptyState
+StatusBadge
+
+Questi componenti devono condividere FUNZIONE E DATI, non necessariamente aspetto.
+
+7. COSA DEVE RESTARE LIBERO PER GAME WORLD
+
+Ogni GW deve mantenere piena libertà su:
+
+- palette;
+- typography;
+- materials;
+- border/radius language;
+- spacing personality;
+- backgrounds;
+- hero composition;
+- photography;
+- generative imagery;
+- score plate appearance;
+- widget appearance;
+- micrographics;
+- iconography;
+- signature objects;
+- motion dialect;
+- editorial pacing;
+- visual density;
+- decorative layering;
+- light/dark balance.
+
+Anche la composizione delle pagine può variare, purché la semantica delle destinazioni e delle interazioni resti prevedibile.
+
+Il principio è:
+
+SAME BEHAVIOR
+≠
+SAME DESIGN.
+
+8. SHELL: DUE O UNA?
+
+RACCOMANDAZIONE: UNA SOLA SHELL TECNICA / CORE CONFIGURABILE.
+
+Non raccomando due implementazioni separate GOLD/MULTI e SINGLE.
+
+Raccomando:
+
+IMC MINISITE CORE
+
+con configurazioni come:
+
+mode: multi | single
+contextModel: country | territory | division | none
+modules: playoffs | promotion | relegation | records | rivalries | archive | reports | data
+rightRail: on | off | contextual
+
+Esempi:
+
+GW002
+mode=multi
+contextModel=country
+modules=data, transfers
+
+GW003
+mode=multi
+contextModel=country
+modules=matrix, comparison
+
+GW007
+mode=multi
+contextModel=territory
+modules=map, rivalries
+
+GW008
+mode=multi
+contextModel=country
+modules=ranking
+
+GW001
+mode=single
+contextModel=division
+modules=archive, reports
+
+GW004
+mode=single
+contextModel=division
+modules=promotion, relegation, positionHistory
+
+GW005
+mode=single
+contextModel=division/competition
+modules=records, honours, archive
+
+GW006
+mode=single
+contextModel=division
+modules=playoffs, progression
+
+GW009
+mode=single
+contextModel=competition
+modules=cupBracket, archive
+
+La presenza in GW003 e GW005 di un app-core condiviso già richiamato dal codice attuale è un segnale concreto che questa direzione non è soltanto teorica.
+
+9. PAGE COMPOSITION: COSA CONDIVIDERE SENZA CREARE TEMPLATE
+
+Non raccomando una stessa pagina-layout per tutti.
+
+Raccomando di standardizzare SLOT SEMANTICI:
+
+LEAD / HERO
+PRIMARY DATA OR ACTION
+CONTEXT
+SECONDARY RAIL
+EDITORIAL FEATURE
+DEEP DATA
+RELATED CONTENT
+
+Ogni GW può comporli in modo diverso.
+
+Esempio:
+- GW001 può trasformare LEAD in hero cinematografica;
+- GW009 in schermata CRT;
+- GW008 in navy feature stage;
+- GW005 in portrait stage;
+- GW007 in territory context.
+
+La struttura informativa rimane riconoscibile senza produrre l'effetto skin/template.
+
+10. IL RUOLO DI GW001 NEL SISTEMA FUTURO
+
+GW001 va preso seriamente come riferimento, ma nel modo corretto.
+
+Quello che merita di diventare IMC-wide NON è:
+- il titanium;
+- la palette;
+- l'archive styling;
+- la fotografia specifica.
+
+Quello che merita di essere trasferito è:
+- gerarchia netta;
+- respiro editoriale;
+- trasformazione del match in storia;
+- competition hub come centro del mondo;
+- separazione fra overview e drilldown;
+- grandi momenti alternati a densità dati;
+- archive/history come secondo tempo narrativo del prodotto.
+
+Questo spiega perché GW001 risulta particolarmente convincente senza costringerci a clonarlo.
+
+11. RISCHI DA EVITARE
+
+A. NOVE NAVIGAZIONI DIVERSE
+L'utente deve reimparare il prodotto passando da un GW all'altro.
+
+B. DUE CORE INDIPENDENTI
+SINGLE e MULTI inizierebbero rapidamente a divergere in bugfix, componenti, accessibilità e data binding.
+
+C. COPIARE GW001
+Trasformerebbe gli altri GW in skin di Road To History e distruggerebbe il lavoro creativo fatto.
+
+D. USARE GW002 COME SHELL UNIVERSALE
+La sua densità e tripla struttura rail/context è ottima per MULTI, ma eccessiva per molti SINGLE.
+
+E. STANDARDIZZARE LA COMPOSIZIONE INVECE DEL COMPORTAMENTO
+Il risultato sarebbe una collezione di template con colori diversi.
+
+F. LASCIARE NOMI E ROUTE TOTALMENTE LIBERI
+La creatività nella label di una funzione fondamentale produce soltanto disorientamento.
+
+12. MODELLO DEFINITIVO CONSIGLIATO
+
+Direzione centrale raccomandata:
+
+ONE IMC MINISITE ENGINE
+TWO INFORMATION PROFILES
+NINE VISUAL IDENTITIES
+
+CORE IMC:
+- route semantics;
+- data contracts;
+- navigation behavior;
+- responsive behavior;
+- accessibility;
+- semantic components;
+- shared states;
+- drilldown logic.
+
+MULTI PROFILE:
+- World;
+- Country/Territory;
+- Division;
+- persistent context.
+
+SINGLE PROFILE:
+- Competition/Division;
+- reduced context depth;
+- optional league/playoff modules.
+
+GW THEME:
+- CSS/theme tokens;
+- visual objects;
+- editorial art direction;
+- motion;
+- imagery;
+- signature components/variants.
+
+13. PRIORITÀ DI SVILUPPO CONSIGLIATA
+
+FASE 1
+Definire il canonical navigation contract e le route semantics.
+
+FASE 2
+Costruire IMC Minisite Core con shared data contracts e responsive shell.
+
+FASE 3
+Implementare profile MULTI usando GW002 come base UX, integrando GW003 + GW008.
+
+FASE 4
+Implementare profile SINGLE usando GW001 come base UX/editoriale, integrando i moduli GW004 + GW006.
+
+FASE 5
+Portare GW007, GW005 e GW009 come stress-test delle estensioni specialistiche e dei theme layer.
+
+FASE 6
+Migrare progressivamente i GW senza perdere le visual identity approvate.
+
+14. CONCLUSIONE
+
+La migliore soluzione IMC non è scegliere un minisito vincitore e copiarlo.
+
+È usare il lavoro delle exploration per separare finalmente due concetti che fino ad ora sono stati mescolati:
+
+UX = COMUNE E PREVEDIBILE
+IDENTITÀ = SPECIFICA E MEMORABILE
+
+Per GOLD/MULTI, GW002 è oggi il riferimento principale di navigation/context, con GW003 e GW008 come integrazioni decisive e GW007 come variante territoriale.
+
+Per SINGLE, GW001 è oggi il riferimento principale di information hierarchy ed editorial UX, con GW004, GW006, GW005 e GW009 che forniscono moduli e stress-test specialistici.
+
+La raccomandazione finale alla Direzione Centrale è quindi:
+
+UN SOLO IMC MINISITE CORE CONFIGURABILE,
+DUE PROFILI INFORMATIVI MULTI/SINGLE,
+IDENTITÀ VISIVA AUTONOMA PER OGNI GAME WORLD.
+
+Nessuna modifica ai minisiti è stata eseguita nell'ambito di questo ticket.
