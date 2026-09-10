@@ -1,0 +1,86 @@
+CASE_ID: IMC-ENG-002
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: DATA_ROOM_ARCHITECTURE
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+DATA ROOM · ARCHITECTURE PROPOSAL
+
+Contesto:
+È stato creato il repository ufficiale:
+
+tommasomellogrand-ui/imc-data-room
+
+GitHub deve essere la fonte autoritativa della futura IMC Data Room.
+Aruba dovrà diventare il livello di pubblicazione/consultazione online.
+
+Obiettivo finale:
+creare un sistema di ticket documentali tra Direzione Centrale IMC e chat specialistiche.
+
+Flusso desiderato:
+DIREZIONE apre REQUEST → ticket identificato da CASE_ID → chat specialistica legge il ticket → produce RESPONSE nello stesso fascicolo → Direzione valuta → eventuale DECISION → ticket chiuso → archivio ricercabile online.
+
+Ogni documento TXT deve iniziare sempre con queste 5 righe:
+CASE_ID:
+DOC_TYPE:
+AREA:
+DATE:
+TOPIC:
+
+REQUEST e RESPONSE dello stesso ticket condividono CASE_ID, AREA e TOPIC.
+
+La Data Room dovrà in futuro supportare almeno:
+- ticket per area;
+- stati OPEN / IN_PROGRESS / WAITING_REVIEW / APPROVED / APPROVED_WITH_CHANGES / REJECTED / CLOSED;
+- documenti REQUEST / RESPONSE / DECISION;
+- registry automatico JSON/CSV;
+- validazione automatica dei metadata;
+- ricerca per CASE_ID, area, data, topic, tipo documento e stato;
+- pubblicazione su Aruba;
+- interfaccia web futura;
+- documenti storici immutabili;
+- nessun secret o credenziale nei ticket;
+- minima operatività manuale per Tom.
+
+PRIMO TEST DEL SISTEMA
+
+Questo stesso documento è il primo ticket reale della Data Room.
+
+Devi:
+1. leggere questo REQUEST direttamente dal repository;
+2. leggere lo stato corrente del repository prima di proporre modifiche;
+3. progettare l'architettura tecnica più semplice, robusta e mantenibile per realizzare il sistema;
+4. definire struttura directory, naming, lifecycle ticket, registry, validator, GitHub Actions, deploy Aruba, sicurezza, recovery e futura UI;
+5. indicare chiaramente cosa automatizzare e cosa deve restare responsabilità della Direzione/chat specialistiche;
+6. evitare database o nuovi servizi se non strettamente necessari;
+7. privilegiare GitHub come source of truth e file statici/derivati rigenerabili;
+8. evidenziare eventuali limiti reali delle chat nel leggere/scrivere automaticamente il repository.
+
+OUTPUT OBBLIGATORIO
+
+NON modificare ancora l'architettura del repository.
+NON creare workflow.
+NON creare la UI.
+NON distribuire su Aruba.
+
+Devi creare ESCLUSIVAMENTE il file:
+
+tickets/ENG/2026/IMC-ENG-002/RESPONSE.txt
+
+La RESPONSE deve usare le stesse 5 righe metadata:
+CASE_ID: IMC-ENG-002
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: DATA_ROOM_ARCHITECTURE
+
+Il contenuto deve essere una proposta architetturale sintetica, concreta e realizzabile, massimo 25 righe operative dopo i metadata.
+
+Concludi indicando:
+- ARCHITETTURA RACCOMANDATA;
+- STEP DI IMPLEMENTAZIONE sequenziali;
+- RISCHI/BLOCKER;
+- VERDETTO: READY TO BUILD oppure NOT READY TO BUILD.
+
+Non eseguire altro.
