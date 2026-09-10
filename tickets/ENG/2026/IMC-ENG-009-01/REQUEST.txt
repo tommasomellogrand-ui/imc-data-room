@@ -1,0 +1,68 @@
+CASE_ID: IMC-ENG-009-01
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: MINISITE_REPOSITORY_STRUCTURE_PROPOSAL
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+IMC MINISITE CORE · REPOSITORY STRUCTURE PROPOSAL
+
+CONTESTO
+Partendo dalla RESPONSE di IMC-ENG-009, prima di qualsiasi implementazione la Direzione vuole una proposta concreta di come ristrutturare fisicamente e logicamente i minisiti nel repository.
+
+Oggi i minisiti sono distribuiti in più cartelle e ciascun GW contiene una quantità significativa di logica locale. Vogliamo capire quale struttura repository adottare per supportare un unico IMC MINISITE CORE senza appiattire le identità dei singoli Game World.
+
+OBIETTIVO
+Proporre la struttura TO-BE migliore per organizzare:
+- un unico IMC MINISITE CORE;
+- configurazioni specifiche per GW;
+- theme layer autonomi;
+- feature modules condivisi;
+- asset specifici per GW;
+- eventuali composition/local overrides;
+- separazione chiara tra codice condiviso e codice specifico.
+
+MANDATO
+Mostra una struttura cartelle concreta. Puoi usare concetti come core/, shared/, features/, GW001/, GW002/, ecc., ma non assumere che siano necessariamente la soluzione corretta: proponi tu la struttura migliore.
+
+Per ogni cartella o tipologia di file spiega:
+- cosa contiene;
+- chi la usa;
+- cosa è condiviso;
+- cosa resta specifico del GW;
+- cosa può essere sovrascritto o esteso localmente;
+- cosa non deve mai essere duplicato.
+
+VINCOLI CREATIVI E ARCHITETTURALI
+- preservare l'identità, la profondità editoriale, la gerarchia e la composizione di GW001 · Road To History;
+- preservare integralmente il principio di GW007 · The Four Kingdoms, incluso il modello Kingdom/Territory come context model reale e non semplice rinomina di Country;
+- evitare un mega-file con condizioni if(GW001), if(GW002), ecc.;
+- evitare due codebase separate MULTI e SINGLE;
+- evitare duplicazione della logica comportamentale;
+- mantenere la possibilità di theme/composition fortemente differenti tra i GW.
+
+OUTPUT RICHIESTO
+La RESPONSE deve contenere almeno:
+1. struttura AS-IS sintetica;
+2. struttura TO-BE proposta;
+3. esempio completo di albero directory;
+4. responsabilità di ogni layer;
+5. regole su cosa vive nel Core e cosa nel singolo GW;
+6. regole su shared features e local overrides;
+7. strategia per migrare gradualmente dalla struttura attuale alla nuova senza big-bang;
+8. rischi principali e mitigazioni;
+9. indicazione di quale parte conviene standardizzare subito e quale lasciare locale nella prima fase.
+
+VINCOLO ASSOLUTO
+Solo proposta e design architetturale.
+
+NON modificare repository, minisiti, CSS, JS, route, workflow, Gateway o deploy.
+NON creare nuove cartelle o spostare file.
+NON implementare ancora il nuovo Core.
+
+La Direzione vuole prima approvare la struttura fisica/logica del repository e solo dopo autorizzare il contract freeze e l'implementazione.
+
+OUTPUT AUTORITATIVO
+tickets/ENG/2026/IMC-ENG-009-01/RESPONSE.txt
+
+Dopo aver registrato la RESPONSE, torna nella chat con Tom e fornisci una sintesi esecutiva in massimo 10 bullet point. La RESPONSE resta la fonte completa e autoritativa.
