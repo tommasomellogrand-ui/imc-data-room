@@ -1,0 +1,44 @@
+CASE_ID: IMC-ENG-004
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: IMC_DATA_ROOM_LIVE_UI_RECOVERY
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+IMC DATA ROOM · LIVE UI RECOVERY
+
+CONTESTO
+La Direzione Centrale ha verificato direttamente la Data Room pubblicata dopo IMC-ENG-003. La pagina live non è accettabile nello stato attuale: nella sezione Tickets compare un errore runtime e i contenuti attesi non risultano normalmente consultabili.
+
+INCARICO
+Rendere la IMC Data Room realmente funzionante e utilizzabile lato utente.
+
+NON viene prescritta la soluzione tecnica. Diagnosi, strategia di correzione e implementazione sono responsabilità dell'ingegnere. La Direzione definisce esclusivamente il risultato atteso.
+
+RISULTATO ATTESO DALLA DIREZIONE
+Aprendo https://www.italianmastersclub.it/data-room/ un utente deve poter:
+- vedere normalmente l'elenco dei TICKETS, inclusi i CASE disponibili e il loro stato;
+- aprire e consultare i documenti disponibili dei ticket, come REQUEST, RESPONSE e DECISION quando presente;
+- vedere una sezione KNOWLEDGE LAYER distinta e comprensibile;
+- vedere e consultare POLICY, PLAYBOOK e REFERENCE pubblicati;
+- cercare e filtrare i contenuti senza errori;
+- utilizzare la pagina correttamente anche da iPhone / Safari mobile;
+- non vedere errori runtime, riquadri di errore, registry non disponibile o sezioni vuote quando i dati esistono.
+
+EVIDENZA DIREZIONE
+Durante la verifica reale su iPhone/Safari la sezione Tickets mostra:
+"Registry non disponibile: null is not an object (evaluating 'el.appendChild')"
+Questa evidenza rende non accettabile lo stato live precedente, indipendentemente dai test automatici risultati SUCCESS.
+
+CRITERIO DI ACCETTAZIONE
+La Direzione deve poter aprire la Data Room e vedere concretamente Tickets + Knowledge Layer funzionanti, popolati e consultabili. Non basta che build, registry o smoke test siano verdi se l'esperienza live reale è rotta.
+
+VINCOLI
+Preservare dati e documenti esistenti. Nessuna modifica a MySQL, Supabase, Gateway, importer, minisiti o Master Site. GitHub resta fonte autoritativa e Aruba copia pubblicata. Nessuna credenziale nei repository pubblici.
+
+CICLO OBBLIGATORIO
+leggere stato corrente → diagnosticare → correggere → verificare → commit → Actions → deploy → verifica live reale → RESPONSE.
+
+OUTPUT AUTORITATIVO
+tickets/ENG/2026/IMC-ENG-004/RESPONSE.txt
+La RESPONSE deve descrivere cosa è stato corretto, commit, Action/run, deploy e verifiche effettuate, con stato finale ONLINE / NON ONLINE. La verifica finale deve includere esplicitamente il comportamento della UI pubblicata e la compatibilità mobile/Safari.
