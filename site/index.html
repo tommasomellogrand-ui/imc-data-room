@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="description" content="IMC Data Room · registry pubblico dei ticket documentali Italian Masters Club">
+<meta name="description" content="IMC Data Room · ticket e knowledge autoritativi Italian Masters Club">
 <title>IMC Data Room</title>
 <link rel="stylesheet" href="assets/data-room.css">
 </head>
 <body>
-<header class="top"><div class="wrap"><p class="eyebrow">ITALIAN MASTERS CLUB</p><h1>IMC Data Room</h1><p>Ticket documentali · GitHub source of truth · Aruba published view</p></div></header>
+<header class="top"><div class="wrap"><p class="eyebrow">ITALIAN MASTERS CLUB</p><h1>IMC Data Room</h1><p>Tickets + Knowledge Layer · GitHub source of truth · Aruba published view</p></div></header>
 <main class="wrap">
-<section class="controls" aria-labelledby="filters-title"><h2 id="filters-title">Ricerca e filtri</h2><div class="grid"><label>CASE_ID o testo<input id="search" type="search" placeholder="IMC-ENG-002"></label><label>Area<select id="area"><option value="">Tutte</option></select></label><label>Data<input id="date" type="date"></label><label>Topic<input id="topic" type="search" placeholder="TOPIC"></label><label>Status<select id="status"><option value="">Tutti</option></select></label></div></section>
-<section aria-labelledby="tickets-title"><div class="section-head"><h2 id="tickets-title">Tickets</h2><span id="count" class="muted"></span></div><div id="tickets" class="tickets" aria-live="polite"><p>Caricamento registry…</p></div></section>
+<section aria-labelledby="knowledge-title"><div class="section-head"><div><p class="eyebrow">KNOWLEDGE LAYER</p><h2 id="knowledge-title">Policies · Playbooks · Reference</h2></div><span id="k-count" class="muted"></span></div><div class="controls"><div class="grid knowledge-grid"><label>DOC_ID, attività o testo<input id="k-search" type="search" placeholder="database routing"></label><label>Tipo<select id="k-type"><option value="">Tutti</option></select></label><label>Area<select id="k-area"><option value="">Tutte</option></select></label><label>Topic<input id="k-topic" type="search" placeholder="TOPIC"></label></div></div><p class="muted">Risoluzione: versione ACTIVE più alta per DOC_ID; POLICY prevale su PLAYBOOK e REFERENCE; a parità di pertinenza una AREA specifica prevale su GLOBAL.</p><div id="knowledge" class="tickets" aria-live="polite"><p>Caricamento knowledge registry…</p></div></section>
+<section class="divider" aria-labelledby="tickets-title"><div class="section-head"><div><p class="eyebrow">TICKETING</p><h2 id="tickets-title">Tickets</h2></div><span id="count" class="muted"></span></div><div class="controls" aria-labelledby="filters-title"><h3 id="filters-title">Ricerca e filtri ticket</h3><div class="grid"><label>CASE_ID o testo<input id="search" type="search" placeholder="IMC-ENG-003"></label><label>Area<select id="area"><option value="">Tutte</option></select></label><label>Data<input id="date" type="date"></label><label>Topic<input id="topic" type="search" placeholder="TOPIC"></label><label>Status<select id="status"><option value="">Tutti</option></select></label></div></div><div id="tickets" class="tickets" aria-live="polite"><p>Caricamento ticket registry…</p></div></section>
 </main>
-<footer><div class="wrap">IMC · DATA ROOM V1 · documenti pubblici non sensibili</div></footer>
+<footer><div class="wrap">IMC · DATA ROOM · documenti pubblici non sensibili</div></footer>
 <script src="assets/data-room.js" defer></script>
 </body>
 </html>
