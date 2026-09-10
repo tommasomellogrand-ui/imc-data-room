@@ -1,0 +1,77 @@
+CASE_ID: IMC-ENG-002-06
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: DATA_ROOM_CASE_HIERARCHY_METADATA_BACKFILL_IMPLEMENTATION
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+IMC DATA ROOM · CASE HIERARCHY + METADATA + LEGACY BACKFILL IMPLEMENTATION
+
+CONTESTO
+La Direzione Centrale ha approvato formalmente la proposta di IMC-ENG-002-05 tramite DECISION.txt.
+
+INCARICO
+Implementare integralmente il modello approvato e completare il backfill storico della Data Room.
+
+SCOPE APPROVATO
+- supporto macro-CASE + iterazioni IMC-<AREA>-<NNN>-<II>;
+- CASE_META.txt come fonte autoritativa per classificazione/gerarchia;
+- metadata DOMAIN, GW, TOPIC, TAGS, CASE_KIND, ROOT_CASE_ID, ITERATION;
+- registry con canonical_case_id, aliases/original_case_id, root_case_id, iteration, domain, gw[], tags[] e searchable_text;
+- ricerca trasversale per CASE_ID, alias, ROOT_CASE_ID, DOMAIN, GW, TOPIC e TAGS;
+- vista FLAT SEARCH e MACRO VIEW con iterazioni;
+- alias e resolver compatibili per i CASE_ID storici;
+- backfill dei CASE esistenti secondo la mappa proposta in IMC-ENG-002-05;
+- nessuna perdita di REQUEST, RESPONSE o DECISION;
+- tracciabilità old CASE_ID → canonical CASE_ID;
+- nessun URL storico lasciato silenziosamente rotto.
+
+BACKFILL STORICO APPROVATO
+Applicare la riclassificazione proposta nella RESPONSE di IMC-ENG-002-05, inclusi almeno:
+
+DATA ROOM
+- IMC-ENG-002 → root DATA_ROOM
+- IMC-ENG-003 → canonical IMC-ENG-002-01
+- IMC-ENG-004 → canonical IMC-ENG-002-02
+- IMC-ENG-007 → canonical IMC-ENG-002-03
+- IMC-ENG-002-05 → iteration DATA_ROOM
+- IMC-ENG-002-06 → nuova iteration di implementazione/backfill
+
+GATEWAY
+- IMC-ENG-005 → root GATEWAY
+- IMC-ENG-006 → canonical IMC-ENG-005-01
+- IMC-ENG-008 → canonical IMC-ENG-005-02
+
+DATABASE
+- IMC-DB-001 → root DATABASE, salvo eventuali metadati aggiuntivi coerenti con il contenuto autoritativo del CASE.
+
+REGOLE
+- non rinumerare retroattivamente per estetica;
+- preservare gap validi;
+- mantenere alias storici funzionanti;
+- nessun nesting di iterazioni oltre un solo livello;
+- nuovi DOMAIN solo se realmente stabili e necessari;
+- TAGS normalizzati secondo la proposta approvata;
+- GW sempre valorizzato con GLOBAL, singolo GW o lista esplicita.
+
+CICLO OBBLIGATORIO
+leggere stato corrente → implementazione → backfill → build/registry → test resolver vecchi e nuovi → test ricerca/filtri/UI → commit → Actions → deploy Aruba → verifica live → RESPONSE.
+
+CRITERI DI ACCETTAZIONE
+- parser e builder accettano root + iteration;
+- tutti i CASE esistenti hanno metadata coerenti;
+- alias storici risolvono correttamente;
+- ricerca RESULTS/GATEWAY/GW001/TRIGGER/DATABASE funziona sui metadata disponibili;
+- Macro View raggruppa correttamente root e iterazioni;
+- nessun documento storico perso o alterato impropriamente;
+- build deterministica;
+- deploy e verifica live positivi;
+- nessuna credenziale esposta.
+
+VINCOLI
+Non modificare MySQL, Supabase, Universal Gateway, importer, minisiti o Master Site. Non alterare il contenuto autoritativo storico dei REQUEST/RESPONSE/DECISION salvo quanto strettamente necessario per resolver/alias generati fuori dai documenti originali.
+
+OUTPUT AUTORITATIVO
+tickets/ENG/2026/IMC-ENG-002-06/RESPONSE.txt
+
+Dopo aver registrato la RESPONSE, tornare nella chat con Tom e fornire una sintesi esecutiva in massimo 10 bullet point. La RESPONSE resta la fonte completa e autoritativa.
