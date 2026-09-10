@@ -1,0 +1,10 @@
+CASE_ID: IMC-ENG-002-03
+AREA: ENG
+DOMAIN: DATA_ROOM
+GW: GLOBAL
+TOPIC: DATA_ROOM_SPECIALIST_RESPONSE_PROTOCOL
+TAGS: data-room, protocol, response, specialist, executive-summary, knowledge-layer
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-ENG-002
+
+ITERATION: 03
