@@ -1,0 +1,20 @@
+DOC_ID: IMC-DATA-ROOM-PROTOCOL
+DOC_TYPE: PLAYBOOK
+AREA: GLOBAL
+DATE: 2026-09-10
+TOPIC: DATA_ROOM_TICKETING_PROTOCOL
+VERSION: V001
+STATUS: ACTIVE
+ACTIVITY: data-room,case-id,request,response,decision,review
+
+IMC DATA ROOM TICKETING PLAYBOOK
+
+1. La Direzione Centrale apre un CASE_ID e registra il REQUEST.
+2. La chat specialistica legge il REQUEST autoritativo associato al CASE_ID.
+3. La specialistica esegue esclusivamente l'incarico autorizzato.
+4. La RESPONSE viene registrata nello stesso fascicolo senza alterare il REQUEST.
+5. La Direzione valuta il lavoro e registra eventualmente una DECISION.
+6. Lo STATUS è derivato dai documenti del fascicolo secondo il builder Data Room.
+
+AUTORITÀ
+GitHub tommasomellogrand-ui/imc-data-room è la fonte autoritativa. Aruba è la copia consultabile online.
