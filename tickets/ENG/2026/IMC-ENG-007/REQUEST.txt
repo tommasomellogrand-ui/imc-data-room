@@ -1,0 +1,53 @@
+CASE_ID: IMC-ENG-007
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: DATA_ROOM_SPECIALIST_RESPONSE_PROTOCOL
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+IMC DATA ROOM · SPECIALIST RESPONSE + EXECUTIVE SUMMARY PROTOCOL
+
+OBIETTIVO
+Formalizzare una nuova regola operativa per tutte le chat specialistiche che lavorano tramite IMC Data Room, separando nettamente il documento completo e autoritativo nella Data Room dalla sintesi esecutiva breve restituita a Tom nella chat specialistica.
+
+NUOVO FLUSSO RICHIESTO
+1. La chat specialistica riceve o legge il CASE_ID e il relativo REQUEST dalla Data Room.
+2. Esegue il lavoro assegnato.
+3. Registra sempre la RESPONSE completa nello stesso fascicolo del ticket.
+4. La RESPONSE nella Data Room è l'unica fonte autoritativa e completa della consegna.
+5. Dopo aver registrato la RESPONSE, la chat torna nella conversazione con Tom.
+6. In chat non deve ripetere il documento completo.
+7. Deve scrivere una sintesi esecutiva in massimo 10 bullet point.
+8. La sintesi deve includere, quando rilevante: cosa è stato fatto; esito; eventuali problemi o limiti; decisioni o raccomandazioni; commit; Action/run; stato finale del lavoro.
+9. Se esistono dubbi, limiti o verifiche non concluse, devono essere esplicitati chiaramente nei bullet.
+10. La sintesi in chat non sostituisce mai la RESPONSE e non deve diventare una seconda copia completa del documento.
+
+FORMATO CHAT DESIDERATO
+"Ho registrato la RESPONSE nel ticket IMC-XXX-XXX.
+
+Sintesi:
+- ...
+- ...
+- ..."
+
+PRINCIPIO
+Data Room = verità completa, storicizzata e autoritativa.
+Chat = executive summary rapido per Tom.
+
+INCARICO
+Progettare e, dove tecnicamente appropriato, implementare questo comportamento come parte del protocollo standard della IMC Data Room, in modo che sia chiaramente applicabile a tutte le chat specialistiche. Determinare il modo più semplice e robusto per documentare/esporre la regola alle specialistiche che ricevono un CASE_ID.
+
+VINCOLI
+Preservare ticket e documenti storici. Non modificare MySQL, Supabase, Universal Gateway, importer, minisiti o Master Site. Nessun secret o credenziale nei repository pubblici. Prima di modificare leggere lo stato corrente; modifica minima; commit; Actions; eventuale deploy Data Room; verifica finale.
+
+CRITERI DI ACCETTAZIONE
+- protocollo RESPONSE completo + executive summary formalizzato;
+- RESPONSE sempre autoritativa nel ticket;
+- executive summary limitato a massimo 10 bullet;
+- regola recuperabile dalle chat specialistiche attraverso il sistema Data Room/Knowledge Layer;
+- nessuna regressione al ticketing esistente;
+- eventuali modifiche pubblicate e verificate secondo il normale ciclo GitHub → Actions → Aruba → live.
+
+OUTPUT AUTORITATIVO
+tickets/ENG/2026/IMC-ENG-007/RESPONSE.txt
+La RESPONSE deve indicare cosa è stato implementato/documentato, come le chat specialistiche recuperano la regola, commit/run/deploy se applicabili, verifiche e stato finale.
