@@ -1,0 +1,169 @@
+CASE_ID: IMC-ENG-009-02
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: MINISITE_UX_FAMILY_ARCHITECTURE_CONVERGENCE_AUDIT
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+MINISITE CORE · UX FAMILY ARCHITECTURE CONVERGENCE AUDIT
+
+CONTESTO
+Questo CASE prosegue IMC-ENG-009 e IMC-ENG-009-01 e incorpora la review del Creative Director IMC-CREATIVE-001-01.
+
+La Direzione Centrale ha ora fissato una decisione di prodotto/UX che costituisce VINCOLO NON NEGOZIABILE dell'analisi.
+
+DECISIONE DELLA DIREZIONE · VINCOLI FONDATIVI
+
+1. SINGLE LEAGUE · GW001 COME MODELLO FONDATIVO
+GW001 è il riferimento fondativo per la famiglia SINGLE.
+
+L'esperienza attuale approvata di GW001 deve essere preservata integralmente nella sua qualità, logica UX, forza editoriale e impostazione generale. Non deve essere degradata, normalizzata o trasformata in una dashboard standard.
+
+Gli altri Game World SINGLE devono partire dal principio UX di GW001, mantenendo però ciascuno:
+- identità grafica propria;
+- theme proprio;
+- storytelling proprio;
+- composizione propria nei limiti della UX familiare;
+- signature components propri;
+- materiali, motion e visual language propri.
+
+Il principio non è copiare la grafica di GW001. È usare GW001 come fondazione UX della famiglia SINGLE e consentire sopra tale fondazione sistemi creativi autonomi.
+
+2. MULTI/GOLD · GW007 COME MODELLO FONDATIVO
+GW007 è il riferimento fondativo per la famiglia MULTI/GOLD.
+
+Il principio dei quattro ingressi principali visibile in GW007 deve essere generalizzato agli altri MULTI/GOLD.
+
+In GW007 i quattro ingressi sono i quattro mondi/Kingdom fondativi del concept.
+
+Negli altri MULTI/GOLD i quattro ingressi principali devono essere dinamici e rappresentare i QUATTRO COUNTRY con il maggior numero di MANAGER IMC ATTIVI nel relativo Game World.
+
+Esempio concettuale:
+Italia = 7 manager IMC attivi
+Francia = 6
+Germania = 5
+Belgio = 4
+Spagna = 3
+...
+
+La superficie primaria mostrerà Italia, Francia, Germania e Belgio come quattro interlocutori/ingressi principali.
+
+Gli altri Country NON scompaiono e devono restare raggiungibili tramite menu/selettore/navigazione completa.
+
+Questa Top-4 non deve essere hardcoded per paese: deve derivare dai dati dei manager IMC attivi nel singolo Game World.
+
+Il principio non è copiare il design di GW007. È usare il suo modello UX dei quattro ingressi prioritari come fondazione della famiglia MULTI/GOLD.
+
+3. USABILITÀ CROSS-GW
+I minisiti sono utilizzati da circa 60 manager, non soltanto dalla Direzione.
+
+Un manager che passa tra Game World della stessa famiglia deve ritrovare immediatamente:
+- posizione e comportamento della navigazione primaria;
+- destinazioni fondamentali;
+- logica di accesso a Results, Schedule, Standings, Clubs, Managers, Players, Transfers e altre funzioni condivise;
+- comportamento mobile coerente;
+- back/deep-link/context behavior coerente;
+- pattern fondamentali di interazione.
+
+Non è accettabile che, per esempio, un MULTI abbia il menu in una zona e un altro MULTI lo sposti arbitrariamente altrove soltanto per libertà creativa.
+
+La libertà creativa deve convivere con una UX familiare prevedibile.
+
+INPUT CREATIVE DIRECTOR · IMC-CREATIVE-001-01
+La Direzione considera valida e da incorporare la review del Creative Director.
+
+In particolare devono essere preservati i principi:
+- CORE OWNS BEHAVIOR AND CONTRACTS;
+- GW PACKAGE OWNS IDENTITY AND COMPOSITION;
+- FEATURES OWN OPTIONAL DOMAIN CAPABILITIES;
+- Composition Layer realmente libero e non semplice variazione di un template;
+- Theme Layer profondo;
+- component skinning profondo;
+- motion language nel GW package;
+- typography nel GW package;
+- responsive composition capace di differire realmente tra desktop/mobile senza rompere la UX familiare;
+- editorial storytelling come capability di prima classe;
+- asset system package-scoped;
+- signature components come meccanismo ufficiale;
+- detail page semantic contracts con rendering specifico;
+- no branching if(GW...);
+- distinzione tra platform tokens e GW creative tokens.
+
+Il Creative Director raccomanda inoltre di formalizzare:
+A. CORE BEHAVIOR CONTRACT
+B. GW CREATIVE FREEDOM CONTRACT
+C. COMPONENT SEMANTIC CONTRACTS
+
+OBIETTIVO DELL'AUDIT
+Partendo dalla decisione non negoziabile della Direzione, dalla tua proposta IMC-ENG-009-01 e dalla review IMC-CREATIVE-001-01, proponi come far collimare ingegneristicamente:
+
+A. un unico IMC Minisite Core;
+B. due famiglie UX coerenti: SINGLE e MULTI/GOLD;
+C. GW001 come fondazione UX SINGLE;
+D. GW007 come fondazione UX MULTI/GOLD;
+E. Top-4 Country dinamica per presenza di manager IMC attivi nei MULTI/GOLD;
+F. libertà creativa e sistemi visuali autonomi dei singoli GW;
+G. usabilità prevedibile per i manager che attraversano più Game World.
+
+NON rimettere in discussione i punti C, D ed E. Sono decisioni della Direzione.
+
+DOMANDE A CUI RISPONDERE
+
+1. Quale architettura tecnica definitiva proponi per supportare due UX family sopra un solo Core?
+2. Quali elementi devono essere standardizzati obbligatoriamente per tutti i SINGLE?
+3. Quali elementi devono essere standardizzati obbligatoriamente per tutti i MULTI/GOLD?
+4. Quali elementi rimangono completamente liberi nel GW package?
+5. Come implementeresti la Top-4 Country dinamica basata sui manager IMC attivi senza hardcoding e senza introdurre branching per GW?
+6. Quale fallback proponi quando un MULTI/GOLD ha meno di quattro Country con manager IMC attivi o presenta parità nel ranking?
+7. Come preservare integralmente l'attuale GW001 mentre diventa riferimento della famiglia SINGLE?
+8. Come usare GW007 come fondazione MULTI/GOLD preservandone contemporaneamente la sua identità Four Kingdoms?
+9. Come formalizzare il confine tra UX family contract e Creative Freedom Contract?
+10. Come devono interagire navigation contract, composition layer, responsive behavior e signature components?
+11. Come evitare che future modifiche al Core rompano GW001, GW007 o la prevedibilità cross-GW?
+12. Quali test/guardrail automatici e manuali raccomandi?
+13. Come modificheresti, se necessario, la struttura repository proposta in IMC-ENG-009-01 alla luce di questa decisione?
+14. Come incorporeresti i tre contratti raccomandati dal Creative Director?
+15. Quale piano di migrazione proporresti, SENZA eseguirlo?
+
+OUTPUT RICHIESTO
+Produci una proposta/audit di convergenza che includa almeno:
+- EXECUTIVE VERDICT;
+- ONE CORE / TWO UX FAMILIES model;
+- SINGLE UX FAMILY CONTRACT;
+- MULTI/GOLD UX FAMILY CONTRACT;
+- DYNAMIC TOP-4 COUNTRY MODEL;
+- GW CREATIVE FREEDOM BOUNDARY;
+- GW001 PRESERVATION STRATEGY;
+- GW007 PRESERVATION + GENERALIZATION STRATEGY;
+- CORE BEHAVIOR CONTRACT proposal;
+- COMPONENT SEMANTIC CONTRACT approach;
+- responsive/mobile contract;
+- repository impact;
+- migration plan;
+- regression/preservation tests;
+- rischi e trade-off;
+- raccomandazione finale.
+
+VINCOLO ASSOLUTO · AUDIT ONLY
+Questo CASE autorizza ESCLUSIVAMENTE analisi e proposta.
+
+NON modificare:
+- repository imc-website;
+- minisiti;
+- Core;
+- CSS;
+- JavaScript;
+- HTML;
+- asset;
+- Gateway;
+- database;
+- workflow;
+- deploy;
+- produzione.
+
+Non creare implementazioni, branch di sviluppo o refactor.
+
+Registra esclusivamente la RESPONSE nella Data Room e torna in chat con la sintesi esecutiva prevista dal protocollo.
+
+OUTPUT AUTORITATIVO
+tickets/ENG/2026/IMC-ENG-009-02/RESPONSE.txt
