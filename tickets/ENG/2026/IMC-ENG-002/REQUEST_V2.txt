@@ -1,0 +1,27 @@
+CASE_ID: IMC-ENG-002
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: IMC_DATA_ROOM_TICKETING_SYSTEM
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+IMC DATA ROOM · DESIGN, IMPLEMENTATION & ARUBA DEPLOYMENT
+
+Questa revisione autorizza la progettazione, implementazione, deploy e verifica della V1 funzionale della IMC Data Room.
+GitHub tommasomellogrand-ui/imc-data-room è la fonte autoritativa; Aruba è esclusivamente il layer pubblicato/consultabile.
+Obiettivo: CASE_ID → REQUEST → esecuzione specialistica → RESPONSE nello stesso fascicolo → registry → pubblicazione Aruba → decisione/archivio.
+Standard obbligatorio TXT: le prime cinque righe sono CASE_ID, DOC_TYPE, AREA, DATE, TOPIC; poi riga vuota e contenuto.
+REQUEST e RESPONSE dello stesso incarico condividono CASE_ID, AREA e TOPIC. I documenti storici non vanno alterati.
+Solo la Direzione Centrale apre nuovi CASE_ID; le chat specialistiche non inventano CASE_ID.
+La V1 deve essere file-based, deterministica e rigenerabile; nessun database nuovo salvo necessità dimostrata.
+Il registry deve derivare dai documenti e indicizzare almeno CASE_ID, DOC_TYPE, AREA, DATE, TOPIC, STATUS.
+La risoluzione CASE_ID → ticket → REQUEST deve essere stabile e non richiedere copia/incolla del prompt.
+La UI Aruba /data-room/ deve elencare, cercare e filtrare ticket e consentire apertura dei documenti disponibili.
+Il deploy deve usare pattern Aruba esistenti, senza hardcodare credenziali; preferire il control plane imc-aruba-ops se tecnicamente pulito.
+Il repository è pubblico: nessun secret, token, password o credenziale nei ticket o nei file pubblicati.
+Non sono autorizzate modifiche a MySQL, Supabase, Gateway, importer, minisiti o Master Site.
+Ciclo obbligatorio: stato corrente → lettura → progettazione → implementazione minima → commit → Action → deploy → verifica live → nuovo stato reale.
+ONLINE è dichiarabile solo dopo Action SUCCESS, verifica live positiva e conferma della versione appena pubblicata.
+Test E2E obbligatorio sul CASE_ID IMC-ENG-002: request leggibile, response nello stesso ticket, registry/stato aggiornati, documenti visibili su Aruba.
+Output finale autoritativo: tickets/ENG/2026/IMC-ENG-002/RESPONSE.txt con TOPIC IMC_DATA_ROOM_TICKETING_SYSTEM e stato finale ONLINE / NON ONLINE.
+Questa revisione supersede operativamente REQUEST.txt senza modificarlo, preservandolo come documento storico V1.
