@@ -1,0 +1,172 @@
+CASE_ID: IMC-INTEL-001-02
+DOC_TYPE: REQUEST
+AREA: INTEL
+DATE: 2026-09-10
+TOPIC: EMPIRICAL_MATCH_ENGINE_ANALYSIS
+
+IMC | SOCCER MANAGER INTELLIGENCE
+EMPIRICAL MATCH ENGINE ANALYSIS · IMC DATA
+
+CONTESTO
+Dopo IMC-INTEL-001 e IMC-INTEL-001-01, la Direzione vuole aggiungere alle evidenze raccolte sul web i dati reali dell'Italian Masters Club.
+
+Questo CASE autorizza Soccer Manager Intelligence ad accedere in SOLA LETTURA ai dati IMC presenti su MySQL Aruba, allo scopo di verificare empiricamente quali ipotesi sul funzionamento di Soccer Manager siano compatibili, incompatibili o non verificabili con i dati disponibili.
+
+ARCHITETTURA DATI AUTORITATIVA
+MySQL Aruba è la fonte dati autoritativa.
+Supabase è esclusivamente il ponte tecnico verso Aruba.
+
+Routing:
+- Sql1956795_1 = CORE
+- Sql1956795_2 = GOLD/MULTI: GW002, GW003, GW007, GW008
+- Sql1956795_3 = CUSTOM/SINGLE: GW001, GW004, GW005, GW006, GW009
+
+Percorso di accesso:
+ChatGPT -> Supabase -> progetto IMC Nexus
+project ref: toanuzojdkfjgucztpze
+-> private.imc_aruba_request(...)
+-> Database Manager Aruba
+-> MySQL Aruba
+
+READ PATTERN
+Per GOLD/MULTI usare target gold; per CUSTOM/SINGLE usare target custom.
+
+SELECT private.imc_aruba_request(
+ jsonb_build_object(
+  'action','query',
+  'target','gold|custom',
+  'sql','<SQL>'
+ )
+) AS request_id;
+
+Poi leggere la risposta:
+SELECT id,status_code,content
+FROM net._http_response
+WHERE id=<request_id>;
+
+Per CORE usa il percorso READ previsto dall'infrastruttura IMC Nexus/Database Manager per Sql1956795_1. Se il percorso CORE non è determinabile in modo sicuro dagli strumenti disponibili, non improvvisare: documenta il limite e prosegui con DB2/DB3 dove possibile.
+
+REPOSITORY DA ESPLORARE
+In sola lettura, individua e analizza dove pertinenti:
+- GWXXX_IMC Results
+- GWXXX_IMC Match Report
+- GWXXX_IMC Schedule
+- GWXXX_IMC Player Codex
+- GWXXX_IMC SM Player Stats
+- eventuali tabelle CORE necessarie per club, manager, competition, mapping e arricchimento delle entità.
+
+Non assumere che tutti i GW abbiano la stessa copertura o gli stessi campi. Verifica sempre schema e contenuto reali prima dell'analisi.
+
+FASE 1 · DATA DISCOVERY E COVERAGE AUDIT
+Prima di formulare conclusioni sul Match Engine, costruisci una fotografia quantitativa della copertura dati realmente disponibile.
+
+Per ogni GW e repository rilevante determina, dove possibile:
+- numero totale di match/fixture;
+- match con Results;
+- match con Match Report;
+- match collegabili in modo affidabile a club/manager;
+- match collegabili a dati giocatore/rosa;
+- presenza di informazioni storiche coerenti con il momento del match;
+- variabili effettivamente osservabili;
+- missingness e principali limiti del dataset.
+
+Non utilizzare dati correnti come se fossero necessariamente lo stato storico al momento della partita. Se una variabile non è temporalmente ricostruibile, dichiarala non utilizzabile per inferenza causale storica.
+
+FASE 2 · EMPIRICAL MATCH ENGINE ANALYSIS
+Usa esclusivamente le analisi sostenibili dalla copertura emersa nella Fase 1.
+
+Studia, quando i dati lo consentono:
+- forza/rating delle squadre e probabilità di vittoria;
+- differenza di forza e goal difference;
+- distribuzione degli upset;
+- home advantage;
+- statistiche Match Report e risultato;
+- formazione/tattica, solo se realmente disponibili;
+- player performance e rating partita;
+- qualità della rosa e risultati;
+- qualità della panchina, solo se identificabile storicamente e correttamente;
+- dimensione della rosa;
+- eventuali segnali relativi a età, morale, condition o forma, solo se disponibili nello stato relativo al match;
+- differenze SINGLE vs MULTI;
+- differenze per divisione e competition;
+- qualsiasi altra variabile emersa da IMC-INTEL-001-01 che i dati IMC consentano realmente di osservare.
+
+INCROCIO CON WEB INTELLIGENCE
+Usa IMC-INTEL-001 e IMC-INTEL-001-01 come base investigativa.
+
+Per ogni ipotesi rilevante confronta:
+1. documentazione ufficiale;
+2. evidenza community/web;
+3. evidenza empirica IMC.
+
+Quando i tre livelli divergono, evidenzia il conflitto invece di forzare una conclusione unica.
+
+REGOLA METODOLOGICA FONDAMENTALE
+NON trasformare correlazione in causalità.
+
+Esempio: se squadre con rose più corte vincono più spesso, questo non dimostra che Soccer Manager penalizzi le rose lunghe.
+
+Distingui sempre:
+OSSERVAZIONE -> CORRELAZIONE -> IPOTESI CAUSALE -> TEST CONTROLLATO NECESSARIO.
+
+Controlla, quando possibile, fattori confondenti quali:
+- forza relativa delle squadre;
+- home/away;
+- divisione;
+- competition;
+- qualità/identità manager;
+- differenza rating;
+- periodo/stagione;
+- disponibilità e qualità del dato.
+
+Non inventare pesi, percentuali o formule che il dataset non permette di stimare.
+
+CLASSIFICAZIONE FINALE DELLE VARIABILI
+Per ogni possibile input/meccanica assegna uno stato tra:
+- CONFIRMED INPUT
+- STRONG EMPIRICAL SIGNAL
+- WEAK SIGNAL
+- NO DETECTABLE SIGNAL
+- INSUFFICIENT DATA
+- CONFOUNDED / CANNOT INFER
+
+Un CONFIRMED INPUT richiede evidenza primaria/ufficiale adeguata; i soli dati osservazionali IMC non bastano a dimostrare che una variabile sia direttamente usata dal codice del Match Engine.
+
+OBIETTIVO FINALE
+Costruisci una prima EMPIRICAL MATCH ENGINE MAP ottenuta dall'incrocio:
+WEB INTELLIGENCE + DOCUMENTAZIONE UFFICIALE + COMMUNITY EVIDENCE + IMC DATA.
+
+La RESPONSE deve includere almeno:
+1. DATA COVERAGE AUDIT per GW/repository;
+2. DATA QUALITY & LIMITATIONS;
+3. ANALISI E METODOLOGIA utilizzata;
+4. EMPIRICAL FINDINGS;
+5. MATCH ENGINE VARIABLE MAP con classificazione;
+6. CONFOUNDERS / CAUSALITY WARNINGS;
+7. IPOTESI SUPPORTATE, INDEBOLITE O NON TESTABILI;
+8. TEST CONTROLLATI che l'IMC potrebbe progettare in futuro per le domande ancora aperte;
+9. HIGHEST-VALUE NEXT INVESTIGATIONS.
+
+VINCOLO ASSOLUTO · READ ONLY
+Questo CASE NON autorizza alcuna scrittura o modifica.
+
+VIETATI:
+- INSERT
+- UPDATE
+- DELETE
+- ALTER
+- CREATE
+- DROP
+- TRUNCATE
+- modifica trigger
+- modifica schema
+- modifica codice
+- modifica Gateway
+- modifica repository
+
+Sono consentite esclusivamente query di lettura e analisi dei risultati.
+
+OUTPUT AUTORITATIVO
+tickets/INTEL/2026/IMC-INTEL-001-02/RESPONSE.txt
+
+Al termine registra la RESPONSE completa nella Data Room e torna nella chat con Tom con una sintesi esecutiva in massimo 10 bullet point.
