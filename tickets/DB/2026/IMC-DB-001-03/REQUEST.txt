@@ -1,0 +1,166 @@
+CASE_ID: IMC-DB-001-03
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-10
+TOPIC: CORE_SMALL_TABLES_SEMANTIC_CONSOLIDATION_AUDIT
+
+IMC | DATABASE MANAGER
+CORE SMALL TABLES · SEMANTIC CONSOLIDATION AUDIT
+
+CONTESTO
+Proseguendo da IMC-DB-001, IMC-DB-001-01 e IMC-DB-001-02, la Direzione vuole smarcare in un unico audit tutte le tabelle non-IMC di piccola dimensione presenti nel CORE Sql1956795_1.
+
+QUESTO CASE È ESCLUSIVAMENTE READ-ONLY / AUDIT.
+NESSUNA MODIFICA È AUTORIZZATA.
+
+SCOPE
+Individua tramite lettura live del CORE tutte e sole le tabelle NON-IMC con meno di 2.000 righe al momento dell'audit.
+
+All'inizio della RESPONSE indica:
+- numero totale delle tabelle coinvolte;
+- nome di ciascuna tabella;
+- COUNT(*) reale di ciascuna;
+- numero complessivo di righe del batch.
+
+Devi analizzare TUTTE le tabelle che rientrano nel criterio nello stesso CASE, senza saltarne nessuna.
+
+PRINCIPIO AUTORITATIVO
+Le tabelle che iniziano con IMC sono la struttura canonica e prioritaria del CORE e sono INTOCCABILI in questo CASE.
+
+Il confronto tra strutture IMC e non-IMC deve essere effettuato PER SIGNIFICATO SEMANTICO DEL DATO, NON PER NOME DELLA TABELLA O DELLA COLONNA.
+
+REGOLA FONDAMENTALE · VINCE SEMPRE IL MODELLO IMC
+Se una colonna/informazione non-IMC rappresenta lo stesso concetto già rappresentato nel modello IMC, quella informazione non-IMC è semanticamente ridondante e deve essere SCARTATA dal piano di consolidamento.
+
+Non importa:
+- che abbia un nome differente;
+- che utilizzi una label differente;
+- che abbia valori testuali leggermente differenti;
+- che provenga da un vecchio sistema;
+- che la struttura legacy rappresenti lo stesso concetto con naming o forma diversi.
+
+Se il concetto è già coperto dal modello IMC, NON proporre merge, sovrascrittura o nuova colonna per conservare il sinonimo legacy.
+
+Esempio concettuale:
+legacy.manager_name
+e
+IMC Manager Codex Global.full_name
+
+se rappresentano semanticamente la stessa proprietà del manager, il dato legacy viene SCARTATO dal piano di consolidamento. Vince la struttura IMC.
+
+Non confrontare quindi semplicemente column_name = column_name. Devi determinare cosa rappresenta realmente ogni campo.
+
+COSA CERCHIAMO DAVVERO
+Delle tabelle non-IMC ci interessano esclusivamente informazioni che aggiungano un CONCETTO UTILE che oggi il modello IMC non possiede.
+
+Per ogni colonna/informazione non-IMC assegna una classificazione:
+
+A · ALREADY COVERED BY IMC
+Stesso concetto già rappresentato nel modello IMC.
+AZIONE: SCARTARE dal consolidamento.
+
+B · NEW USEFUL ATTRIBUTE
+Concetto utile non rappresentato attualmente nell'entità IMC corretta.
+AZIONE: proporre, se semanticamente 1:1 con l'entità, eventuale nuova colonna nella tabella IMC appropriata.
+
+C · ONE-TO-MANY / HISTORICAL INFORMATION
+Informazione utile, ripetibile, temporale, storica o one-to-many.
+AZIONE: proporre eventuale nuova tabella IMC ... Child.
+
+D · RELATION / EXTERNAL OR LOCAL IDENTIFIER
+Relazione, crosswalk, identificativo esterno, identificativo world-local o mapping tra entità.
+AZIONE: proporre eventuale nuova tabella IMC ... Mapping.
+
+E · TECHNICAL SOURCE / PROVENANCE
+Dato necessario esclusivamente per ingestion, raw source, audit, provenance o pipeline tecnica.
+AZIONE: proporre mantenimento tecnico, spiegando perché non deve diventare fonte canonica.
+
+F · OBSOLETE / USELESS
+Informazione senza valore utile per il modello futuro.
+AZIONE: SCARTARE.
+
+ANALISI OBBLIGATORIA PER OGNI TABELLA
+Per ciascuna tabella del batch restituisci una sezione distinta contenente:
+1. nome tabella;
+2. COUNT(*) reale;
+3. funzione attuale;
+4. reader/writer/dipendenze conosciute;
+5. elenco completo colonne;
+6. significato semantico di ciascuna colonna;
+7. eventuale corrispondenza semantica con il modello IMC;
+8. colonne/informazioni da scartare perché già coperte semanticamente da IMC;
+9. informazioni realmente nuove;
+10. destinazione proposta per ogni informazione nuova;
+11. eventuali nuove colonne IMC proposte;
+12. eventuali nuove IMC Child proposte;
+13. eventuali nuove IMC Mapping proposte;
+14. eventuali elementi tecnici/source/provenance da mantenere fuori dal modello canonico;
+15. reader/writer che richiederebbero futura migrazione;
+16. rischi/dubbi;
+17. destino finale proposto della tabella.
+
+MAPPING DELLE SOLE INFORMAZIONI DA PRESERVARE
+Per ogni informazione realmente nuova che proponi di preservare, mostra una mappatura esplicita del tipo:
+
+legacy_table.legacy_field
+-> IMC Existing Table.new_or_existing_field
+
+oppure:
+
+legacy_table.legacy_field
+-> NEW IMC CHILD / MAPPING
+
+Non produrre mapping di migrazione per informazioni classificate ALREADY COVERED BY IMC: quelle devono essere scartate e non devono sovrascrivere il dato canonico IMC.
+
+OUTPUT RIASSUNTIVO
+Alla fine crea una matrice unica:
+TABLE | ROWS | ALREADY COVERED | NEW INFO | PROPOSED DESTINATION | FINAL PROPOSAL | RISK
+
+Fornisci inoltre i conteggi finali:
+- totale tabelle analizzate;
+- totale righe del batch;
+- quante tabelle risultano completamente semanticamente coperte e candidabili a retirement dopo proof;
+- quante contengono nuovi attributi da proporre alle IMC esistenti;
+- quante richiederebbero nuove IMC Child;
+- quante richiederebbero nuove IMC Mapping;
+- quante devono restare tecniche/source/provenance;
+- quante richiedono una decisione specifica della Direzione.
+
+Per ogni tabella assegna una proposta finale tra:
+- MERGE NEW INFO INTO IMC EXISTING
+- CREATE IMC CHILD
+- CREATE IMC MAPPING
+- KEEP TECHNICAL
+- RETIRE AFTER PARITY
+- DIRECTOR DECISION REQUIRED
+
+RETIREMENT
+Una proposta RETIRE AFTER PARITY NON autorizza alcuna cancellazione.
+Deve indicare quali prove sarebbero necessarie prima di una futura eliminazione: parity, zero reader/writer, preservation dei dati unici, migrazione codice e qualsiasi altro requisito pertinente.
+
+STOP OBBLIGATORIO
+NON eseguire nessuna proposta.
+
+VIETATI:
+- CREATE
+- ALTER
+- INSERT
+- UPDATE
+- DELETE
+- DROP
+- RENAME
+- TRUNCATE
+- backfill
+- modifica trigger
+- modifica schema
+- modifica codice
+- modifica Gateway
+- modifica importer
+- modifica sito
+
+Questo CASE deve esclusivamente permettere alla Direzione di prendere una decisione definitiva sulle tabelle non-IMC sotto le 2.000 righe.
+
+OUTPUT AUTORITATIVO
+tickets/DB/2026/IMC-DB-001-03/RESPONSE.txt
+
+Dopo la RESPONSE fermati e torna in chat con la sintesi esecutiva prevista dal protocollo Data Room.
