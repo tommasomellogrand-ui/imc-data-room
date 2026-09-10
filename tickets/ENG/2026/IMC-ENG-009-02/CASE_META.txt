@@ -1,0 +1,8 @@
+CASE_ID: IMC-ENG-009-02
+AREA: ENG
+DOMAIN: MINISITE
+GW: GLOBAL
+TOPIC: MINISITE_UX_FAMILY_ARCHITECTURE_CONVERGENCE_AUDIT
+TAGS: minisite-core, ux-family, single, multi, gold, GW001, GW007, navigation, top4-country, creative-freedom, architecture, audit
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-ENG-009
