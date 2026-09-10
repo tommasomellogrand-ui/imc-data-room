@@ -1,0 +1,8 @@
+CASE_ID: IMC-INTEL-001
+AREA: INTEL
+DOMAIN: GENERAL
+GW: GLOBAL
+TOPIC: SOCCER_MANAGER_INTELLIGENCE_LANDSCAPE
+TAGS: soccer-manager, intelligence, research, web-research, community, game-mechanics, sources, knowledge-base
+CASE_KIND: ROOT
+ROOT_CASE_ID: IMC-INTEL-001
