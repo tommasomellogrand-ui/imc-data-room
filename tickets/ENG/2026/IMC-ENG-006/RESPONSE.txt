@@ -1,0 +1,217 @@
+CASE_ID: IMC-ENG-006
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: UNIVERSAL_GATEWAY_INGRESS_REDUCTION_PROPOSAL
+
+IMC | UNIVERSAL GATEWAY · INGRESS-ONLY REDUCTION PROPOSAL
+
+SCOPE
+Solo analisi e proposta. Nessuna modifica a Gateway, importer, Database Manager, MySQL, Supabase, trigger, sito o minisiti. Nessun deploy/refactor/migration.
+
+A. AS-IS DEL UNIVERSAL GATEWAY
+
+Il Gateway ufficiale corrente è /imc-universal-gateway/. index.php effettua preflight del payload, instrada minisite_read verso minisite.php/minisite-site.php e poi carica core.php, read.php, write.php e ddl.php per il canale generale.
+
+core.php versione 2.2.13 espone oggi un insieme molto ampio di action:
+health, probe, resolve_database, resolve_table, show_tables, read, read_one, sample, count, count_nulls, distinct, aggregate, show_columns, describe, schema, indexes, show_create_table, query, create_table, drop_table, rename_table, add_column, drop_column, rename_column, modify_column, add_index, drop_index, add_primary_key, drop_primary_key, insert, insert_many, upsert, upsert_many, update, delete_one, delete, clear_repository, clear_table, clone_table_structure, copy_rows, truncate_table, dry_run, validate, audit_repository, find_duplicates, foreign_keys, add_foreign_key, drop_foreign_key, table_status.
+
+Le capability dichiarate dal health sono ROUTING, READ, SCHEMA, QUERY, WRITE, DELETE, DDL, TRANSACTIONS, VALIDATION, AUDIT, LOG, RESPONSE.
+
+Il Gateway contiene inoltre oggi:
+- routing GW→famiglia/database;
+- routing esplicito degli import con mapping repository→tabella;
+- allowlist repository;
+- allowlist database hardcoded per GW001–GW009;
+- costruzione dei nomi fisici GWXXX_IMC <Repository>;
+- introspezione schema MySQL;
+- validazione dei valori contro tipi/required field delle tabelle import;
+- controlli game_world_id rispetto alla tabella;
+- logging/audit;
+- read endpoint dedicato MINISITE verso CORE e Site Tables.
+
+Questa fotografia mostra che il Gateway attuale è contemporaneamente ingress gateway, DB router, DB administration API, schema validator e internal read API. È molto più ampio del ruolo ingress-only deciso dalla Direzione.
+
+B. CALLER / CAPABILITY ATTIVI OSSERVATI
+
+1. IMPORTER ESTERNI
+Il codice corrente mantiene esplicitamente il canale IMPORT e route_mode=explicit per read/insert_many. I repository import contemplati sono IMC Results, IMC SM Player Stats, IMC Schedule, IMC Match Report, IMC Transfer e IMC Player Codex. Questi caller rappresentano il caso d'uso che deve sopravvivere nella futura versione ingress-only.
+
+2. MINISITI
+Il shared app-core.js pubblicato usa window.IMC_MINISITE_DATA.read(...), che effettua POST a /imc-universal-gateway/ con channel=MINISITE, action=minisite_read. Le risorse attive comprendono CORE (codex/mapping/manager/player) e Site Resources (results, schedule, match_report, transfers, sm_player_stats). Questo è un caller interno Aruba→Aruba oggi realmente dipendente dal Gateway e deve essere migrato prima di rimuovere MINISITE dal Gateway.
+
+3. CONTROLLO/AMMINISTRAZIONE
+core.php mantiene channel=CHATGPT e numerose action read/schema/query/write/delete/DDL/audit. Sono capability amministrative oggi disponibili, ma non appartengono al ruolo ingress-only. La loro eventuale necessità operativa deve essere soddisfatta dal Database Manager/control plane, non dal Gateway pubblico di ingresso.
+
+4. MASTER SITE
+Il Master Site corrente non dipende dal Universal Gateway: site-assets/master/api.php usa un endpoint PHP server-side Aruba che apre PDO verso MySQL e compone le Site Tables. È una prova concreta che un consumer Aruba→Aruba può leggere MySQL senza passare dal Universal Gateway.
+
+C. CONTRATTO TO-BE INGRESS-ONLY MINIMALE
+
+Il Gateway TO-BE deve avere un solo scopo: accettare una richiesta proveniente da un caller esterno autorizzato e consegnarne il payload al target Aruba autorizzato.
+
+Envelope minimo proposto:
+- protocol_version: versione tecnica del contratto envelope;
+- channel/caller_id: identità tecnica del tipo di caller;
+- action: operazione tecnica ammessa, idealmente INGEST e opzionalmente PROBE/HEALTH se realmente necessari agli importer;
+- target_id: identificatore tecnico opaco del target autorizzato;
+- game_world_id o equivalente routing key solo se necessario alla risoluzione infrastrutturale;
+- request_id/trace_id: correlazione e idempotenza/audit quando necessaria;
+- payload: oggetto opaco contenente i dati business dell'importer.
+
+Il Gateway NON deve conoscere i campi interni di payload. Aggiungere dieci nuovi campi business leciti non deve richiedere alcuna modifica al Gateway.
+
+VALIDAZIONE GATEWAY AMMESSA
+- metodo HTTP/content type;
+- JSON valido;
+- dimensione massima richiesta;
+- autenticazione caller;
+- autorizzazione caller→action→target;
+- presenza e formato dei soli campi envelope;
+- limiti tecnici batch/rate se necessari per protezione infrastrutturale;
+- target_id presente in registry tecnico autorizzato;
+- routing target risolvibile;
+- eventuale request_id/idempotency key tecnicamente valida.
+
+VALIDAZIONE DA NON FARE NEL GATEWAY
+- nomi/obbligatorietà dei campi Results/Schedule/etc.;
+- tipi business delle colonne MySQL;
+- competition_key/competition_group;
+- regole SM Action;
+- country/division semantics;
+- fingerprint business;
+- dedup semantico fixture;
+- mapping repository→significato IMC;
+- normalizzazione camelCase/snake_case;
+- costruzione di record IMC;
+- regole di competizione;
+- regole editoriali/site-ready.
+
+Questi controlli devono essere responsabilità del consumer di ingestion/storage immediatamente dietro il Gateway o dei layer successivi, non della porta.
+
+D. KEEP / MOVE-OUT / DEPRECATE / REMOVE
+
+KEEP NEL GATEWAY
+- endpoint esterno POST/OPTIONS;
+- CORS/origin policy per caller browser esterni quando necessaria;
+- authentication;
+- authorization;
+- envelope validation minima;
+- routing tecnico verso target autorizzato;
+- limiti tecnici request/batch;
+- forwarding/transport;
+- response/error normalization tecnica;
+- trace/audit tecnico;
+- HEALTH essenziale.
+
+MOVE-OUT
+- schema introspection → Database Manager;
+- query/read amministrative → Database Manager/control plane;
+- write/delete amministrativi → Database Manager/control plane;
+- DDL → Database Manager migration workflow;
+- validazione colonne/tipi business → ingestion/storage adapter;
+- normalizzazione → Normalizer;
+- dedup business → importer/storage policy appropriata;
+- semantica competizioni → Normalizer/domain layer;
+- Site Table reads → internal Site API/server-side read layer.
+
+DEPRECATE TEMPORANEAMENTE
+- channel=MINISITE + minisite_read, finché i minisiti non sono migrati a internal Site API;
+- channel=CHATGPT e action amministrative, finché ogni caller operativo necessario non usa il Database Manager/control plane;
+- route_mode=explicit e il payload legacy degli importer, finché gli importer non adottano l'envelope pass-through nuovo;
+- resolve_database/resolve_table se qualche tool di transizione li usa ancora.
+
+REMOVE DOPO MIGRAZIONE
+- read.php/write.php/ddl.php dal runtime del Gateway ingress-only;
+- query arbitraria;
+- show_tables/schema/indexes/show_create_table e simili;
+- CRUD amministrativo;
+- clear/truncate/drop/alter operations;
+- minisite.php/minisite-site.php dal Gateway pubblico;
+- imc_validate_import_value(), imc_row() e ogni schema validation business;
+- mapping hardcoded repository→suffix tabella;
+- mapping hardcoded GW→nome database nel codice applicativo del Gateway.
+
+E. ROUTING SCALABILE A 10+ DATABASE
+
+Il Gateway non deve contenere array del tipo GW001→Sql..., GW002→Sql... nel codice.
+
+Proposta: registry tecnico di routing esterno al codice del Gateway, gestito come configurazione infrastrutturale privata. Esempio concettuale:
+target_id = gw-results/GW001
+→ storage_endpoint/adapter_id = mysql-import-A
+→ connection_target = DB logical target X
+
+Il Gateway deve vedere target_id e policy di autorizzazione. Non deve sapere che GW001 è SINGLE, che Results significa una particolare tabella o che una competizione è DOMESTIC. La risoluzione target_id→adapter/storage può crescere a 10, 20 o più database modificando configurazione infrastrutturale, non business logic del Gateway.
+
+Idealmente il Gateway inoltra verso un ingestion adapter Aruba che possiede la responsabilità di persistenza. Se nella prima fase il Gateway deve ancora aprire MySQL direttamente per compatibilità, il mapping fisico deve comunque essere letto da registry/config privato e non codificato nel core.
+
+F. PIANO DI MIGRAZIONE
+
+FASE 0 · INVENTARIO/TELEMETRIA — rischio basso
+- loggare per periodo definito caller/action realmente usati;
+- classificare ogni action come external ingress, internal read o admin;
+- non rimuovere nulla.
+Criterio uscita: nessun caller ignoto.
+
+FASE 1 · CONTRATTO INGRESS V2 — rischio basso/medio
+- definire envelope tecnico pass-through;
+- introdurre target registry privato;
+- mantenere endpoint legacy in parallelo;
+- nessun cambiamento semantico importer.
+Criterio uscita: V2 accetta payload opaco e protegge target/action.
+
+FASE 2 · MIGRAZIONE IMPORTER — rischio medio
+- migrare un repository/importer alla volta;
+- confrontare conteggi e risultati di persistenza;
+- mantenere fallback legacy per finestra controllata.
+Criterio uscita: tutti gli importer attivi usano V2.
+
+FASE 3 · MIGRAZIONE MINISITE READ — rischio medio/alto
+- creare/validare internal Site API fuori dal Gateway;
+- migrare IMC_MINISITE_DATA mantenendo lo stesso contratto frontend dove possibile;
+- verificare ogni resource e GW;
+- solo dopo rimuovere channel=MINISITE dal Gateway.
+Criterio uscita: zero richieste MINISITE al Gateway in produzione.
+
+FASE 4 · MIGRAZIONE ADMIN — rischio medio
+- spostare caller CHATGPT/read/schema/write/DDL al Database Manager/control plane;
+- verificare audit e autorizzazioni equivalenti o migliori.
+Criterio uscita: zero caller amministrativi sul Gateway.
+
+FASE 5 · RIDUZIONE FISICA — rischio basso dopo le precedenti
+- rimuovere moduli read/write/ddl/minisite e schema validator;
+- mantenere solo ingress runtime;
+- ridurre health alle capability reali.
+Criterio uscita: Gateway non espone più capability interne/amministrative.
+
+G. CRITERI DI COMPLETAMENTO FUTURO
+
+La riduzione può dirsi completata quando:
+1. ogni richiesta al Gateway proviene da un boundary esterno autorizzato;
+2. nessun sito/minisito Aruba usa il Gateway per leggere MySQL;
+3. nessun caller amministrativo usa il Gateway per query/DDL/write/delete;
+4. il Gateway non contiene SQL di dominio o schema business;
+5. il Gateway non contiene normalizzazione IMC;
+6. il Gateway non conosce competition_key, SM Action, division/country semantics o regole competizioni;
+7. aggiungere/rimuovere campi business negli importer non richiede modifiche al Gateway;
+8. aggiungere un nuovo database richiede configurazione di routing, non modifica del core;
+9. authorization è definita caller→action→target, non tramite conoscenza dei campi business;
+10. logging e response riguardano trasporto/trace/errori tecnici, non interpretazione dei dati.
+
+RACCOMANDAZIONE FINALE
+
+Il Universal Gateway TO-BE deve essere una porta ingress-only molto piccola. Non deve essere bidirezionale per principio e non deve essere il passaggio universale Aruba→Aruba.
+
+Flusso target:
+EXTERNAL SOURCE / IMPORTER
+→ UNIVERSAL GATEWAY (auth + authorization + envelope + routing + transport + technical audit)
+→ ARUBA INGESTION/STORAGE ADAPTER
+→ MYSQL ARUBA
+
+I flussi interni devono restare fuori:
+MYSQL ARUBA
+→ NORMALIZER/TRIGGER/SITE TABLES
+→ INTERNAL SITE API
+→ SITE/MINISITES
+
+La riduzione deve però essere progressiva. Oggi MINISITE e capability amministrative sono caller/capability reali; rimuoverli immediatamente romperebbe servizi attivi. Prima si migrano i caller, poi si elimina il codice. La semplicità finale si ottiene togliendo responsabilità nell'ordine corretto, non cancellando metà Gateway e osservando quali pezzi iniziano a fumare.
