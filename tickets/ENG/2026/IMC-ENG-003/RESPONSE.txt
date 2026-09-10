@@ -1,0 +1,99 @@
+CASE_ID: IMC-ENG-003
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: IMC_DATA_ROOM_KNOWLEDGE_LAYER
+
+IMC DATA ROOM · KNOWLEDGE LAYER IMPLEMENTATION RESPONSE
+
+ARCHITETTURA IMPLEMENTATA
+La V1 ticketing è stata estesa senza sostituirla. Il knowledge layer vive sotto knowledge/ e mantiene POLICIES, PLAYBOOKS e REFERENCE separate dai ticket operativi. Lo stesso builder valida entrambi i domini e produce registry distinti nello stesso sito statico.
+
+STRUTTURA KNOWLEDGE
+knowledge/<DOC_TYPE>/<AREA>/<DOC_ID>/<VERSION>.txt
+
+Metadata obbligatori:
+DOC_ID, DOC_TYPE, AREA, DATE, TOPIC, VERSION, STATUS, ACTIVITY.
+
+Tipi ammessi:
+POLICY, PLAYBOOK, REFERENCE.
+
+Status knowledge ammessi:
+ACTIVE, DEPRECATED.
+
+VERSIONAMENTO E PRECEDENZA
+- Le revisioni sono file immutabili V001.txt, V002.txt, ecc.
+- Per lo stesso DOC_ID la versione ACTIVE numericamente più alta è quella pubblicata come corrente.
+- Precedenza semantica: POLICY > PLAYBOOK > REFERENCE.
+- A parità di pertinenza, un consumer deve preferire AREA specifica a GLOBAL.
+- Le versioni storiche restano nel repository GitHub.
+
+RISOLUZIONE STABILE
+Il build pubblica per ogni documento attivo:
+/data-room/knowledge/<DOC_TYPE>/<DOC_ID>/current.txt
+/data-room/knowledge/<DOC_TYPE>/<DOC_ID>/current.json
+
+Il registry pubblico è:
+/data-room/data/knowledge.json
+con DOC_ID, tipo, AREA, TOPIC, ACTIVITY, versione, status, path e precedenza. Questo permette a una chat specialistica di trovare documenti pertinenti per AREA/TOPIC/attività senza ricevere l'intero knowledge nel prompt.
+
+DOCUMENTI INIZIALI
+1. POLICY/GLOBAL/IMC-AUTHORITY/V001.txt
+   Autorità: MySQL Aruba dati; Supabase ponte; GitHub codice/sito/gateway; GitHub Data Room autoritativa e Aruba copia pubblicata.
+2. REFERENCE/ENG/IMC-DB-ROUTING/V001.txt
+   CORE Sql1956795_1; GOLD/MULTI Sql1956795_2 GW002/GW003/GW007/GW008; CUSTOM/SINGLE Sql1956795_3 GW001/GW004/GW005/GW006/GW009.
+3. PLAYBOOK/ENG/IMC-GITHUB-DELIVERY/V001.txt
+   Stato/file corrente → modifica minima → diff → commit → Actions → deploy → verifica live; ONLINE solo dopo Action SUCCESS + live positivo.
+4. PLAYBOOK/GLOBAL/IMC-DATA-ROOM-PROTOCOL/V001.txt
+   Direzione CASE_ID → REQUEST → specialistica → RESPONSE → Direzione → DECISION.
+
+BUILDER E REGISTRY
+ tools/build_data_room.py ora valida ticket e knowledge separatamente, preserva data/registry.json V1 per i ticket e genera data/knowledge.json + data/knowledge.csv. Genera inoltre resolver stabili current.txt/current.json. La costruzione resta deterministica.
+
+UI DATA ROOM
+La pagina /data-room/ espone una sezione Knowledge Layer separata dalla sezione Tickets. Sono disponibili ricerca per DOC_ID/topic/activity e filtri per tipo, AREA e TOPIC. La distinzione ticket/knowledge resta esplicita nell'interfaccia.
+
+REGRESSIONE IMC-ENG-002
+Il workflow verifica ancora il resolver pubblico di IMC-ENG-002 e il relativo TOPIC. Nessun documento storico di IMC-ENG-002 è stato modificato.
+
+COMMIT IMC-DATA-ROOM
+- 3d66624b848812db3987f52a0c1c89f848881ff9 · POLICY autorità.
+- 7aea15f02727afed6c5b7996f74f8b6a2cc1d0ca · REFERENCE DB routing.
+- 85ba0cd7205138d264e6a40cbfe88e764f020b5d · PLAYBOOK GitHub delivery.
+- 8d85813c1b0b1c9bd0dec62ecb079296f801abaa · PLAYBOOK Data Room protocol.
+- 00e06e1261a46fdc7eef9de009e984e9ff8d58b9 · builder/knowledge registry.
+- b98b32316fe8a4696c6b8ce8d38ab3537d34f8fe · UI search/filter knowledge.
+- f04dd78321400825b5faf4d94250d1e821eafa95 · UI knowledge section.
+- adf41ef6a7b4cc1ead885c2ee3c9a61a972edb29 · stile knowledge layer.
+- 7d89e14d24e050c11360047f0476f81405988088 · CI validate/build knowledge.
+
+COMMIT IMC-ARUBA-OPS
+- 6c2e82b550b45204fa2981ba07c10d31ea036009 · OPS-004 esteso con smoke test knowledge layer e IMC-ENG-003.
+
+ACTIONS E VERIFICHE
+- imc-data-room Validate and Build run 34455794096: SUCCESS.
+- OPS-004 deploy run 34455873349: SUCCESS.
+- Deploy FTPS: SUCCESS.
+- Verifica byte-per-byte: SUCCESS.
+- Verifica live HTTP: SUCCESS.
+- Smoke test UI Knowledge Layer: SUCCESS.
+- Smoke test registry tickets IMC-ENG-002 + IMC-ENG-003: SUCCESS.
+- Smoke test data/knowledge.json: SUCCESS.
+- Smoke test POLICY IMC-AUTHORITY e REFERENCE IMC-DB-ROUTING: SUCCESS.
+
+CREDENZIALI
+Nessun secret, token, password o credenziale è stato aggiunto al repository Data Room. Il deploy continua a usare i secrets esistenti nel control plane imc-aruba-ops.
+
+LIMITI RESIDUI
+La V1 usa un registry statico rigenerato a build time; la selezione per AREA/TOPIC/ACTIVITY viene eseguita dal consumer/UI e non da un servizio di ricerca server-side. È coerente con l'obiettivo file-based e non introduce nuova infrastruttura.
+
+URL LIVE
+https://www.italianmastersclub.it/data-room/
+https://www.italianmastersclub.it/data-room/data/knowledge.json
+https://www.italianmastersclub.it/data-room/knowledge/POLICY/IMC-AUTHORITY/current.txt
+https://www.italianmastersclub.it/data-room/knowledge/REFERENCE/IMC-DB-ROUTING/current.txt
+
+STATO FINALE
+ONLINE
+
+La RESPONSE viene ora sottoposta allo stesso ciclo validate/build → deploy Aruba → verifica live. Dopo la sua pubblicazione, il CASE IMC-ENG-003 risulta WAITING_REVIEW in attesa della DECISION della Direzione Centrale.
