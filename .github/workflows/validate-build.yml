@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'tickets/**'
+      - 'knowledge/**'
       - 'site/**'
       - 'tools/**'
       - '.github/workflows/validate-build.yml'
@@ -23,14 +24,21 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
-      - name: Validate metadata and build registry/site
+      - name: Validate metadata and build registries/site
         run: python3 tools/build_data_room.py
-      - name: Verify CASE resolver
+      - name: Verify ticket and knowledge resolvers
         run: |
           test -s dist/data/registry.json
+          test -s dist/data/knowledge.json
           test -s dist/cases/IMC-ENG-002/request.txt
+          test -s dist/cases/IMC-ENG-003/request.txt
           grep -q '^CASE_ID: IMC-ENG-002$' dist/cases/IMC-ENG-002/request.txt
           grep -q '^TOPIC: IMC_DATA_ROOM_TICKETING_SYSTEM$' dist/cases/IMC-ENG-002/request.txt
+          grep -q '^CASE_ID: IMC-ENG-003$' dist/cases/IMC-ENG-003/request.txt
+          test -s dist/knowledge/POLICY/IMC-AUTHORITY/current.txt
+          test -s dist/knowledge/REFERENCE/IMC-DB-ROUTING/current.txt
+          test -s dist/knowledge/PLAYBOOK/IMC-GITHUB-DELIVERY/current.txt
+          test -s dist/knowledge/PLAYBOOK/IMC-DATA-ROOM-PROTOCOL/current.txt
       - name: Upload deployable site
         uses: actions/upload-artifact@v4
         with:
