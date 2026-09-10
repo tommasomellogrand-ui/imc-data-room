@@ -1,0 +1,179 @@
+CASE_ID: IMC-INTEL-001-05
+DOC_TYPE: REQUEST
+AREA: INTEL
+DATE: 2026-09-10
+TOPIC: GW002_HUMAN_VS_COMPUTER_MATCH_ENGINE_ANALYSIS
+
+IMC | SOCCER MANAGER INTELLIGENCE
+GW002 · HUMAN vs HUMAN vs COMPUTER · MATCH ENGINE ANALYSIS
+
+CONTESTO
+Dopo IMC-INTEL-001-04, la Direzione vuole iniziare immediatamente una nuova analisi empirica utilizzando TUTTI i Match Report fisicamente disponibili in GW002 al momento dell'esecuzione.
+
+GW002 è attualmente in importazione continua e il numero di Match Report sta crescendo rapidamente. NON usare un conteggio storico o quello indicato in CASE precedenti.
+
+PRIMA OPERAZIONE OBBLIGATORIA
+Esegui COUNT(*) reale su `GW002_IMC Match Report` e fissa nella RESPONSE:
+- numero Match Report disponibili all'inizio dell'analisi;
+- intervallo match_date;
+- ultimo imported_at osservato.
+
+Usa TUTTI i Match Report disponibili in quella fotografia, non un sample, salvo limiti tecnici che dovranno essere dichiarati e quantificati.
+
+OBIETTIVO PRINCIPALE
+Studiare se esistono differenze osservabili nel comportamento/output delle partite a seconda del tipo di controllo delle due squadre:
+
+1. HUMAN IMC
+2. HUMAN NON-IMC
+3. COMPUTER / UNMANAGED
+
+PRINCIPIO SEMANTICO
+Dal punto di vista del videogioco un manager IMC è semplicemente un manager umano. Soccer Manager non conosce l'appartenenza IMC.
+
+La categoria HUMAN IMC serve esclusivamente come segmentazione analitica interna IMC.
+
+La domanda fondamentale è quindi:
+
+HUMAN CONTROL vs COMPUTER CONTROL produce differenze statisticamente rilevabili negli output del Match Engine, una volta considerate le principali variabili osservabili?
+
+Secondariamente:
+
+all'interno dei match HUMAN, i manager IMC mostrano pattern differenti dagli altri manager umani? Se sì, tali differenze devono essere interpretate come possibili effetti di selezione/qualità manageriale/tattiche/rose e NON come un bonus IMC del Match Engine.
+
+CLASSIFICAZIONE DEL CONTROL TYPE
+Determina per ogni lato di ogni fixture, usando esclusivamente dati affidabili disponibili nei Match Report e nelle strutture IMC pertinenti, una categoria:
+- HUMAN_IMC
+- HUMAN_NON_IMC
+- COMPUTER
+- UNKNOWN, se non classificabile con sufficiente certezza.
+
+Non forzare UNKNOWN dentro HUMAN o COMPUTER.
+Documenta esattamente la regola utilizzata per distinguere HUMAN da COMPUTER e IMC da NON-IMC.
+
+MATCHUP DA QUANTIFICARE
+Calcola numerosità e risultati per almeno:
+- IMC vs IMC
+- IMC vs HUMAN NON-IMC
+- IMC vs COMPUTER
+- HUMAN NON-IMC vs HUMAN NON-IMC
+- HUMAN NON-IMC vs COMPUTER
+- COMPUTER vs COMPUTER
+- matchup con UNKNOWN separati, se presenti.
+
+Per confronti HUMAN vs COMPUTER aggregati, tratta IMC e NON-IMC come HUMAN quando metodologicamente appropriato.
+
+OUTPUT DA CONFRONTARE
+Per ogni gruppo/matchup, dove i dati lo permettono, confronta almeno:
+- W / D / L;
+- goals for / against;
+- goal difference;
+- possession;
+- total shots;
+- shots on target;
+- shot accuracy;
+- goals per shot / goals per SOT;
+- corners;
+- yellow/red cards;
+- home/away;
+- formation iniziale;
+- tactical instructions iniziali;
+- numero e timing delle sostituzioni;
+- numero/timing dei tactical changes se ricostruibile dagli snapshot;
+- match rating dei giocatori;
+- starter/substitute usage;
+- qualsiasi altro output Match Report utile.
+
+HOME ADVANTAGE × CONTROL TYPE
+Dato che IMC-INTEL-001-04 ha trovato conferma ufficiale che home/away è un input del Match Engine, verifica separatamente il segnale home per:
+- HUMAN vs HUMAN;
+- HUMAN vs COMPUTER;
+- COMPUTER vs HUMAN;
+- COMPUTER vs COMPUTER.
+
+Non confondere il lato home con il control type.
+
+STRENGTH / RATING CONTROL
+Dove la Rating History permette ricostruzione temporalmente valida, controlla la forza delle XI e dell'avversario.
+
+Non usare rating corrente come proxy storico senza validità temporale.
+
+Se la copertura rating non è sufficiente sull'intero dataset, esegui:
+A. analisi descrittiva completa su tutti i Match Report;
+B. analisi controllata sul sottoinsieme con rating storico ricostruibile;
+C. confronta se le conclusioni cambiano.
+
+TACTICS / HUMAN BEHAVIOR
+Verifica se eventuali differenze HUMAN vs COMPUTER possono essere spiegate da differenze osservabili di comportamento manageriale, ad esempio:
+- scelta formazione;
+- mentality;
+- pressing;
+- tempo;
+- passing/attacking style;
+- defensive line/width/fluidity/creativity;
+- counter attack/tight marking;
+- cambi tattici durante il match;
+- sostituzioni.
+
+Questo è importante: se HUMAN batte COMPUTER più spesso ma HUMAN utilizza rose più forti o cambia tattica più frequentemente, NON attribuire automaticamente la differenza al Match Engine.
+
+IMC vs OTHER HUMAN
+All'interno dei soli HUMAN confronta:
+- HUMAN_IMC vs HUMAN_NON_IMC;
+- performance media;
+- strength quando disponibile;
+- tactical behavior;
+- substitution behavior;
+- home/away balance;
+- opponent quality;
+- competition/division/country distribution.
+
+Se emerge un vantaggio IMC, trattalo come ASSOCIAZIONE OSSERVAZIONALE. Soccer Manager non conosce IMC come categoria.
+
+METODOLOGIA
+Distingui sempre:
+DESCRIPTIVE DIFFERENCE -> CONTROLLED ASSOCIATION -> POSSIBLE EXPLANATION -> CAUSAL CLAIM.
+
+Non fare causal claim senza supporto adeguato.
+
+Usa, quando sostenibile:
+- stratificazione;
+- matched comparisons;
+- regressioni/logistic models;
+- fixed effects per competition/division/club/manager quando utili;
+- confidence intervals / uncertainty;
+- effect sizes oltre alla sola significatività statistica.
+
+Evita p-value theatre: con migliaia di match anche effetti irrilevanti possono risultare statisticamente significativi. Quantifica sempre la grandezza dell'effetto.
+
+DOMANDE FINALI OBBLIGATORIE
+1. HUMAN vs COMPUTER mostra differenze reali negli output?
+2. Queste differenze restano dopo controllo per home/away e strength dove disponibile?
+3. HUMAN modifica tattiche/sostituzioni in modo diverso dal COMPUTER?
+4. COMPUTER sembra utilizzare pattern tattici differenti?
+5. L'home advantage cambia per control type?
+6. IMC vs altri HUMAN mostra differenze?
+7. Se sì, quali variabili osservabili spiegano meglio il gap IMC?
+8. Esiste qualcosa che suggerisca un trattamento diverso del Match Engine per HUMAN e COMPUTER, oppure le differenze sono spiegabili dalle decisioni/rose?
+9. Quali nuove ipotesi sul Match Engine emergono?
+10. Quale prossimo test IMC avrebbe il massimo valore informativo?
+
+OUTPUT AUTORITATIVO
+Produci una RESPONSE completa in:
+`tickets/INTEL/2026/IMC-INTEL-001-05/RESPONSE.txt`
+
+Includi:
+- DATASET SNAPSHOT;
+- CONTROL-TYPE CLASSIFICATION METHOD;
+- MATCHUP MATRIX;
+- DESCRIPTIVE RESULTS;
+- CONTROLLED ANALYSIS;
+- HOME ADVANTAGE × CONTROL TYPE;
+- TACTICAL BEHAVIOR;
+- IMC vs OTHER HUMAN;
+- CONFOUNDERS/LIMITATIONS;
+- VERDICT per ciascuna domanda;
+- NEXT HIGHEST-VALUE TESTS.
+
+VINCOLO
+READ ONLY.
+Nessuna modifica a database, codice, Gateway, importer, sito o infrastruttura.
