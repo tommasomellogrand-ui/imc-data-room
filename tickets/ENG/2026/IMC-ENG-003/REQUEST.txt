@@ -1,0 +1,56 @@
+CASE_ID: IMC-ENG-003
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: IMC_DATA_ROOM_KNOWLEDGE_LAYER
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+IMC DATA ROOM · POLICIES + PLAYBOOKS + REFERENCE
+
+CONTESTO
+La V1 del ticketing system IMC Data Room (IMC-ENG-002) è completata, pubblicata e verificata live. GitHub tommasomellogrand-ui/imc-data-room resta la fonte autoritativa; Aruba è la copia consultabile online.
+
+OBIETTIVO
+Estendere la Data Room con un knowledge layer autoritativo composto da POLICIES, PLAYBOOKS e REFERENCE, così che Direzione Centrale e chat specialistiche possano recuperare istruzioni tecniche e operative aggiornate dalla Data Room invece di accumularle nel contesto o copiarle manualmente nei prompt.
+
+REQUISITI FUNZIONALI
+1. Progettare una struttura file-based, deterministica, versionabile e leggibile sia da GitHub sia dalla Data Room pubblicata.
+2. Introdurre tre famiglie documentali distinte:
+   - POLICIES: regole autoritative e vincoli permanenti/trasversali.
+   - PLAYBOOKS: procedure operative passo-passo per attività ricorrenti.
+   - REFERENCE: architetture, routing, repository, mapping, convenzioni e riferimenti tecnici consultabili.
+3. Definire naming, metadata minimi, struttura directory e regole di precedenza/versionamento dei documenti.
+4. Integrare il knowledge layer nel registry/generatore esistente senza rompere il ticket system V1.
+5. Rendere POLICIES, PLAYBOOKS e REFERENCE consultabili nella UI /data-room/, con navigazione e ricerca/filtri coerenti con l'architettura esistente.
+6. Definire una risoluzione stabile che permetta a una chat specialistica di individuare i documenti pertinenti a partire da AREA/TOPIC/attività, senza dover ricevere l'intero contenuto nel prompt.
+7. Preservare la distinzione tra ticket operativi (REQUEST/RESPONSE/DECISION) e knowledge documentale.
+8. Nessun secret, token, password o credenziale nei file pubblici.
+
+CONTENUTO INIZIALE MINIMO DA MODELLARE
+La soluzione deve essere predisposta per ospitare almeno:
+- architettura autoritativa IMC: MySQL Aruba = dati; Supabase = ponte tecnico; GitHub = codice/sito/gateway;
+- DB routing: CORE Sql1956795_1; GOLD/MULTI Sql1956795_2 per GW002/GW003/GW007/GW008; CUSTOM/SINGLE Sql1956795_3 per GW001/GW004/GW005/GW006/GW009;
+- protocollo GitHub: leggere stato/file corrente → modifica minima → commit → Actions → verifica live; dichiarare ONLINE solo dopo Action SUCCESS + verifica live positiva;
+- protocollo Data Room: Direzione apre CASE_ID → REQUEST → specialistica lavora → RESPONSE nello stesso ticket → Direzione valuta → DECISION;
+- regola di autorità: GitHub Data Room è fonte autoritativa, Aruba copia consultabile online.
+
+VINCOLI
+Prima di modificare leggere integralmente lo stato corrente del repository e riutilizzare l'architettura V1 dove possibile. Modifica minima e compatibile. Non modificare MySQL, Supabase, Universal Gateway, importer, minisiti o Master Site salvo necessità esplicitamente dimostrata e nuova autorizzazione della Direzione. Non alterare i documenti storici di IMC-ENG-002.
+
+CICLO OBBLIGATORIO
+stato corrente → lettura → progettazione → implementazione minima → commit → Actions → deploy Aruba → verifica live → RESPONSE.
+
+CRITERI DI ACCETTAZIONE
+- struttura POLICIES/PLAYBOOKS/REFERENCE presente e documentata;
+- almeno i documenti iniziali sopra elencati rappresentati nel nuovo modello;
+- registry/build deterministici e compatibili con i ticket esistenti;
+- UI Data Room consente consultazione del knowledge layer;
+- ticket IMC-ENG-002 continua a funzionare senza regressioni;
+- deploy Aruba riuscito;
+- verifica live positiva della versione appena pubblicata;
+- nessuna credenziale esposta.
+
+OUTPUT AUTORITATIVO
+Registrare la risposta in:
+tickets/ENG/2026/IMC-ENG-003/RESPONSE.txt
+con stesso CASE_ID, AREA e TOPIC e con stato finale ONLINE / NON ONLINE, includendo commit, Action/run, verifiche effettuate, struttura implementata ed eventuali limiti residui.
