@@ -1,0 +1,513 @@
+CASE_ID: IMC-DB-001
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-10
+TOPIC: CORE_SQL1_TABLE_AUDIT
+STATUS: COMPLETED
+MODE: READ_ONLY
+
+IMC | DATABASE MANAGER
+CORE Sql1956795_1 · READ-ONLY TABLE AUDIT
+
+======================================================================
+0. EXECUTIVE RESULT
+======================================================================
+
+L'audit è stato eseguito esclusivamente su MySQL Aruba CORE Sql1956795_1 in modalità READ-ONLY.
+Non sono stati eseguiti DELETE, DROP, ALTER, TRUNCATE, RENAME, migration, modifiche trigger o altre WRITE sul database.
+
+Fotografia corrente:
+- 49 tabelle base
+- 405 colonne complessive
+- 93 indici
+- 10 foreign key
+- 0 trigger
+- 0 view
+- 11 tabelle con prefisso "IMC" da considerare INTOCCABILI per vincolo del CASE
+- 38 tabelle non-IMC
+
+Conclusione generale:
+Il CORE contiene tre strati tecnici distinti e un quarto strato di compatibilità/legacy attiva:
+1. registri IMC* di riferimento, intoccabili;
+2. sorgenti e provenance SM/SoccerWiki;
+3. tabelle canoniche/tecniche di servizio e mapping;
+4. tabelle lowercase storiche che in alcuni domini sovrappongono le nuove IMC*, ma sono ancora usate dal codice corrente.
+
+Non emerge alcuna tabella che possa essere dichiarata cancellabile in sicurezza oggi senza un CASE separato di dependency migration. Le aree con maggiore sovrapposizione sono:
+- imc_game_worlds vs IMC Game World Codex Global;
+- imc_managers vs IMC Manager Codex Global;
+- gw_manager_assignments vs IMC Manager Assignment Global;
+- player_codex_* lowercase vs nuove IMC Player Codex Global Data / Rating History, con copertura però non equivalente.
+
+======================================================================
+1. IMC* INTOCCABILI
+======================================================================
+
+REGOLA APPLICATA: nessuna proposta di cancellazione, modifica, rename, accorpamento, svuotamento o sostituzione viene formulata per le tabelle IMC*.
+
+1.1 IMC Club Codex Global
+- Righe: 7.072
+- Struttura: id, name, image_file, image_url.
+- Funzione: registro IMC globale di identità club e asset immagine.
+- Dipendenze DB: nessuna FK rilevata; nessun trigger/view.
+- Confronto: gli stessi 7.072 ID esistono in clubs; 0 differenze sui nomi; 7.062 differenze su image_url.
+- Stato: attiva / riferimento IMC.
+- Nota: forte sovrapposizione di identità con clubs, ma rappresentazione immagini differente. La controparte da preservare in ogni futura razionalizzazione è IMC Club Codex Global.
+- Classificazione: NECESSARIA · INTOCCABILE.
+
+1.2 IMC Competition Codex Global
+- Righe: 326
+- Struttura: id, game_world_id, sm_action, custom_competition, sm_action_group, sm_country, sm_division, teams_count, expected_match, is_sm_action.
+- Funzione: catalogo operativo per-Game-World delle competizioni, incluse azioni SM, competizioni custom, scope country/division, team count ed expected match.
+- Contenuto osservato: League, League Cup, League Shield, Charity Shield, Friendly, SMFA Cup, SMFA Shield, Super Cup, International Qualifier, World Cup, playoff e Kick Off Cup.
+- Dipendenze DB: nessuna FK rilevata; nessun trigger/view.
+- Stato: attiva / riferimento IMC.
+- Confronto: non è duplicata da imc_competition_master/rules; quelle tabelle modellano il motore astratto di regole, mentre questa contiene istanze/configurazioni operative per GW.
+- Classificazione: NECESSARIA · INTOCCABILE.
+
+1.3 IMC Country Codex Global
+- Righe: 37
+- Struttura: id, name.
+- Funzione: codex IMC dei country/scope globali.
+- Dipendenze DB: nessuna FK rilevata; nessun trigger/view.
+- Stato: attiva / riferimento IMC.
+- Classificazione: NECESSARIA · INTOCCABILE.
+
+1.4 IMC Game World Club Mapping
+- Righe: 1.434
+- Struttura: Club ID, Club Name, Game World, SM Club ID.
+- Funzione: membership/mapping IMC dei club nei Game World.
+- Dipendenze DB: FK Game World -> IMC Game World Codex Global.IMC GW.
+- Copertura osservata: 7 GW (GW001, GW002, GW003, GW004, GW005, GW006, GW009); non risultano righe GW007/GW008 nella fotografia corrente.
+- Dettaglio identità: in tutte le 1.434 righe Club ID = SM Club ID.
+- Confronto: non è equivalente a clubs_game_world_id. Quest'ultima conserva club_gw_id, cioè l'identificativo locale del club dentro lo specifico Game World, mentre la tabella IMC registra l'identità globale/SM e la membership.
+- Stato: attiva / riferimento IMC, con copertura corrente da censire nel tempo.
+- Classificazione: NECESSARIA · INTOCCABILE.
+
+1.5 IMC Game World Codex Global
+- Righe: 10
+- Struttura: IMC GW, IMC GW Name, SM Game World ID, Active Club, Country.
+- Funzione: registro IMC globale dei Game World.
+- Dipendenze DB: referenziata da IMC Game World Club Mapping.
+- Confronto: GW001-GW009 coincidono con imc_game_worlds sui campi comuni principali (nome, SM Game World ID, club attivi). IMC Game World Codex Global contiene inoltre GW010 Sensible Soccer Academy, SM Game World ID 1111161, 24 club attivi, assente da imc_game_worlds.
+- Stato: attiva, più aggiornata della controparte lowercase sul perimetro verificato.
+- Classificazione: NECESSARIA · INTOCCABILE.
+
+1.6 IMC Manager Assignment Global
+- Righe: 272
+- Struttura: id, game_world_id, manager_id, full_name, club_id, assignment_type, start_date, end_date, national_team_id.
+- Funzione: assegnazioni globali manager -> club/nazionale per GW.
+- Dipendenze DB: nessuna FK rilevata; nessun trigger/view.
+- Confronto: tutte le 272 righe hanno una corrispondenza logica in gw_manager_assignments sui campi game_world_id, manager_id, club/team, tipo assegnazione, date e nazionale. I surrogate ID non coincidono completamente e gw_manager_assignments possiede season_id, mentre la tabella IMC possiede full_name.
+- Stato: attiva / riferimento IMC.
+- Classificazione: NECESSARIA · INTOCCABILE.
+
+1.7 IMC Manager Codex Global
+- Righe: 60
+- Struttura: manager_id, full_name, imc_join_date, sm_manager_id.
+- Funzione: registro globale manager IMC.
+- Dipendenze DB: nessuna FK rilevata; nessun trigger/view.
+- Confronto: corrispondenza 60/60 con imc_managers e 0 differenze nei campi comuni full_name, imc_join_date, sm_manager_id. imc_managers contiene in aggiunta sm_username e timestamp tecnici.
+- Stato: attiva / riferimento IMC.
+- Classificazione: NECESSARIA · INTOCCABILE.
+
+1.8 IMC National Team Codex Global
+- Righe: 80
+- Struttura: id, name, image_file, image_url.
+- Funzione: codex IMC delle nazionali con asset bandiera locali.
+- Dipendenze DB: nessuna FK rilevata; nessun trigger/view.
+- Confronto: national_teams contiene 100 righe ma usa un diverso schema di identità (codici stringa come ARG, BEL, ecc.), mentre IMC National Team Codex Global usa ID numerici e asset /nexus/assets/flags/nations/*.svg. Non è una duplicazione 1:1.
+- Stato: attiva / riferimento IMC.
+- Classificazione: NECESSARIA · INTOCCABILE.
+
+1.9 IMC Player Codex Global
+- Righe: 176.687
+- Struttura: id, forename, surname, image_file, image_url.
+- Funzione: registro globale identità giocatori e asset immagini IMC.
+- Dipendenze DB: referenziata da IMC Player Codex Global Rating History.
+- Confronto: tutti i 176.687 ID esistono anche in players; 14 differenze sui nomi e 113.861 differenze su image_url. Quindi identità quasi completamente sovrapposta ma layer immagine/normalizzazione differente.
+- Stato: attiva / riferimento IMC.
+- Classificazione: NECESSARIA · INTOCCABILE.
+
+1.10 IMC Player Codex Global Data
+- Righe: 2.297
+- Struttura: player_id, full_name, nationality, position, rating, market_value, age, date_of_birth, height_cm, weight_kg, foot, soccerwiki_club_name, soccerwiki_club_id, wage, updated_at.
+- Funzione: dati arricchiti Player Codex IMC.
+- Attività: MAX(updated_at) osservato 2026-09-10 10:15:58.
+- Confronto con player_codex_global lowercase: solo 4 player_id condivisi su 2.297 vs 108; sui 4 condivisi il rating coincide. Non è possibile trattarle come copie equivalenti.
+- Stato: attiva e aggiornata nel giorno del CASE.
+- Classificazione: NECESSARIA · INTOCCABILE.
+
+1.11 IMC Player Codex Global Rating History
+- Righe: 11.848
+- Struttura: id, player_id, change_date, old_rating, new_rating, imported_at.
+- Funzione: storico globale dei rating Player Codex IMC.
+- Dipendenze DB: FK player_id -> IMC Player Codex Global.id.
+- Attività: MAX(imported_at) osservato 2026-09-10 10:15:32.
+- Confronto con player_codex_rating_history lowercase: soltanto 10 record esatti condivisi; il lowercase contiene 247 righe complessive. Le coperture sono quindi profondamente differenti.
+- Stato: attiva e aggiornata nel giorno del CASE.
+- Classificazione: NECESSARIA · INTOCCABILE.
+
+======================================================================
+2. TABELLE NECESSARIE NON-IMC
+======================================================================
+
+La classificazione "necessaria" significa necessaria nello stato operativo attuale. Non implica che il modello sia definitivo; significa che esiste una funzione distinta, una dependency DB/code o un ruolo di provenance che impedisce di trattarla come scarto.
+
+2.1 clubs
+- Righe: 7.072; 11 colonne.
+- Ruolo: registry canonico tecnico dei club con canonical_source, presenza SM/SoccerWiki, source_conflict, lifecycle.
+- Tutti i 7.072 club sono presenti nelle due sorgenti; 16 hanno source_conflict=1.
+- Sovrappone l'identità di IMC Club Codex Global, ma aggiunge provenance/fusion state non presenti nella tabella IMC.
+- Classificazione: NECESSARIA OGGI · SOVRAPPOSIZIONE PARZIALE CON IMC Club Codex Global.
+
+2.2 players
+- Righe: 176.687; 11 colonne.
+- Ruolo: registry canonico tecnico dei giocatori con source merge e stato presenza/conflitto.
+- 176.687 corrispondenze con sm_players_source; 105.138 con sw_players_source.
+- È parent FK del sottosistema player_codex lowercase.
+- Sovrappone l'identità di IMC Player Codex Global, ma conserva metadata di provenance/fusione.
+- Classificazione: NECESSARIA OGGI · SOVRAPPOSIZIONE PARZIALE CON IMC Player Codex Global.
+
+2.3 clubs_game_world_id
+- Righe: 2.430; 3 colonne: club_id, game_world_id, club_gw_id.
+- Ruolo: mapping tra club globale e identificativo locale per-Game-World.
+- Copertura: GW001 40, GW002 590, GW003 590, GW004 80, GW005 24, GW006 80, GW007 616, GW008 380, GW009 30.
+- Uso codice verificato in API/gateway correnti per risolvere club locali.
+- Non duplica IMC Game World Club Mapping: conserva una dimensione locale club_gw_id assente nel mapping IMC.
+- Classificazione: NECESSARIA.
+
+2.4 nations_game_world_id
+- Righe: 720; 3 colonne: nation_id, game_world_id, nation_gw_id.
+- Ruolo: mapping delle identità nazionali nei Game World, analogo al mapping club ma per nazionali.
+- Nessun trigger/view/FK rilevato.
+- Classificazione: NECESSARIA TECNICA.
+
+2.5 imc_competition_master
+- Righe: 10; 16 colonne.
+- Ruolo: catalogo astratto delle famiglie di competizione, scope, struttura gironi/knockout/divisioni.
+- Tutte le 10 voci osservate sono attive.
+- FK in ingresso da imc_competition_rules.
+- Distinta da IMC Competition Codex Global: master/rules descrive il motore astratto; il Codex IMC descrive configurazioni operative per GW.
+- Classificazione: NECESSARIA.
+
+2.6 imc_competition_rules
+- Righe: 15; 15 colonne.
+- Ruolo: regole ed eccezioni per struttura SINGLE_LEAGUE/MULTI_LEAGUE e specifici GW.
+- FK competition_master_id -> imc_competition_master.
+- Contiene regole attive per League, National Cup, League Cup, Charity Shield, SMFA competitions, qualifiers, World Cup ed eccezioni GW.
+- Classificazione: NECESSARIA.
+
+2.7 imc_game_world_seasons
+- Righe: 10; 5 colonne.
+- Ruolo: mappa stagioni IMC -> stagione Soccer Manager e date di validità.
+- Contiene GW001-GW009, con due stagioni per GW008.
+- Non esiste controparte equivalente tra le IMC* censite.
+- Classificazione: NECESSARIA.
+
+2.8 source_snapshots
+- Righe: 10.
+- Ruolo: provenance degli snapshot importati (source, file, hash, data, status, counts, errori).
+- Snapshot osservati dal 2026-09-03 al 2026-09-07, inclusi Soccer Manager, SoccerWiki e SM_PLAYER_GLOBAL.
+- Referenziata via FK da player_codex_observations e player_codex_player_snapshots.
+- Classificazione: NECESSARIA PER PROVENANCE/AUDIT.
+
+2.9 sm_clubs_source
+- Righe: 7.072.
+- Ruolo: sorgente Soccer Manager dei club, con first/last snapshot e active_latest.
+- Tutte le identità/nome coincidono con il registry canonico clubs.
+- Il fatto che oggi coincidano è atteso in una pipeline source -> canonical e non rende la source ridondante.
+- Classificazione: NECESSARIA SOURCE LAYER.
+
+2.10 sm_players_source
+- Righe: 176.687.
+- Ruolo: sorgente Soccer Manager dei giocatori con lineage snapshot.
+- Tutti gli ID e i nomi coincidono con players nella fotografia corrente.
+- Classificazione: NECESSARIA SOURCE LAYER.
+
+2.11-2.20 sw_*_source
+Tabelle:
+- sw_awards_source: 4
+- sw_clubs_source: 7.072
+- sw_cups_source: 235
+- sw_football_managers_source: 12.435
+- sw_international_cups_source: 10
+- sw_leagues_source: 405
+- sw_national_teams_source: 100
+- sw_player_images_source: 238
+- sw_players_source: 105.138
+- sw_stadiums_source: 6.187
+
+Ruolo comune:
+- snapshot/source layer SoccerWiki;
+- conserva first_snapshot_id, last_snapshot_id e active_latest oltre ai dati sorgente.
+- Le proiezioni canoniche corrispondenti hanno oggi lo stesso contenuto principale per awards, cups, football_managers, international_cups, leagues, national_teams, player_images e stadiums; sw_clubs_source differisce da clubs su 16 nomi, coerentemente con i 16 source_conflict; sw_players_source differisce sui nomi di 9 record, coerentemente con i conflitti osservati.
+- Classificazione: NECESSARIE SOURCE/PROVENANCE; NON duplicati eliminabili delle proiezioni canoniche.
+
+2.21-2.28 proiezioni canoniche SoccerWiki
+Tabelle:
+- awards: 4
+- cups: 235
+- football_managers: 12.435
+- international_cups: 10
+- leagues: 405
+- national_teams: 100
+- player_images: 238
+- stadiums: 6.187
+
+Ruolo comune:
+- proiezione canonica/consumabile dei domini SoccerWiki;
+- separa il dato applicativo corrente dal lineage delle tabelle sw_*_source.
+- Nella fotografia odierna il contenuto principale coincide 100% con la rispettiva source per questi otto domini, ma le source hanno colonne di provenance aggiuntive.
+- Classificazione: NECESSARIE OGGI COME LAYER CANONICO, pur con sovrapposizione dati alle source.
+
+2.29 ingestion_runs
+- Righe: 4.
+- Ruolo: audit delle operazioni di ingestion.
+- I 4 run osservati sono success e coprono manager, game world settings, seasons, assignments.
+- Referenziata da ingestion_errors.
+- Classificazione: NECESSARIA OPERATIVA.
+
+2.30 ingestion_errors
+- Righe: 0.
+- Ruolo: error log dei run ingestion; FK run_id -> ingestion_runs.
+- L'assenza di righe indica assenza di errori registrati, non inutilizzo strutturale.
+- Classificazione: NECESSARIA OPERATIVA.
+
+2.31 import_errors
+- Righe: 0.
+- Ruolo: error log degli import source_snapshots, distinto dall'errore dei run applicativi.
+- Uso codice corrente verificato: il core di import inserisce qui gli errori e marca source_snapshots failed.
+- Classificazione: NECESSARIA OPERATIVA.
+
+======================================================================
+3. TABELLE SOVRAPPOSTE / DUPLICATE
+======================================================================
+
+Questa sezione distingue sovrapposizione semantica da eliminabilità. Tutte le controparti IMC* citate devono essere preservate senza eccezioni.
+
+3.1 imc_game_worlds
+- Righe: 9; 11 colonne.
+- Sovrapposizione: IMC Game World Codex Global.
+- Evidenza: GW001-GW009 coincidono sui campi principali comuni; la tabella IMC contiene inoltre GW010, assente da imc_game_worlds.
+- Valore unico lowercase: game_world_type, soccer_manager_season, soccer_manager_name/type/owner/creator, countries.
+- Dependency codice: è ancora letta da sito/API e ingestion correnti.
+- Stato: SOVRAPPOSTA + OPERATIVAMENTE ATTIVA.
+- Classificazione: CANDIDATA A FUTURA RAZIONALIZZAZIONE SOLO DOPO migrazione dei consumer e preservazione dei campi unici. Preservare IMC Game World Codex Global.
+
+3.2 imc_managers
+- Righe: 60; 7 colonne.
+- Sovrapposizione: IMC Manager Codex Global.
+- Evidenza: 60/60 record corrispondono e i campi comuni sono identici.
+- Valore unico lowercase: sm_username, created_at, updated_at.
+- Dependency codice: sito, API, manager scan e altre funzioni correnti la leggono direttamente.
+- Stato: SOVRAPPOSTA + OPERATIVAMENTE ATTIVA.
+- Classificazione: CANDIDATA A FUTURA RAZIONALIZZAZIONE SOLO DOPO migrazione consumer e gestione metadata unici. Preservare IMC Manager Codex Global.
+
+3.3 gw_manager_assignments
+- Righe: 272; 9 colonne.
+- Sovrapposizione: IMC Manager Assignment Global.
+- Evidenza: 272/272 corrispondenze logiche in entrambe le direzioni su world, manager, club/team, assignment type, date e nazionale.
+- Differenze strutturali: season_id esiste nel lowercase; full_name esiste nella IMC*; surrogate ID non perfettamente allineati.
+- Dependency codice: ancora utilizzata da managers-live, API, ingestion e componenti Nexus.
+- Stato: DUPLICAZIONE SEMANTICA FORTE + OPERATIVAMENTE ATTIVA.
+- Classificazione: candidata alla razionalizzazione dopo migrazione di season_id e consumer. Preservare IMC Manager Assignment Global.
+
+3.4 clubs
+- Righe: 7.072.
+- Sovrapposizione: IMC Club Codex Global su identità e nome (100% IDs, 100% nomi).
+- Funzione distinta: merge/provenance SM/SoccerWiki e source_conflict.
+- Stato: SOVRAPPOSTA MA FUNZIONALMENTE DISTINTA.
+- Classificazione: NON candidata immediata. Preservare IMC Club Codex Global e mantenere clubs finché serve il layer canonical/source-merge.
+
+3.5 players
+- Righe: 176.687.
+- Sovrapposizione: IMC Player Codex Global su identità globale; 14 differenze nome, ampie differenze immagine.
+- Funzione distinta: canonical_source, source presence/conflict, lifecycle.
+- Stato: SOVRAPPOSTA MA FUNZIONALMENTE DISTINTA.
+- Classificazione: NON candidata immediata. Preservare IMC Player Codex Global.
+
+3.6 player_codex_global
+- Righe: 108; 29 colonne.
+- Sovrapposizione di dominio: IMC Player Codex Global Data, ma NON copertura equivalente.
+- Evidenza: soltanto 4 player_id condivisi; 104 record lowercase non sono presenti in IMC Player Codex Global Data; ultimo updated_at lowercase 2026-09-07 09:46:53, mentre IMC Player Codex Global Data arriva al 2026-09-10 10:15:58.
+- Dependency codice: ancora letto dal frontend Player Codex e scritto dal handler player-global corrente.
+- Stato: LEGACY/COMPATIBILITÀ ATTIVA, non duplicato eliminabile.
+- Classificazione: CANDIDATA A FUTURA MIGRAZIONE DI SOTTOSISTEMA, non a cancellazione diretta. Preservare tutte le IMC Player Codex*.
+
+3.7 player_codex_rating_history
+- Righe: 247; 7 colonne.
+- Sovrapposizione di dominio: IMC Player Codex Global Rating History (11.848 righe).
+- Solo 10 record exact-match condivisi; ultimo lowercase 2026-09-07, IMC* aggiornata 2026-09-10.
+- FK player_id -> players.player_id.
+- Stato: LEGACY/COMPATIBILITÀ ATTIVA del vecchio sottosistema.
+- Classificazione: CANDIDATA A FUTURA MIGRAZIONE, non eliminabile oggi. Preservare IMC Player Codex Global Rating History.
+
+3.8 proiezioni canoniche vs sw_*_source
+- awards/sw_awards_source, cups/sw_cups_source, football_managers/sw_football_managers_source, international_cups/sw_international_cups_source, leagues/sw_leagues_source, national_teams/sw_national_teams_source, player_images/sw_player_images_source, stadiums/sw_stadiums_source.
+- Il dataset applicativo corrente coincide nei campi principali, ma le source conservano lineage snapshot.
+- Stato: SOVRAPPOSIZIONE VOLUTA DI PIPELINE, non duplicazione patologica.
+- Classificazione: mantenere entrambi i layer finché resta il modello source -> canonical.
+
+======================================================================
+4. TABELLE LEGACY / DUBBIE / APPARENTEMENTE INUTILIZZATE
+======================================================================
+
+Non sono state individuate tabelle dimostrabilmente inutilizzate e cancellabili in sicurezza. Le seguenti sono invece aree legacy/dubbie da razionalizzare solo con un nuovo CASE WRITE preceduto da dependency migration.
+
+4.1 player_codex_observations
+- Righe: 112; 10 colonne.
+- Ruolo: log delle osservazioni change/new del vecchio player-global.
+- FK: source_snapshot_id -> source_snapshots; player_id -> players.
+- Attività massima: 2026-09-07 09:46:53.
+- Codice: handler player-global corrente inserisce ancora record in questa tabella.
+- Classificazione: LEGACY/COMPATIBILITÀ ATTIVA · CANDIDATA A FUTURA RAZIONALIZZAZIONE DI SOTTOSISTEMA.
+
+4.2 player_codex_player_snapshots
+- Righe: 108; 14 colonne.
+- Ruolo: snapshot per-player del vecchio player-global.
+- FK: source_snapshot_id -> source_snapshots; player_id -> players.
+- Attività massima: 2026-09-07 09:46:53.
+- Classificazione: LEGACY/COMPATIBILITÀ ATTIVA · non rimuovere senza migrare il flusso player-global.
+
+4.3 player_codex_global
+- Vedi 3.6.
+- Il basso numero di record non significa inutilità: è usato dal codice corrente.
+- Classificazione: LEGACY ATTIVA / MIGRATION CANDIDATE.
+
+4.4 player_codex_rating_history
+- Vedi 3.7.
+- Classificazione: LEGACY ATTIVA / MIGRATION CANDIDATE.
+
+4.5 imc_game_worlds, imc_managers, gw_manager_assignments
+- Sono fortemente sovrapposte alle rispettive IMC*, ma ancora dependency live del codice.
+- Classificazione: COMPATIBILITY LAYER ATTIVO / MIGRATION CANDIDATE, non “unused”.
+
+4.6 Osservazioni su tabelle vuote
+- import_errors: 0 righe, ma codice di import la usa come destinazione errori.
+- ingestion_errors: 0 righe, ma è FK-child di ingestion_runs e parte del sistema audit ingestion.
+- Nessuna delle due va classificata inutilizzata sulla sola base del COUNT=0.
+
+======================================================================
+5. APPENDICE · CLASSIFICAZIONE COMPLETA DELLE 49 TABELLE
+======================================================================
+
+01 IMC Club Codex Global | 7.072 | IMC identity/asset registry | NECESSARIA · INTOCCABILE
+02 IMC Competition Codex Global | 326 | competition operational codex | NECESSARIA · INTOCCABILE
+03 IMC Country Codex Global | 37 | country codex | NECESSARIA · INTOCCABILE
+04 IMC Game World Club Mapping | 1.434 | IMC GW club membership | NECESSARIA · INTOCCABILE
+05 IMC Game World Codex Global | 10 | GW global registry | NECESSARIA · INTOCCABILE
+06 IMC Manager Assignment Global | 272 | manager assignments | NECESSARIA · INTOCCABILE
+07 IMC Manager Codex Global | 60 | manager codex | NECESSARIA · INTOCCABILE
+08 IMC National Team Codex Global | 80 | national team codex/assets | NECESSARIA · INTOCCABILE
+09 IMC Player Codex Global | 176.687 | player identity/assets | NECESSARIA · INTOCCABILE
+10 IMC Player Codex Global Data | 2.297 | enriched player data | NECESSARIA · INTOCCABILE
+11 IMC Player Codex Global Rating History | 11.848 | rating history | NECESSARIA · INTOCCABILE
+12 awards | 4 | canonical award projection | NECESSARIA · source overlap
+13 clubs | 7.072 | canonical SM/SW merge registry | NECESSARIA · partial IMC overlap
+14 clubs_game_world_id | 2.430 | global -> world-local club ID map | NECESSARIA
+15 cups | 235 | canonical cup projection | NECESSARIA · source overlap
+16 football_managers | 12.435 | SoccerWiki manager registry | NECESSARIA · source overlap
+17 gw_manager_assignments | 272 | live assignment compatibility table | DUPLICATA/SOVRAPPOSTA · ATTIVA
+18 imc_competition_master | 10 | competition rule master | NECESSARIA
+19 imc_competition_rules | 15 | competition rules/exceptions | NECESSARIA
+20 imc_game_world_seasons | 10 | season mapping | NECESSARIA
+21 imc_game_worlds | 9 | live GW compatibility registry | SOVRAPPOSTA · ATTIVA · FUTURE MIGRATION CANDIDATE
+22 imc_managers | 60 | live manager compatibility registry | SOVRAPPOSTA · ATTIVA · FUTURE MIGRATION CANDIDATE
+23 import_errors | 0 | source import error log | NECESSARIA OPERATIVA
+24 ingestion_errors | 0 | ingestion run error log | NECESSARIA OPERATIVA
+25 ingestion_runs | 4 | ingestion audit | NECESSARIA OPERATIVA
+26 international_cups | 10 | canonical international cup projection | NECESSARIA · source overlap
+27 leagues | 405 | canonical league projection | NECESSARIA · source overlap
+28 national_teams | 100 | code-based national team registry | NECESSARIA · domain differs from IMC codex IDs
+29 nations_game_world_id | 720 | nation world-local mapping | NECESSARIA TECNICA
+30 player_codex_global | 108 | old player codex application table | LEGACY/COMPATIBILITÀ ATTIVA
+31 player_codex_observations | 112 | old codex observations | LEGACY/COMPATIBILITÀ ATTIVA
+32 player_codex_player_snapshots | 108 | old codex snapshots | LEGACY/COMPATIBILITÀ ATTIVA
+33 player_codex_rating_history | 247 | old codex rating history | LEGACY/COMPATIBILITÀ ATTIVA
+34 player_images | 238 | canonical player image projection | NECESSARIA · source overlap
+35 players | 176.687 | canonical SM/SW merge registry | NECESSARIA · partial IMC overlap
+36 sm_clubs_source | 7.072 | SM source + lineage | NECESSARIA SOURCE
+37 sm_players_source | 176.687 | SM source + lineage | NECESSARIA SOURCE
+38 source_snapshots | 10 | snapshot provenance | NECESSARIA SOURCE/AUDIT
+39 stadiums | 6.187 | canonical stadium projection | NECESSARIA · source overlap
+40 sw_awards_source | 4 | SoccerWiki source lineage | NECESSARIA SOURCE
+41 sw_clubs_source | 7.072 | SoccerWiki source lineage | NECESSARIA SOURCE
+42 sw_cups_source | 235 | SoccerWiki source lineage | NECESSARIA SOURCE
+43 sw_football_managers_source | 12.435 | SoccerWiki source lineage | NECESSARIA SOURCE
+44 sw_international_cups_source | 10 | SoccerWiki source lineage | NECESSARIA SOURCE
+45 sw_leagues_source | 405 | SoccerWiki source lineage | NECESSARIA SOURCE
+46 sw_national_teams_source | 100 | SoccerWiki source lineage | NECESSARIA SOURCE
+47 sw_player_images_source | 238 | SoccerWiki source lineage | NECESSARIA SOURCE
+48 sw_players_source | 105.138 | SoccerWiki source lineage | NECESSARIA SOURCE
+49 sw_stadiums_source | 6.187 | SoccerWiki source lineage | NECESSARIA SOURCE
+
+======================================================================
+6. PROPOSTA DI CORE PULITO · FUTURA, NON ESEGUITA
+======================================================================
+
+Nessuna modifica è autorizzata o eseguita in IMC-DB-001.
+La seguente è esclusivamente una proposta architetturale per futuri CASE separati.
+
+LAYER A · IMC REFERENCE LAYER
+- Tutte le 11 tabelle IMC* restano intatte e prioritarie.
+- Nessun consolidamento deve intervenire su di esse.
+
+LAYER B · SOURCE / PROVENANCE
+- source_snapshots
+- sm_clubs_source
+- sm_players_source
+- tutti i sw_*_source
+- import_errors
+- ingestion_runs
+- ingestion_errors
+Queste tabelle devono rimanere separate dai registri canonici perché conservano lineage e audit.
+
+LAYER C · CANONICAL TECHNICAL / MAPPING / RULE ENGINE
+- clubs, players
+- clubs_game_world_id, nations_game_world_id
+- awards, cups, football_managers, international_cups, leagues, national_teams, player_images, stadiums
+- imc_competition_master, imc_competition_rules
+- imc_game_world_seasons
+Queste tabelle svolgono ruoli tecnici distinti o proiezioni applicative e non devono essere eliminate solo perché i dati coincidono oggi con una source o con una IMC*.
+
+LAYER D · COMPATIBILITY / LEGACY TO MIGRATE
+- imc_game_worlds
+- imc_managers
+- gw_manager_assignments
+- player_codex_global
+- player_codex_observations
+- player_codex_player_snapshots
+- player_codex_rating_history
+
+Percorso di razionalizzazione futura raccomandato:
+A. censire tutti i consumer GitHub live delle sette tabelle di compatibility;
+B. definire per ciascun campo un mapping verso IMC* o verso un layer tecnico permanente;
+C. preservare i campi oggi non presenti nelle IMC* (es. sm_username, season_id, metadata GW);
+D. migrare codice/API/ingestion un dominio alla volta;
+E. verificare zero letture/scritture residue;
+F. solo in un CASE WRITE successivo valutare l'eventuale retirement delle sole tabelle non-IMC ormai prive di funzione.
+
+Priorità suggerita per futuri audit/migration CASE:
+1. imc_game_worlds: overlap forte e già stale rispetto a IMC Game World Codex Global (manca GW010), ma ancora ampiamente usata dal codice.
+2. imc_managers: overlap 60/60 perfetto nei campi comuni, ma consumer live e metadata extra.
+3. gw_manager_assignments: duplicazione semantica 272/272, ma season_id e dipendenze applicative da preservare.
+4. player_codex_* lowercase: doppio sottosistema ancora attivo; richiede analisi funzionale prima di qualsiasi consolidamento perché i dataset non hanno copertura equivalente.
+
+======================================================================
+7. RISCHI E NOTE FINALI
+======================================================================
+
+- Non usare il solo nome tabella o COUNT=0 per decidere inutilità.
+- Non considerare le tabelle sw_*/sm_* duplicati delle canoniche: rappresentano provenance/source history.
+- Non considerare clubs e players copie inutili delle IMC*: contengono source merge/conflict state.
+- La presenza di consumer GitHub live rende imc_game_worlds, imc_managers, gw_manager_assignments e player_codex_* attualmente operative anche quando sovrapposte.
+- IMC Game World Codex Global è più aggiornata di imc_game_worlds sul perimetro verificato, perché contiene GW010.
+- IMC Game World Club Mapping e clubs_game_world_id hanno funzioni diverse: membership globale vs mapping al world-local ID.
+- Il CORE non usa attualmente trigger o view; le dipendenze DB esplicite sono quindi concentrate nelle 10 foreign key rilevate.
+- Qualunque futura razionalizzazione deve essere trattata come migrazione di dipendenze, non come pulizia per somiglianza nominale.
+
+AUDIT RESULT: COMPLETE
+DB WRITES EXECUTED: NONE
+MYSQL TARGET: Sql1956795_1
+AUTHORITATIVE DATA SOURCE: MySQL Aruba
