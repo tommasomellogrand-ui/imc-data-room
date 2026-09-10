@@ -1,0 +1,189 @@
+CASE_ID: IMC-INTEL-001-03
+DOC_TYPE: REQUEST
+AREA: INTEL
+DATE: 2026-09-10
+TOPIC: PLAYER_HISTORY_MATCH_REPORT_JOIN_FEASIBILITY_AUDIT
+
+IMC | SOCCER MANAGER INTELLIGENCE
+PLAYER HISTORY × MATCH REPORT · JOIN FEASIBILITY AUDIT
+
+CONTESTO
+Questo CASE prosegue IMC-INTEL-001, IMC-INTEL-001-01 e IMC-INTEL-001-02.
+
+La Direzione vuole verificare concretamente se i dati già presenti nei repository IMC permettono di collegare, a livello player-match, il Match Report con la storia del Player Codex Global e ricostruire lo stato del giocatore alla data della partita.
+
+Questo CASE è un AUDIT DI FATTIBILITÀ. Non costruire ancora il modello statistico definitivo del Match Engine.
+
+DATASET PILOTA
+Usa i Game World con maggiore copertura Match Report utile al momento dell'esecuzione, con priorità a:
+- GW002
+- GW005
+- GW001
+
+NON usare conteggi fissati nel REQUEST.
+
+Prima di analizzare, esegui una COUNT reale dei Match Report fisicamente presenti in ciascuno di questi GW al momento dell'esecuzione e usa tutti i record disponibili.
+
+Se durante l'esecuzione GW002 continua a ricevere nuovi Match Report, usa la fotografia reale disponibile nel momento in cui avvii l'analisi e documenta timestamp e conteggio.
+
+FONTI DATI AUTORITATIVE
+MySQL Aruba = fonte dati autoritativa.
+Supabase = ponte tecnico.
+
+Routing:
+- Sql1956795_1 = CORE
+- Sql1956795_2 = GOLD/MULTI: GW002, GW003, GW007, GW008
+- Sql1956795_3 = CUSTOM/SINGLE: GW001, GW004, GW005, GW006, GW009
+
+Percorso:
+ChatGPT -> Supabase -> IMC Nexus
+project ref: toanuzojdkfjgucztpze
+-> private.imc_aruba_request(...)
+-> Database Manager Aruba
+-> MySQL Aruba
+
+READ ONLY.
+
+OBIETTIVO PRINCIPALE
+Verifica se è realmente possibile costruire questa catena:
+
+MATCH REPORT
+-> player_id presente nel singolo Game World
+-> identità globale del giocatore
+-> IMC Player Codex Global
+-> IMC Player Codex Global Data
+-> IMC Player Codex Global Rating History
+-> rating e altri attributi validi alla match_date
+-> performance individuale e contesto squadra nel Match Report
+
+Non fermarti al Player Codex locale del singolo GW.
+
+AUDIT CORE OBBLIGATORIO
+Prima di dichiarare una variabile storica non disponibile, controlla realmente le strutture IMC del CORE pertinenti, incluse almeno:
+- IMC Player Codex Global
+- IMC Player Codex Global Data
+- IMC Player Codex Global Rating History
+
+Controlla anche eventuali ulteriori strutture IMC pertinenti presenti nel CORE se utili al mapping, ma senza modificare nulla.
+
+MATCH REPORT · LETTURA INTEGRALE
+Per ciascun GW pilota:
+- leggi lo schema reale del repository Match Report;
+- leggi campioni completi di record reali;
+- analizza integralmente i JSON disponibili, non solo la presenza/non-null.
+
+Verifica in particolare la presenza e usabilità di:
+- fixture ID;
+- match date;
+- club IDs;
+- manager IDs;
+- score;
+- formation;
+- posizione/slot in formazione se ricostruibile;
+- starter/substitute;
+- player ID;
+- match rating;
+- goals;
+- assists;
+- MoM;
+- cards;
+- substitutions e minuti;
+- team statistics;
+- possession;
+- shots;
+- shots on target;
+- tactics iniziali;
+- tactical changes/snapshots se presenti;
+- events/commentary se utili.
+
+JOIN FEASIBILITY · MISURE RICHIESTE
+Per GW002, GW005 e GW001 determina almeno:
+1. numero Match Report utilizzati;
+2. numero totale di player-match osservati;
+3. quanti player-match hanno player ID utilizzabile;
+4. quanti player-match sono collegabili in modo affidabile a un'identità globale;
+5. percentuale di match/player-match con join riuscito;
+6. percentuale di player-match per cui il rating alla match_date è ricostruibile;
+7. percentuale per cui la posizione naturale alla match_date è ricostruibile;
+8. quali altri attributi storici sono ricostruibili dal CORE;
+9. quali campi Match Report possono essere associati al singolo giocatore;
+10. quali campi squadra/tattici possono essere associati al contesto del giocatore.
+
+RATING STORICO
+Verifica in modo esplicito se, usando `player_id` e `change_date`, è possibile ricostruire il rating valido del giocatore alla data di ogni partita.
+
+Non usare il rating corrente come proxy storico quando esiste una storia temporale disponibile.
+
+POSIZIONE NATURALE VS POSIZIONE GIOCATA
+Verifica se possiamo distinguere:
+- posizione naturale del giocatore alla data del match;
+- posizione/ruolo effettivamente occupato nella formazione della partita.
+
+Se il Match Report non espone direttamente la posizione, valuta se la si può ricostruire in modo affidabile da formation + ordine/slot dei player.
+
+Classifica la ricostruzione come:
+- DIRECT
+- RELIABLE DERIVATION
+- PARTIAL/AMBIGUOUS
+- NOT AVAILABLE
+
+CAPACITÀ ANALITICHE DA VALUTARE
+Solo dopo aver verificato il join reale, indica se il dataset consente già, o potrà consentire completando gli import, analisi come:
+- impatto marginale del rating del singolo giocatore;
+- 94 vs 93 vs 92 a parità di contesto;
+- effetto di più giocatori forti nello stesso reparto;
+- rating medio XI;
+- rating per reparto;
+- rating gap tra le due squadre;
+- ruolo naturale vs fuori ruolo;
+- relazione rating -> match rating individuale;
+- relazione rating -> goal/assist/MoM;
+- relazione qualità XI -> possession/shots/SOT/result;
+- interazioni tra rating del singolo e qualità dei compagni;
+- diminishing returns del rating;
+- differenze per ruolo/reparto;
+- formazione/tattica come moderatori dell'effetto del rating;
+- qualità della panchina, solo se ricostruibile correttamente;
+- effetti delle sostituzioni.
+
+IMPORTANTE
+Non eseguire ancora il modello statistico completo e non dichiarare effetti causali definitivi.
+
+Questo CASE deve rispondere prima alla domanda:
+"IL DATASET CHE STIAMO COSTRUENDO È TECNICAMENTE E TEMPORALMENTE ABBASTANZA COERENTE PER COSTRUIRE UN MODELLO SERIO DEL MATCH ENGINE?"
+
+OUTPUT RICHIESTO
+La RESPONSE deve includere almeno:
+- CURRENT MATCH REPORT COUNTS per GW002/GW005/GW001;
+- MATCH REPORT FIELD MAP;
+- CORE PLAYER HISTORY FIELD MAP;
+- JOIN KEY MAP;
+- JOIN SUCCESS RATE;
+- HISTORICAL RATING RECONSTRUCTION RATE;
+- POSITION RECONSTRUCTION RATE;
+- PLAYER-MATCH DATASET SCHEMA proposto;
+- TEAM-MATCH DATASET SCHEMA proposto;
+- ANALYSES ALREADY POSSIBLE;
+- ANALYSES POSSIBLE AFTER FULL IMPORT;
+- MISSING DATA / BLOCKERS;
+- eventuali campi che sarebbe utile preservare negli importer futuri;
+- raccomandazione finale GO / GO WITH GAPS / NOT YET.
+
+VINCOLO ASSOLUTO · AUDIT ONLY / READ ONLY
+NON modificare:
+- database;
+- schema;
+- trigger;
+- repository;
+- importer;
+- Gateway;
+- codice;
+- dati;
+- produzione.
+
+Sono consentite esclusivamente letture e analisi.
+
+OUTPUT AUTORITATIVO
+tickets/INTEL/2026/IMC-INTEL-001-03/RESPONSE.txt
+
+Al termine registra la RESPONSE completa nella Data Room e torna nella chat con Tom con una sintesi esecutiva in massimo 10 bullet point.
