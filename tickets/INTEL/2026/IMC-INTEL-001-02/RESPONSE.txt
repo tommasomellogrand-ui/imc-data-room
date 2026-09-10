@@ -1,0 +1,200 @@
+CASE_ID: IMC-INTEL-001-02
+DOC_TYPE: RESPONSE
+AREA: INTEL
+DATE: 2026-09-10
+TOPIC: EMPIRICAL_MATCH_ENGINE_ANALYSIS
+STATUS: COMPLETED
+
+IMC | SOCCER MANAGER INTELLIGENCE
+EMPIRICAL MATCH ENGINE ANALYSIS · IMC DATA
+
+1. EXECUTIVE OVERVIEW
+
+Questo CASE incrocia le conclusioni web dei report IMC-INTEL-001/001-01 con letture reali MySQL Aruba via IMC Nexus. Tutte le operazioni DB sono state esclusivamente SELECT/SHOW. Nessuna modifica è stata eseguita.
+
+Conclusione metodologica principale: l'archivio IMC è già molto forte per analizzare risultati aggregati e home advantage; è promettente per match statistics e tattiche; non è ancora temporalmente sufficiente per attribuire causalmente risultati a rating di rosa, panchina, morale, condition, età o forma storica. Il dataset contiene infatti molti Results ma una copertura Match Report molto più piccola e Player Codex quasi sempre assente; dove il Codex esiste, lo stato corrente non può essere retroproiettato automaticamente al giorno del match.
+
+2. DATA COVERAGE AUDIT
+
+Fonte autoritativa: `IMC Repository Report` letta direttamente su Sql1956795_2 (GOLD/MULTI) e Sql1956795_3 (CUSTOM/SINGLE).
+
+GW001 CUSTOM: Results 771; Match Report 73; Schedule 20; Player Codex 0; SM Player Stats 297.
+GW002 GOLD: Results 5,329; Match Report report-table 43 (lettura diretta tabella al momento dell'audit: 50); Schedule 430; Player Codex 0; SM Player Stats 1,224.
+GW003 GOLD: Results 7,763; Match Report 0; Schedule 2,845; Player Codex 0; SM Player Stats 988.
+GW004 CUSTOM: Results 1,424; Match Report 42; Schedule 846; Player Codex 0; SM Player Stats 326.
+GW005 CUSTOM: Results 589; Match Report 271; Schedule 48; Player Codex 700; SM Player Stats 245.
+GW006 CUSTOM: Results 1,368; Match Report 0; Schedule 848; Player Codex 0; SM Player Stats 315.
+GW007 GOLD: Results 2,464; Match Report 0; Schedule 9,268; Player Codex 0; SM Player Stats 1,006.
+GW008 GOLD: Results 427; Match Report 13; Schedule 7,270; Player Codex 0; SM Player Stats 708.
+GW009 CUSTOM: Results 241; Match Report 22; Schedule 447; Player Codex 0; SM Player Stats 257.
+
+Nota di consistenza: `IMC Repository Report` è una fotografia aggiornata da trigger/reporting e può divergere per pochi record da una COUNT diretta eseguita pochi minuti dopo durante importazioni attive. Esempio GW002 Match Report: report 43 alle 14:48:19, COUNT diretta successiva 50. Questo non invalida il dato ma dimostra che la base è dinamica.
+
+Copertura Match Report più utile: GW005 (271/589 Results, ~46%), poi GW001 (73), GW002 (~50), GW004 (42), GW009 (22), GW008 (13). GW003/GW006/GW007 non hanno Match Report utilizzabili al momento dell'audit.
+
+3. DATA QUALITY & LIMITATIONS
+
+Lo schema `GW005_IMC Match Report` contiene fixture, competition, date, club, manager, score, attendance e JSON strutturati per team stats, players, events, tactics e commentary. Nei 271 record GW005 tutti i 271 hanno team_stats_json, players_json e tactics_json non null; 102 hanno entrambi i manager ID.
+
+Il JSON giocatori identifica starter/substitute, side, player ID, match rating, goal, assist, cards, MoM e minuti di sostituzione. Il JSON tattico contiene almeno formation, mentality, passing style, attacking style, tempo, pressing, tackling, counter attack, tight marking, defensive line, width, fluidity, creativity, playmaker/target-man flags e altri campi. Questo è materiale di grande valore per futuri modelli match-level.
+
+Il Player Codex GW005 contiene rating, età, posizione, club corrente e rating_history, ma è uno snapshot/import contemporaneo. Senza snapshot storico affidabile per la data di ogni fixture non è metodologicamente corretto usare il rating corrente come rating pre-match per centinaia di partite storiche.
+
+Analogamente SM Player Stats è prevalentemente stato aggregato corrente, non necessariamente snapshot pre-match. Non consente da solo inferenza causale su forma precedente, condition, morale o qualità della rosa al momento della gara.
+
+CORE: non è stato necessario improvvisare un percorso non documentato; le analisi sostenibili sono state svolte su DB2/DB3 come autorizzato.
+
+4. ANALISI E METODOLOGIA
+
+Sono state effettuate:
+- coverage counts per repository/GW;
+- ispezione schema reale prima dell'analisi;
+- controllo completezza JSON Match Report;
+- distribuzione esiti home/draw/away su quattro dataset ampi;
+- media goal home/away;
+- su GW005 Match Report, media tiri, tiri in porta e possesso home/away;
+- confronto con evidenza ufficiale/community dei CASE precedenti.
+
+Non sono stati costruiti pseudo-modelli basati su rating correnti retroattivi. Sarebbe statisticamente elegante soltanto nel senso in cui un castello di carte è architettonicamente elegante.
+
+5. EMPIRICAL FINDINGS
+
+5.1 HOME ADVANTAGE
+
+GW002 (n=5,329): home wins 2,278 (42.75%); draws 948 (17.79%); away wins 2,103 (39.46%). Goal medi: home 1.6269, away 1.5226. Differenziale +0.1043 goal home.
+
+GW003 (n=7,763): home wins 3,330 (42.90%); draws 1,365 (17.58%); away wins 3,068 (39.52%). Goal medi: home 1.6035, away 1.5154. Differenziale +0.0881.
+
+GW004 (n=1,424): home wins 590 (41.43%); draws 288 (20.22%); away wins 546 (38.34%). Goal medi: home 1.4417, away 1.4024. Differenziale +0.0393.
+
+GW005 (n=589): home wins 213 (36.16%); draws 194 (32.94%); away wins 182 (30.90%). Goal medi: home 1.1868, away 1.1511. Differenziale +0.0357.
+
+Aggregando concettualmente questi quattro mondi, il segnale è coerentemente orientato verso casa: in tutti e quattro home-win rate > away-win rate e home goals > away goals. Il margine è piccolo/moderato e varia tra mondi.
+
+CLASSIFICAZIONE: STRONG EMPIRICAL SIGNAL per un home advantage osservazionale. NON è `CONFIRMED INPUT`, perché i dati osservazionali non provano che il codice applichi esplicitamente un modificatore casa. Possibili confondenti: composizione competizioni, manager, selezione squadre, stagioni e differenze tra mondi.
+
+5.2 MATCH STATISTICS
+
+GW005 Match Report, n=271:
+- tiri medi home 12.982 vs away 12.565;
+- tiri in porta home 5.273 vs away 5.159;
+- possesso medio home 50.808%.
+
+Anche gli output intermedi mostrano un leggero orientamento home coerente col risultato aggregato. Di nuovo: segnale, non prova di una variabile codificata.
+
+5.3 MATCH REPORT GRANULARITY
+
+Un controllo diretto mostra che Match Report conserva eventi molto granulari. Esempio osservato: una gara 4-1 contiene 27 vs 16 tiri, 11 vs 2 in porta, 61%-39% possesso, e un rosso al 12'. Il player JSON permette di associare rating partita, starter e cartellini; tactics_json registra tattiche iniziali e snapshot successivi. Questo rende possibile in futuro modellare shot generation, conversione, red-card effects e tactical state changes senza inventare ciò che il motore fa internamente.
+
+5.4 RATING / TEAM STRENGTH
+
+Web: rating è ufficialmente parte centrale della rappresentazione del giocatore; il CASE precedente ha classificato la qualità dei giocatori come input plausibilmente fondamentale.
+IMC data: GW005 dispone di Codex 700, ma non è garantito che il rating attuale equivalga al rating al momento del match.
+Conclusione: CONFIRMED INPUT a livello concettuale dalla documentazione ufficiale; INSUFFICIENT DATA per stimarne ora quantitativamente l'effetto storico con rigore sul dataset IMC disponibile.
+
+5.5 BENCH / FULL SQUAD QUALITY
+
+I Match Report distinguono starter e substitute, ma la qualità completa della rosa non è ricostruibile storicamente in modo uniforme. Player Codex manca in 8/9 GW analizzati e lo snapshot corrente non può sostituire lo stato pre-match.
+Conclusione: INSUFFICIENT DATA. I dati attuali non supportano né smentiscono l'ipotesi IMC che una panchina/rosa debole abbassi direttamente il Match Engine.
+
+5.6 TACTICS
+
+GW005 ha 271 match con tactics_json completo e numerose istruzioni. È dunque testabile osservazionalmente l'associazione tra tattiche e output, ma il campione è fortemente confondibile da forza squadra, manager e scelta tattica endogena. La documentazione ufficiale conferma che le tattiche sono input.
+Conclusione: CONFIRMED INPUT (fonte ufficiale); dataset IMC già adatto a future analisi comparative, ma non a dichiarare una tattica universalmente superiore senza controlli.
+
+5.7 CONDITION / MORALE / FORM / AGE
+
+Condition e morale sono CONFIRMED INPUT dalla documentazione ufficiale dei CASE precedenti. Il database osservato non offre snapshot pre-match uniformi di queste variabili. Age è presente solo nel Codex GW005 corrente; form pre-match non è ricostruita in modo affidabile.
+Conclusione empirica IMC: INSUFFICIENT DATA per condition, morale e form; CONFOUNDED/CANNOT INFER per un effetto autonomo dell'età.
+
+5.8 RNG / UPSETS
+
+I Results dimostrano naturalmente varianza negli esiti, ma senza una misura storica affidabile della forza pre-match non è possibile definire rigorosamente un upset né isolare la componente RNG.
+Conclusione: INSUFFICIENT DATA per quantificare RNG o upset conditional-on-strength.
+
+5.9 SINGLE VS MULTI
+
+I dati mostrano differenze nelle distribuzioni: GW002/GW003 GOLD hanno più goal e draw rate ~17-18%, mentre GW005 presenta goal più bassi e draw rate ~33%. Non è lecito attribuire queste differenze alla categoria GOLD vs CUSTOM: cambiano club, competizioni, stagioni, regole e composizione del campione.
+Conclusione: CONFOUNDED / CANNOT INFER.
+
+6. MATCH ENGINE VARIABLE MAP
+
+Rating / player quality: CONFIRMED INPUT concettuale; effetto quantitativo IMC = INSUFFICIENT DATA storico.
+Natural position / out of position: CONFIRMED INPUT ufficiale; IMC = INSUFFICIENT DATA perché manca codifica storica della posizione occupata vs naturale per tutti i match.
+Tactics: CONFIRMED INPUT; Match Report IMC offre forte base futura.
+Condition/Fitness: CONFIRMED INPUT ufficiale; IMC = INSUFFICIENT DATA pre-match.
+Morale: CONFIRMED INPUT ufficiale; IMC = INSUFFICIENT DATA pre-match.
+Starting XI: CONFIRMED/observable component; IMC Match Report identifica starter.
+Substitutions: CONFIRMED/observable; IMC conserva substitute e minuti.
+Bench quality direct modifier: INSUFFICIENT DATA / non confermato ufficialmente.
+Full squad quality direct modifier: INSUFFICIENT DATA / non confermato ufficialmente.
+Age/experience direct modifier: CONFOUNDED / CANNOT INFER.
+Form direct modifier: INSUFFICIENT DATA.
+Home advantage: STRONG EMPIRICAL SIGNAL nei Results IMC; non confirmed code input.
+RNG: INSUFFICIENT DATA per quantificazione.
+Momentum: NO DIRECT EVIDENCE / INSUFFICIENT DATA.
+Manager identity: osservabile in parte; CONFOUNDED e potenziale importante controllo.
+Cards/red cards: observable match event; forte candidato per analisi causale quasi-temporale sugli output successivi alla card.
+Shot generation/conversion: observable output layer; testabile con Match Report.
+
+7. CONFOUNDERS / CAUSALITY WARNINGS
+
+Le principali trappole sono:
+- rating corrente usato come rating storico;
+- roster corrente usato come roster storico;
+- tattica scelta in risposta alla forza avversaria interpretata come causa indipendente;
+- manager forti associati sia a rose forti sia a tattiche migliori;
+- campionati/divisioni diversi aggregati senza controllo;
+- partite di coppa/league mescolate;
+- Match Report non random sample dell'intero archivio;
+- cambiamenti del motore nel tempo;
+- importazioni dinamiche e copertura diversa per GW.
+
+8. IPOTESI SUPPORTATE / INDEBOLITE / NON TESTABILI
+
+SUPPORTATA come osservazione: esiste un segnale home positivo ripetuto su GW002, GW003, GW004 e GW005.
+SUPPORTATA: Match Report contiene abbastanza dettaglio per analisi tattiche e di generazione eventi molto più profonde.
+NON TESTABILE ORA: qualità panchina come modificatore diretto.
+NON TESTABILE ORA: qualità rosa completa come modificatore diretto.
+NON TESTABILE ORA: morale/condition quantitativi.
+NON TESTABILE ORA: forma come input autonomo.
+NON TESTABILE ORA: età/esperienza come modificatore autonomo.
+NON TESTABILE ORA: quantità di RNG.
+NON DIMOSTRATA: differenza strutturale del motore SINGLE vs MULTI.
+
+9. TEST CONTROLLATI PROPOSTI
+
+A. BENCH TEST: stessa XI/tattica contro avversario controllato, alternando sistematicamente panchina forte/debole senza usare i sostituti. Molte repliche. È il test più diretto della controversia IMC.
+
+B. FULL-SQUAD TEST: stesso XI+panchina, modificare solo giocatori non convocati mantenendo tutto il resto stabile. Richiede Game World sperimentale e molte repliche.
+
+C. HOME/AWAY PAIRED TEST: coppie di squadre/manager comparabili, stessa tattica e XI in andata/ritorno, accumulando molte coppie. Permette di separare meglio home effect da team strength.
+
+D. TACTIC A/B: stessa squadra e avversario comparabile, una sola istruzione cambiata per blocchi di partite. Non cambiare cinque parametri insieme, tradizione umana sorprendentemente popolare quando si vuole capire quale dei cinque abbia funzionato.
+
+E. CONDITION/MORALE: iniziare a catturare snapshot timestamped pre-match per XI e bench. Senza questo il database non può rispondere seriamente.
+
+F. RATING: conservare rating snapshot alla data della partita e rating XI ponderato. Solo allora stimare win probability e goal difference conditional-on-rating-gap.
+
+G. RED CARD NATURAL EXPERIMENT: usare minuto del rosso e stato della partita per studiare cambi in goal/event generation post-card; richiede timeline commentary/events.
+
+10. HIGHEST-VALUE NEXT INVESTIGATIONS
+
+1. Costruire snapshot pre-match storici di rating, condition, morale, posizione e roster.
+2. Analisi completa GW005 dei 271 Match Report: tactics -> shots -> SOT -> goals, controllando team/manager.
+3. Home advantage multi-GW con stratificazione league/cup, divisione e stagione.
+4. Bench/full-squad controlled experiment.
+5. Rating-gap model appena disponibili rating pre-match.
+6. Shot conversion e distribuzione degli upset dopo ricostruzione strength.
+7. Effetti delle sostituzioni e del minuto di sostituzione.
+8. Effetti red card con timeline.
+9. Stabilità del Match Engine nel tempo, separando versioni/periodi.
+10. Manager fixed-effects: misurare quanto del risultato resta associato al manager dopo controllo per forza squadra.
+
+11. CONCLUSIONE
+
+Il risultato più importante del CASE non è una formula segreta estratta dal nulla. È aver stabilito cosa il patrimonio dati IMC può già misurare senza barare con la causalità.
+
+Il segnale empirico più pulito oggi è l'home advantage osservazionale, replicato in quattro Game World. Il patrimonio più promettente è GW005 Match Report, perché combina risultato, statistiche, giocatori e tattiche per 271 gare. La controversia sulla qualità della panchina/rosa resta invece realmente aperta: il database attuale non possiede ancora lo stato storico necessario per risolverla correttamente.
+
+Per trasformare l'IMC in un vero laboratorio del
