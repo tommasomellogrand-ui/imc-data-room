@@ -1,0 +1,383 @@
+CASE_ID: IMC-CREATIVE-001-01
+DOC_TYPE: RESPONSE
+AREA: CREATIVE
+DATE: 2026-09-10
+TOPIC: MINISITE_CORE_CREATIVE_ARCHITECTURE_REVIEW
+
+IMC | CREATIVE DIRECTOR
+MINISITE CORE · CREATIVE ARCHITECTURE REVIEW
+
+EXECUTIVE VERDICT
+La proposta dell'Engineer è corretta nella direzione e, con alcuni vincoli creativi espliciti, protegge bene l'identità autonoma dei Game World.
+
+Approvo il principio:
+CORE OWNS BEHAVIOR AND CONTRACTS
+GW PACKAGE OWNS IDENTITY AND COMPOSITION
+FEATURES OWN OPTIONAL DOMAIN CAPABILITIES
+
+La condizione essenziale è che “composition” non diventi in pratica una sottile variazione di uno stesso layout. Il Core deve imporre comportamento, semantica, accessibilità, stato, dati e contratti; non deve imporre ritmo visivo, gerarchia editoriale, proporzioni, densità, materiali, fotografia, hero o struttura narrativa.
+
+La decisione creativa consigliata è quindi:
+APPROVARE L’ARCHITETTURA, MA FORMALIZZARE UN CREATIVE FREEDOM CONTRACT PRIMA DELL’IMPLEMENTAZIONE.
+
+1. COMPOSITION LAYER
+Il Composition Layer deve essere un vero livello di composizione, non un set di slot fissi.
+
+REQUISITO:
+- ogni GW deve poter cambiare ordine, scala, quantità e relazione tra i blocchi;
+- una pagina Home può essere radicalmente diversa da un’altra;
+- una Competition Page può usare griglia, timeline, mappa, board, stack, journal o qualsiasi altra struttura coerente con il proprio mondo;
+- il Core può fornire dati e component contracts, ma non deve prescrivere che ogni pagina abbia “hero + 3 cards + table + rail”.
+
+Il Composition Layer deve poter:
+- omettere componenti non necessari;
+- ripetere componenti;
+- sostituire un componente standard con un signature component;
+- cambiare la gerarchia visiva a seconda del GW;
+- costruire layout asimmetrici e editoriali;
+- avere varianti desktop e mobile realmente differenti.
+
+2. THEME LAYER
+Il Theme Layer deve governare molto più del semplice colore.
+
+Deve poter definire almeno:
+- typography families e scale;
+- font weights;
+- spacing rhythm;
+- radius language;
+- border language;
+- materials;
+- surface behavior;
+- shadows;
+- glow;
+- translucency;
+- texture;
+- icon treatment;
+- image treatment;
+- chart styling;
+- score styling;
+- emphasis rules;
+- motion tokens;
+- responsive density.
+
+Il sistema non deve assumere che tutti i GW abbiano card arrotondate, superfici scure, bordi sottili o uno stesso modello di depth.
+
+3. COMPONENT SKINNING
+Lo skinning deve essere profondo, non cosmetico.
+
+Un “Match Object” condiviso semanticamente può avere lo stesso contratto dati ma rendering completamente differente:
+- GW001: archivio premium / titanium / broadcast;
+- GW007: oggetto territoriale;
+- GW009: retro score plate / CRT / pixel panel;
+- GW005: editoriale / Hall / recognition object.
+
+Il contratto condiviso deve descrivere COSA rappresenta il componente, non COME deve apparire.
+
+4. MOTION
+Il Core deve condividere accessibilità, prefer-reduced-motion e lifecycle degli stati, ma il motion language deve restare nel GW package.
+
+Ogni GW deve poter definire:
+- duration;
+- easing;
+- reveal behavior;
+- transitions;
+- stagger;
+- morph;
+- depth transition;
+- number change;
+- score update treatment;
+- page entrance.
+
+Il Core non deve imporre una motion grammar unica.
+
+5. TYPOGRAPHY
+La tipografia deve restare totalmente di competenza del GW package.
+
+Il Core può definire solo requisiti tecnici:
+- leggibilità;
+- contrasto;
+- scaling;
+- tabular numbers quando utile;
+- fallback;
+- performance;
+- accessibilità.
+
+Non deve imporre una font family, una scala tipografica identica o un sistema di titoli uniforme.
+
+6. RESPONSIVE COMPOSITION
+Questo è un punto critico.
+
+Il responsive non deve essere gestito dal Core come semplice compressione del desktop.
+
+Il Core può definire:
+- breakpoint contract;
+- safe area;
+- touch target;
+- keyboard/focus behavior;
+- navigation state;
+- overflow safety.
+
+Il GW package deve poter ridefinire completamente:
+- ordine dei contenuti;
+- visibilità dei blocchi;
+- dimensione degli hero;
+- struttura delle rail;
+- posizione delle navigation controls;
+- densità dei dati;
+- composizione delle detail page.
+
+Mobile e desktop devono restare due composizioni dello stesso mondo, non la stessa pagina ridotta.
+
+7. EDITORIAL STORYTELLING
+Il Core non deve ridurre il minisito a una sequenza di viste funzionali.
+
+Deve essere possibile inserire nel GW package:
+- editorial break;
+- chapter;
+- quote;
+- archive moment;
+- manifesto;
+- feature story;
+- season narrative;
+- rivalry module;
+- record wall;
+- visual essay;
+- cinematic hero.
+
+Questi elementi devono poter convivere con i componenti dati senza essere considerati “eccezioni”.
+
+8. ASSET SYSTEM
+Gli asset devono essere pienamente package-scoped.
+
+Ogni GW deve poter avere:
+- immagini;
+- textures;
+- illustration;
+- generated imagery;
+- icons;
+- crests;
+- decorative objects;
+- fonts;
+- backgrounds;
+- video/motion assets;
+- sound assets, qualora in futuro approvati.
+
+Il Core deve fornire un asset resolver e regole di caricamento/performance, ma non una libreria visuale obbligatoria.
+
+9. SIGNATURE COMPONENTS
+È indispensabile un meccanismo ufficiale per signature components.
+
+Non devono essere hack o componenti “fuori standard”. Devono essere una feature di prima classe del sistema.
+
+Esempi:
+- GW001 Historical Annotation / Archive Chapter / Titanium Score Plate;
+- GW007 Territory Map / Kingdom Object / Border Score;
+- GW009 CRT Panel / Pixel Score Plate / Season Manual;
+- GW005 Recognition Wall / Living Hall Portrait;
+- GW004 Promotion Gate / Pyramid Level;
+- GW006 Stage Progression / Final Gate.
+
+Il Core deve permettere al package di registrare componenti specifici senza introdurre branching if(GW...).
+
+10. HOMEPAGE FREEDOM
+La homepage deve essere la pagina con maggiore libertà creativa.
+
+Non deve esistere un “Home template” obbligatorio.
+
+Il Core deve fornire:
+- routing;
+- data context;
+- state management;
+- loading/error behavior;
+- accessibility;
+- feature availability.
+
+La composizione deve essere completamente del GW.
+
+Questo è fondamentale per preservare la forza di GW001 e per permettere in futuro mondi ancora più radicali.
+
+11. DETAIL PAGE FREEDOM
+Le detail page devono avere un contratto semantico comune, ma non necessariamente lo stesso layout.
+
+Esempio Match Detail:
+shared contract:
+- competition;
+- teams;
+- score/status;
+- date/time;
+- events;
+- stats;
+- managers;
+- players;
+- source state.
+
+rendering:
+- completamente specifico del GW.
+
+Stesso principio per Club, Manager, Player, Competition e Transfer.
+
+12. COMPONENT CONTRACT VS RENDERING
+La separazione deve essere formalizzata così:
+
+SHARED CONTRACT = semantica, dati, stati, eventi, accessibility hooks.
+GW RENDERER = markup, hierarchy, style, visual grammar, motion, editorial interpretation.
+
+Il Core non dovrebbe distribuire markup rigido come unica modalità di rendering.
+
+Preferibile un sistema in cui il Core fornisce component model / view model e il GW decide il renderer.
+
+13. PRESERVATION GW001
+GW001 è il test principale della libertà del sistema.
+
+Deve poter conservare:
+- ritmo Archive × Command Center;
+- hero cinematici;
+- chapter editoriali;
+- score plate premium;
+- alternanza dark / ivory;
+- dossier e annotazioni storiche;
+- composizione asimmetrica;
+- forte gerarchia tipografica;
+- pagine Competition e Match specifiche;
+- Archive come funzione narrativa, non semplice elenco.
+
+Se il futuro Core costringesse GW001 a sembrare una dashboard standard con skin diversa, l’architettura avrebbe fallito.
+
+14. PRESERVATION GW007
+GW007 è il secondo stress test.
+
+Deve poter conservare:
+- Kingdom navigation;
+- Territory Map;
+- codifica cromatica territoriale;
+- border/confrontation language;
+- relazioni geografiche astratte;
+- layout a regioni;
+- moduli rivalry;
+- gerarchia narrativa Four Kingdoms.
+
+Il Core non deve trattare Country come unico paradigma possibile di navigazione contestuale.
+
+Il context engine deve poter supportare un concetto generico di “context dimension”, che GW007 può chiamare Kingdom/Territory.
+
+15. FUTURI GW RADICALMENTE NUOVI
+L’architettura deve essere valutata non solo sui GW esistenti ma anche su un GW futuro che oggi non possiamo prevedere.
+
+Requisito:
+un nuovo GW deve poter avere una nuova visual grammar senza modificare il Core.
+
+Se per creare una nuova identità servisse cambiare il Core, significa che il Core possiede troppo design.
+
+16. NAVIGATION
+La semantica di navigazione può essere condivisa, ma il suo rendering no.
+
+Il sistema dovrebbe standardizzare:
+- destination semantics;
+- active state;
+- back behavior;
+- deep links;
+- context persistence;
+- mobile accessibility;
+- keyboard behavior;
+- route naming.
+
+Ma ogni GW deve poter scegliere:
+- top nav;
+- side rail;
+- bottom nav;
+- contextual rail;
+- territory selector;
+- tab system;
+- menu overlay;
+- hybrid navigation.
+
+Non deve esistere un’unica shell visiva obbligatoria.
+
+17. CREATIVE TOKEN BOUNDARIES
+Consiglio di dividere esplicitamente i token in due categorie.
+
+PLATFORM TOKENS
+- accessibility sizes;
+- safe touch target;
+- focus behavior;
+- breakpoint primitives;
+- state semantics;
+- loading/error semantics.
+
+GW CREATIVE TOKENS
+- color;
+- type;
+- spacing rhythm;
+- surface;
+- border;
+- radius;
+- depth;
+- imagery;
+- motion;
+- chart language;
+- visual density.
+
+Il Core non deve trasformare i platform tokens in una design system visuale universale.
+
+18. FEATURE MODULES
+Le feature opzionali sono corrette, ma devono essere composable.
+
+Un feature module deve fornire capability e data contract, non un blocco visuale obbligatorio.
+
+Esempio:
+Promotion/Relegation Feature
+fornisce:
+- thresholds;
+- zone state;
+- progression;
+- movement semantics.
+
+GW004 decide come renderizzarla come Promotion Gate; un altro GW potrebbe usarla come timeline o simple table annotation.
+
+19. NO BRANCHING IF(GW...)
+Confermo pienamente questa regola.
+
+È importante anche creativamente perché impedisce che il Core accumuli eccezioni per i singoli mondi.
+
+Le differenze devono vivere in:
+- config;
+- composition;
+- renderer registry;
+- feature registration;
+- theme;
+- assets;
+- extensions.
+
+20. CREATIVE GOVERNANCE
+Prima dell’implementazione consiglio di formalizzare tre documenti/contratti:
+
+A. CORE BEHAVIOR CONTRACT
+Cosa è condiviso e non modificabile dal GW.
+
+B. GW CREATIVE FREEDOM CONTRACT
+Cosa il GW può controllare completamente.
+
+C. COMPONENT SEMANTIC CONTRACTS
+Quali dati/stati ogni componente rappresenta, senza imporre il rendering.
+
+Questo evita che nel tempo il Core si allarghi e inizi a inglobare decisioni visuali per comodità tecnica.
+
+FINAL RECOMMENDATION
+APPROVATO CON REQUISITI.
+
+L’architettura proposta dall’Engineer è la direzione corretta e coerente con IMC-CREATIVE-001.
+
+La scelta migliore non è creare due shell visuali separate GOLD/MULTI e SINGLE, ma un solo Minisite Core con due information profiles e package creativi completamente autonomi.
+
+Formula definitiva consigliata:
+
+ONE IMC MINISITE CORE
+TWO INFORMATION PROFILES
+NINE CREATIVE SYSTEMS
+UNLIMITED FUTURE IDENTITIES
+
+Il Core deve possedere comportamento, dati, semantica, accessibility e contratti.
+Il GW package deve possedere identità, composizione, rendering e storytelling.
+Le feature devono possedere capacità opzionali, non design.
+
+Questa separazione è sufficientemente forte per preservare GW001, GW007 e gli altri mondi, purché i vincoli sopra vengano considerati requisiti architetturali e non semplici preferenze creative.
