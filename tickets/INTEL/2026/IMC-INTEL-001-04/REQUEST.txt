@@ -1,0 +1,222 @@
+CASE_ID: IMC-INTEL-001-04
+DOC_TYPE: REQUEST
+AREA: INTEL
+DATE: 2026-09-10
+TOPIC: DATA_INFORMED_EXTERNAL_MATCH_ENGINE_RESEARCH
+
+IMC | SOCCER MANAGER INTELLIGENCE
+DATA-INFORMED EXTERNAL MATCH ENGINE DEEP RESEARCH
+
+CONTESTO
+Dopo IMC-INTEL-001, IMC-INTEL-001-01, IMC-INTEL-001-02 e IMC-INTEL-001-03, la Direzione vuole effettuare una nuova investigazione esterna molto più profonda sul funzionamento di Soccer Manager Worlds.
+
+Questa ricerca deve essere diversa dalle precedenti.
+
+Nei CASE precedenti hai prima studiato il web e successivamente scoperto quali dati possiede realmente IMC.
+
+Ora conosci entrambe le cose.
+
+Sai che IMC dispone, o sta progressivamente acquisendo, di un dataset Match Report estremamente granulare contenente per migliaia di partite:
+- player ID globale;
+- starter/substitute;
+- minuti di ingresso/uscita;
+- match rating;
+- gol;
+- assist;
+- MoM;
+- cartellini;
+- risultati;
+- possesso;
+- tiri;
+- tiri in porta;
+- corner;
+- formazione;
+- tattiche iniziali;
+- snapshot tattici durante la partita;
+- eventi con minuto e player ID;
+- commentary;
+- manager;
+- club;
+- home/away;
+- competition;
+- match date.
+
+Sai inoltre che il player ID dei Match Report appartiene allo stesso namespace di IMC Player Codex Global.id e che IMC possiede Rating History temporalmente utilizzabile, oltre a ulteriori informazioni Player Codex.
+
+La posizione effettivamente giocata NON è un requisito di questa ricerca. Non concentrare risorse investigative sulla ricostruzione della played position.
+
+OBIETTIVO
+Torna ora sul web pubblico e ricomincia l'investigazione con gli occhi di chi conosce esattamente quali variabili IMC può osservare e testare.
+
+Non vogliamo una terza panoramica generale di Soccer Manager.
+
+Vogliamo trovare claim, esperimenti, osservazioni, dichiarazioni e teorie specifiche sul Match Engine che possano essere confrontate con il dataset IMC.
+
+RICERCA MOLTO PIÙ AMPIA
+Non limitarti alle fonti già utilizzate.
+
+Cerca profondamente in:
+- documentazione ufficiale attuale e storica;
+- vecchi Help/FAQ;
+- post o dichiarazioni di sviluppatori/moderatori;
+- forum Soccer Manager;
+- forum calcistici con community SM;
+- Reddit;
+- Facebook pubblico;
+- gruppi/pagine/community pubblicamente indicizzabili;
+- blog;
+- siti personali;
+- YouTube e relative descrizioni/commenti pubblici quando utili;
+- guide;
+- wiki;
+- archivi web;
+- thread molto vecchi;
+- discussioni molto lunghe;
+- spreadsheet/dataset pubblici;
+- screenshot o report di esperimenti;
+- community internazionali.
+
+Cerca anche in lingue diverse dall'inglese.
+
+Utilizza query e terminologia locale quando questo può far emergere community che una ricerca inglese non trova.
+
+Segui link, riferimenti, username, community e termini tecnici scoperti durante la ricerca.
+
+Non fermarti ai primi risultati dei motori di ricerca.
+
+Nessun accesso privato, bypass, login, cookie, token o aggiramento anti-bot.
+
+COSA CERCARE
+Dedica particolare attenzione a evidenze riguardanti:
+
+PLAYER RATING
+Quanto conta?
+È lineare?
+94 vs 93 produce lo stesso salto di 89 vs 88?
+Esistono diminishing returns?
+Esistono soglie?
+
+COMPOSIZIONE DELLA XI
+Conta maggiormente la media XI, i migliori giocatori, il giocatore più forte, i top 3/top 5 o qualche altra distribuzione?
+Esistono testimonianze/test su 94 + squadra mediocre rispetto a 94 + 93 + 92 + squadra forte?
+
+PANCHINA
+Esistono prove, esperimenti o dichiarazioni sul fatto che la qualità dei sostituti incida prima ancora che entrino?
+
+ROSA COMPLETA
+Cerca specificamente qualsiasi riferimento all'ipotesi che giocatori non convocati o qualità/media dell'intera rosa influenzino la simulazione.
+
+MATCH RATING
+Da cosa sembra derivare il voto del singolo giocatore?
+Qual è la relazione osservata tra Soccer Manager player rating e match rating?
+
+MINUTI / STARTER / SUBSTITUTE
+Esistono differenze note nel comportamento o rendimento dei sostituti?
+
+TACTICS
+Cerca non soltanto “best tactics”, ma esperimenti che colleghino singole istruzioni a possesso, tiri, SOT, gol, risultato e disciplina.
+
+TACTICAL CHANGES
+Esistono analisi sugli effetti delle modifiche tattiche durante la partita?
+
+HOME ADVANTAGE
+IMC ha già trovato un forte segnale osservazionale. Cerca qualsiasi evidenza esterna che possa confermarlo, quantificarlo o contraddirlo.
+
+SHOTS / SHOTS ON TARGET / CONVERSION
+Cerca discussioni sul modo in cui il motore genera occasioni e converte occasioni in gol.
+
+RNG / VARIANZA / UPSETS
+Cerca tentativi seri di quantificare casualità, upset, risultati contro andamento partita o “match engine specials”.
+
+MANAGER EFFECT
+Cerca se esistono meccaniche attribuite direttamente al manager oppure se l'effetto manageriale deriva esclusivamente dalle decisioni prese.
+
+MORALE / CONDITION / FORM
+Cerca soglie, esperimenti, effetti quantitativi o comportamenti non documentati.
+
+CARTELLINI / ESPULSIONI
+Cerca informazioni sull'effetto di giocare in dieci e sull'eventuale comportamento adattivo del motore.
+
+ALTRE VARIABILI
+Non limitarti a questo elenco.
+
+Se trovi una meccanica, teoria o pattern che IMC potrebbe verificare con Match Report + Player Codex + Results, approfondiscilo.
+
+CAMBIO DI METODO
+Per ogni informazione interessante vogliamo questa catena:
+
+EXTERNAL CLAIM
+-> SOURCE / DATE / VERSION
+-> EVIDENCE LEVEL
+-> CONTRARY EVIDENCE
+-> IMC VARIABLES AVAILABLE
+-> TEST POSSIBLE WITH IMC DATA
+-> EXPECTED OBSERVABLE SIGNAL
+
+Esempio:
+CLAIM: la panchina debole riduce la forza della squadra
+
+non deve terminare con “la community lo dice”.
+
+Deve terminare con:
+Per testarlo IMC dovrebbe confrontare match con XI strength comparabile ma bench strength differente, controllando opponent strength, home/away, manager e tactics.
+
+CERCA ANCHE DI SMENTIRE
+Per ogni claim importante effettua deliberatamente una ricerca contraria.
+
+Se trovi:
+rating medio XI determina fortemente il risultato
+
+cerca anche:
+rating doesn't matter Soccer Manager Worlds
+lower rated teams winning SM Worlds
+
+e equivalenti nelle altre lingue.
+
+Vogliamo sapere dove la community concorda e dove si contraddice.
+
+VERSIONING
+Questo è fondamentale.
+
+Soccer Manager Worlds è cambiato nel tempo.
+
+Ogni evidenza deve essere classificata, quando possibile, come:
+CURRENT
+LIKELY CURRENT
+HISTORICAL
+POTENTIALLY OBSOLETE
+VERSION UNKNOWN
+
+Non mescolare automaticamente una meccanica documentata nel 2012 con il motore 2026.
+
+OUTPUT
+Produci:
+SOCCER MANAGER INTELLIGENCE REPORT #004 · DATA-INFORMED EXTERNAL MATCH ENGINE RESEARCH
+
+con:
+1. nuove fonti trovate;
+2. nuove community trovate;
+3. nuovi claim;
+4. conferme delle precedenti evidenze;
+5. contraddizioni;
+6. evidenze storiche potenzialmente obsolete;
+7. matrice CLAIM -> IMC TEST;
+8. ranking delle ipotesi per valore investigativo;
+9. esperimenti immediatamente eseguibili con i dati IMC attuali;
+10. esperimenti che diventeranno possibili aumentando la copertura Match Report/Rating History;
+11. TOP 20 MATCH ENGINE HYPOTHESES TESTABLE BY IMC;
+12. WHAT WE STILL CANNOT EXPLAIN.
+
+PRINCIPIO FINALE
+Non cercare una fantomatica “formula segreta” da copiare.
+
+Cerca pezzi di comportamento osservabile che possano essere trasformati in ipotesi falsificabili sui nostri dati.
+
+Il valore di questa ricerca sarà misurato soprattutto da quante nuove domande testabili riuscirai a portarci, non dalla quantità di testo prodotto.
+
+VINCOLO
+Solo ricerca e analisi.
+Nessuna modifica a database, codice, importer o infrastruttura.
+
+OUTPUT AUTORITATIVO
+tickets/INTEL/2026/IMC-INTEL-001-04/RESPONSE.txt
