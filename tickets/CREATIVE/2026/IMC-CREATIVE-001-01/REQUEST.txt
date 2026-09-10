@@ -1,0 +1,96 @@
+CASE_ID: IMC-CREATIVE-001-01
+DOC_TYPE: REQUEST
+AREA: CREATIVE
+DATE: 2026-09-10
+TOPIC: MINISITE_CORE_CREATIVE_ARCHITECTURE_REVIEW
+
+IMC | CREATIVE DIRECTOR
+MINISITE CORE · CREATIVE ARCHITECTURE REVIEW
+
+CONTESTO
+L'Engineer ha completato IMC-ENG-009-01 e ha proposto la futura struttura dell'IMC Minisite Core.
+
+SINTESI DELLA PROPOSTA ENGINEER
+La proposta prevede tre livelli:
+
+1. PLATFORM SHARED
+Core runtime, router, context engine, data access, component contracts, feature modules, accessibility e foundation condivisa.
+
+2. GAME WORLD PACKAGE
+Ogni GW mantiene autonomamente:
+- config;
+- theme;
+- compositions;
+- assets;
+- eventuali extensions.
+
+3. PUBLIC ENTRYPOINT
+Shell minima pubblica che carica Core + package del relativo GW.
+
+Principio tecnico proposto:
+CORE OWNS BEHAVIOR AND CONTRACTS
+GW PACKAGE OWNS IDENTITY AND COMPOSITION
+FEATURES OWN OPTIONAL DOMAIN CAPABILITIES
+
+L'Engineer propone inoltre che il Core non conosca mai direttamente GW001, GW002, ecc. e che nessun comportamento specifico venga implementato tramite branching if(GW...).
+
+Routing, data access, context, loading/error states, navigation behavior, accessibility e contratti semantici diventerebbero comuni.
+
+Rimangono invece completamente nel singolo GW:
+- art direction;
+- typography;
+- palette;
+- materials;
+- motion;
+- visual density;
+- page composition;
+- hero;
+- asset;
+- component skin;
+- editorial rhythm;
+- eventuali estensioni realmente specifiche.
+
+È previsto inoltre un vero Composition Layer, così una pagina non deve necessariamente avere lo stesso markup o layout negli altri GW.
+
+In particolare:
+- GW001 conserverebbe compositions proprie per Home, Competition, Match, Archive e le proprie estensioni editoriali;
+- GW007 conserverebbe compositions Kingdom/Territory e relative estensioni Four Kingdoms.
+
+Quindi il Core condividerebbe il comportamento, non il design.
+
+DOMANDA ALLA DIREZIONE CREATIVA
+Prima di approvare questa struttura per la futura implementazione, vogliamo una tua review.
+
+Considerando IMC-CREATIVE-001, le Visual Design Exploration e la proposta tecnica dell'Engineer:
+
+1. Ritieni che questa architettura protegga sufficientemente la libertà creativa e l'identità dei singoli Game World?
+2. Cosa aggiungeresti, modificheresti o vincoleresti dal punto di vista della Creative Direction prima che l'Engineer inizi a costruire il sistema?
+
+AREE DA VALUTARE
+Valuta in particolare:
+- Composition Layer;
+- Theme Layer;
+- component skinning;
+- motion;
+- typography;
+- responsive composition;
+- editorial storytelling;
+- asset system;
+- possibilità di creare signature components;
+- libertà delle homepage;
+- libertà delle detail page;
+- rapporto tra component contract condiviso e rendering specifico;
+- preservation di GW001;
+- preservation di GW007;
+- capacità futura di creare GW con identità radicalmente nuove.
+
+VINCOLI
+Non ridisegnare ora i minisiti.
+Non modificare codice, CSS, asset, repository, workflow o siti.
+
+Vogliamo esclusivamente una CREATIVE ARCHITECTURE REVIEW della proposta dell'Engineer e gli eventuali requisiti creativi da aggiungere prima dell'implementazione tecnica.
+
+OUTPUT AUTORITATIVO
+tickets/CREATIVE/2026/IMC-CREATIVE-001-01/RESPONSE.txt
+
+Registra la RESPONSE completa nella Data Room. Dopo averla registrata torna nella chat con Tom e fornisci una sintesi esecutiva in massimo 10 bullet point.
