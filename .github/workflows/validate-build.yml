@@ -26,15 +26,27 @@ jobs:
       - uses: actions/checkout@v4
       - name: Validate metadata and build registries/site
         run: python3 tools/build_data_room.py
-      - name: Verify ticket and knowledge resolvers
+      - name: Verify hierarchy, aliases, search metadata and knowledge resolvers
         run: |
+          set -euo pipefail
           test -s dist/data/registry.json
+          test -s dist/data/case-aliases.json
           test -s dist/data/knowledge.json
           test -s dist/cases/IMC-ENG-002/request.txt
+          test -s dist/cases/IMC-ENG-002-01/request.txt
           test -s dist/cases/IMC-ENG-003/request.txt
-          grep -q '^CASE_ID: IMC-ENG-002$' dist/cases/IMC-ENG-002/request.txt
-          grep -q '^TOPIC: IMC_DATA_ROOM_TICKETING_SYSTEM$' dist/cases/IMC-ENG-002/request.txt
-          grep -q '^CASE_ID: IMC-ENG-003$' dist/cases/IMC-ENG-003/request.txt
+          test -s dist/cases/IMC-ENG-005-02/request.txt
+          test -s dist/cases/IMC-ENG-008/request.txt
+          grep -q '"IMC-ENG-003": "IMC-ENG-002-01"' dist/data/case-aliases.json
+          grep -q '"IMC-ENG-008": "IMC-ENG-005-02"' dist/data/case-aliases.json
+          grep -q '"domain": "GATEWAY"' dist/data/registry.json
+          grep -q '"domain": "DATABASE"' dist/data/registry.json
+          grep -q 'GW001' dist/data/registry.json
+          grep -qi 'results' dist/data/registry.json
+          grep -qi 'trigger' dist/data/registry.json
+          grep -q 'IMC-ENG-002-06' dist/data/registry.json
+          cmp dist/cases/IMC-ENG-002-01/request.txt dist/cases/IMC-ENG-003/request.txt
+          cmp dist/cases/IMC-ENG-005-02/request.txt dist/cases/IMC-ENG-008/request.txt
           test -s dist/knowledge/POLICY/IMC-AUTHORITY/current.txt
           test -s dist/knowledge/REFERENCE/IMC-DB-ROUTING/current.txt
           test -s dist/knowledge/PLAYBOOK/IMC-GITHUB-DELIVERY/current.txt
