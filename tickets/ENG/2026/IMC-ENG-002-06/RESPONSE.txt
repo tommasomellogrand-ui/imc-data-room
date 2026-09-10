@@ -1,0 +1,124 @@
+CASE_ID: IMC-ENG-002-06
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: DATA_ROOM_CASE_HIERARCHY_METADATA_BACKFILL_IMPLEMENTATION
+
+IMC DATA ROOM · CASE HIERARCHY + METADATA + LEGACY BACKFILL IMPLEMENTATION
+
+STATO FINALE: ONLINE
+
+1. IMPLEMENTAZIONE ESEGUITA
+È stato implementato il modello approvato in IMC-ENG-002-05 senza rinominare o spostare i fascicoli storici. Il filesystem GitHub storico resta flat e intatto; la gerarchia è rappresentata tramite CASE_META.txt, registry e resolver pubblici.
+
+2. FORMATO CASE SUPPORTATO
+Il parser accetta ora:
+- ROOT: IMC-<AREA>-<NNN>
+- ITERATION: IMC-<AREA>-<NNN>-<II>
+
+Sono validati CASE_KIND, ROOT_CASE_ID, AREA, DOMAIN, GW e TAGS. Il vocabolario DOMAIN controllato include DATA_ROOM, GATEWAY, DATABASE, RESULTS, SCHEDULE, MATCH_REPORT, TRANSFERS, PLAYER_CODEX, PLAYER_STATS, IMPORTER, SITE, MINISITE, DEPLOYMENT, COMPETITION, AUTHORITY e GENERAL.
+
+3. METADATA IMPLEMENTATI
+Ogni CASE censito al momento del deploy finale possiede CASE_META.txt con:
+CASE_ID, AREA, DOMAIN, GW, TOPIC, TAGS, CASE_KIND, ROOT_CASE_ID e, per le iterazioni, ITERATION.
+
+Durante l'esecuzione sono stati aperti contemporaneamente nuovi CASE DB e CREATIVE; sono stati inclusi nel backfill prima del deploy finale per mantenere il registry completo.
+
+4. GERARCHIA E BACKFILL
+Cluster DATA_ROOM:
+- IMC-ENG-002 = ROOT
+- IMC-ENG-003 → canonical IMC-ENG-002-01
+- IMC-ENG-004 → canonical IMC-ENG-002-02
+- IMC-ENG-007 → canonical IMC-ENG-002-03
+- IMC-ENG-002-05 = ITERATION 05
+- IMC-ENG-002-06 = ITERATION 06
+
+Cluster GATEWAY:
+- IMC-ENG-005 = ROOT
+- IMC-ENG-006 → canonical IMC-ENG-005-01
+- IMC-ENG-008 → canonical IMC-ENG-005-02
+
+Cluster DATABASE:
+- IMC-DB-001 = ROOT
+- IMC-DB-001-01 = ITERATION 01
+
+Cluster CREATIVE/MINISITE:
+- IMC-CREATIVE-001 = ROOT, multi-GW GW001–GW009.
+
+5. COMPATIBILITÀ LEGACY E RESOLVER
+È stato introdotto data/case-aliases.json. Gli ID storici restano resolver validi e puntano allo stesso contenuto del canonical CASE. Esempi verificati dal build/deploy:
+- /cases/IMC-ENG-003/request.txt resta disponibile;
+- /cases/IMC-ENG-002-01/request.txt è il resolver canonical equivalente;
+- /cases/IMC-ENG-008/request.txt resta disponibile;
+- /cases/IMC-ENG-005-02/request.txt è il resolver canonical equivalente.
+
+I REQUEST/RESPONSE/DECISION storici non sono stati rinominati, riscritti o spostati.
+
+6. REGISTRY V2
+registry.json è stato portato a version 2 e include per ogni CASE:
+canonical_case_id, original_case_id, aliases, case_kind, root_case_id, iteration, area, domain, gw, topic, tags, status, active_request, case_meta, searchable_text e documents.
+
+Il registry espone inoltre macro_cases con root, dominio, stato, conteggio e lista ordinata delle iterazioni. registry.csv è stato esteso con gli stessi metadata principali.
+
+7. SEARCH E UI
+La UI Data Room ora supporta ricerca trasversale su CASE_ID, alias, DOMAIN, GW, TOPIC, TAGS e contenuto indicizzato, oltre a filtri AREA, DOMAIN, GW, CASE_KIND, STATUS, DATE, TOPIC e TAG.
+
+Sono disponibili due viste:
+- Flat Search;
+- Macro View, che raggruppa ROOT + ITERATION e ordina le iterazioni numericamente.
+
+Termini come RESULTS, GATEWAY, GW001, TRIGGER e DATABASE sono ricercabili attraverso metadata e searchable_text disponibile nel registry.
+
+8. VALIDAZIONE E REGRESSIONI
+Il workflow Data Room è stato esteso con controlli su:
+- resolver canonical;
+- resolver legacy;
+- case-aliases.json;
+- DOMAIN GATEWAY/DATABASE;
+- ricerca indicizzata GW001/RESULTS/TRIGGER;
+- IMC-ENG-002-06;
+- equivalenza byte dei REQUEST canonical/legacy;
+- Knowledge Layer preesistente.
+
+Il build eseguito da OPS-004 sul source finale ha prodotto:
+Validated and built 12 ticket(s), 4 knowledge document(s), 5 alias(es).
+
+9. INCIDENTI TECNICI RISOLTI DURANTE IL CICLO
+Primo deploy: failure di build causata da una troncatura del builder durante la prima sostituzione; corretto con builder compatto completo.
+Secondo tentativo: un CASE DB (IMC-DB-001-01) era stato aperto contemporaneamente e non aveva ancora metadata; classificato e incluso.
+Terzo tentativo: deploy FTPS byte-per-byte riuscito ma live check fallito per curl exit 23 causato da pipe curl|grep -q con registry più grande; OPS-004 è stato corretto per scaricare prima su file temporaneo e poi verificare con grep.
+Quarto tentativo: un nuovo CASE CREATIVE era stato aperto contemporaneamente; classificato e incluso prima del deploy definitivo.
+
+10. COMMIT PRINCIPALI
+Data Room:
+- b50e6f18579aa72531621e44951c9f254602c4d8 · design approvato IMC-ENG-002-05
+- 7f7445729671fe9269f1cdc03a7af165097c46a7 · builder gerarchico corretto/compatto
+- 3c2597012845fad6b8d398c328041814456ddb7e · metadata DB iteration concorrente
+- c8ccc92937639a5a394888414f4f9a0b7011d929 · metadata CREATIVE concorrente / HEAD funzionale pubblicato
+
+Aruba Ops:
+- 7d9c7b048415f7a56a18cd402c90e535743f8e51 · live verification robusta per registry grandi.
+
+11. DEPLOY E VERIFICA LIVE
+OPS-004 run 34472654540: SUCCESS.
+Step completati con SUCCESS:
+- Checkout Data Room source of truth;
+- Validate and build;
+- Validate Aruba configuration;
+- Check published revision;
+- Deploy Data Room via FTPS and verify bytes;
+- Verify live Data Room.
+
+La versione funzionale pubblicata e verificata live corrisponde al source Data Room commit c8ccc92937639a5a394888414f4f9a0b7011d929.
+
+12. PRESERVAZIONE STORICA
+Nessun REQUEST, RESPONSE o DECISION storico è stato cancellato, rinominato o spostato. Gli old CASE_ID restano risolvibili. Il mapping old→canonical è esplicito e auditabile nel registry e in case-aliases.json. La cronologia Git resta il rollback autoritativo.
+
+13. SISTEMI NON TOCCATI
+Nessuna modifica a MySQL, Supabase, Universal Gateway, importer, minisiti o Master Site.
+
+14. LIMITE RESIDUO
+L'apertura concorrente di nuovi CASE durante un backfill globale richiede che il nuovo fascicolo riceva CASE_META prima del build; questo comportamento è intenzionalmente fail-closed per evitare ticket silenziosamente non classificati. Il processo di creazione dei futuri CASE dovrà quindi creare REQUEST + CASE_META come unità logica.
+
+ESITO
+La Data Room supporta ora macro-case e iterazioni, metadata strutturati, alias legacy, registry V2, ricerca trasversale e Macro View. Il backfill storico disponibile al momento del deploy finale è stato completato senza perdita documentale e la versione è stata pubblicata e verificata live.
