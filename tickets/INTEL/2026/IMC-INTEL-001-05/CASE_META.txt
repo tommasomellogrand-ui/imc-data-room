@@ -1,0 +1,8 @@
+CASE_ID: IMC-INTEL-001-05
+AREA: INTEL
+DOMAIN: MATCH_ENGINE
+GW: GW002
+TOPIC: HUMAN_VS_COMPUTER_MATCH_ENGINE_ANALYSIS
+TAGS: soccer-manager, match-engine, GW002, match-report, human, computer, imc-manager, home-advantage, tactics, rating, empirical-analysis
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-INTEL-001
