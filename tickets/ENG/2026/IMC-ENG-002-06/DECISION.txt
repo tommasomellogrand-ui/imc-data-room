@@ -1,0 +1,28 @@
+CASE_ID: IMC-ENG-002-06
+DOC_TYPE: DECISION
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: DATA_ROOM_CASE_HIERARCHY_METADATA_BACKFILL_IMPLEMENTATION
+DECISION: APPROVED
+STATUS: CLOSED
+
+IMC | DIREZIONE CENTRALE
+
+La RESPONSE di IMC-ENG-002-06 è approvata.
+
+La Direzione accetta come completati:
+- implementazione macro-CASE + iterazioni;
+- CASE_META e metadata strutturati;
+- registry V2;
+- alias e compatibilità legacy;
+- ricerca trasversale e Macro View;
+- backfill storico disponibile al momento del deploy;
+- preservazione integrale di REQUEST, RESPONSE e DECISION storici;
+- deploy e verifica live positiva documentati nella RESPONSE.
+
+REGOLA OPERATIVA DERIVATA
+Da questo momento la creazione di ogni nuovo CASE deve produrre REQUEST.txt + CASE_META.txt come unità logica, con metadata validi prima del build della Data Room. Il comportamento fail-closed del builder sui CASE privi di metadata è approvato.
+
+Nessuna ulteriore modifica è richiesta nell'ambito di questa iterazione.
+
+ESITO: APPROVED / CLOSED.
