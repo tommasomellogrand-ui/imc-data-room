@@ -1,0 +1,55 @@
+CASE_ID: IMC-CREATIVE-001
+DOC_TYPE: REQUEST
+AREA: CREATIVE
+DATE: 2026-09-10
+TOPIC: GAME_WORLD_CREATIVE_UX_DIRECTION_REVIEW
+
+IMC | CREATIVE DIRECTOR
+GAME WORLD CREATIVE & UX DIRECTION REVIEW
+
+CONTESTO
+La Direzione Centrale vuole fare un punto sul lavoro sviluppato finora per i minisiti dei Game World.
+
+Prima di formulare una raccomandazione, analizza ciò che è stato realmente prodotto dalle diverse chat specialistiche: Visual Design Exploration, preview, homepage, pagine interne, menu, navigazione, componenti, UX e relative direzioni creative.
+
+OBIETTIVO
+Non vogliamo rendere i Game World graficamente uguali. Ogni GW deve continuare ad avere una propria identità visiva forte e riconoscibile.
+
+Vogliamo però evitare che ogni minisito abbia anche una logica di utilizzo completamente diversa.
+
+La domanda posta alla Direzione Creativa è:
+quale dovrebbe essere, secondo te, la migliore impostazione creativa, editoriale e soprattutto UX/navigation da adottare come riferimento per le due famiglie di Game World?
+
+FAMIGLIA GOLD / MULTI
+GW002 · GW003 · GW007 · GW008
+
+FAMIGLIA SINGLE LEAGUE
+GW001 · GW004 · GW005 · GW006 · GW009
+
+MANDATO
+Non partiamo da una soluzione già decisa. Analizza quanto è stato prodotto e indica:
+- quale lavoro esistente rappresenta oggi il riferimento migliore per ciascuna famiglia;
+- quali soluzioni di menu e navigazione meritano di diventare comuni;
+- quale information architecture funziona meglio;
+- cosa dovrebbe essere standardizzato a livello UX;
+- cosa deve invece rimanere libero e specifico del singolo GW;
+- se conviene avere due shell differenti, GOLD/MULTI e SINGLE, oppure una struttura IMC comune configurabile;
+- quale direzione consiglieresti alla Direzione Centrale come modello definitivo da sviluppare.
+
+POSTILLA DELLA DIREZIONE
+A Tom piace particolarmente il lavoro realizzato per GW001 · Road To History.
+
+Questo non significa che GW001 debba essere copiato sugli altri Game World e non deve condizionare artificialmente l'analisi.
+
+Va però considerato come un riferimento importante per capire quali aspetti della sua impostazione, esperienza, navigazione, ritmo editoriale o organizzazione dei contenuti funzionano particolarmente bene e se alcuni di questi principi possano essere trasferiti, reinterpretati o evoluti nel sistema futuro.
+
+RISULTATO ATTESO
+Una raccomandazione da Creative Director, basata sul lavoro realmente prodotto dalle chat specialistiche, che definisca la direzione consigliata per GOLD/MULTI e SINGLE LEAGUE e il corretto equilibrio tra UX comune e identità autonoma dei singoli GW.
+
+VINCOLI
+Solo audit, analisi e proposta. Nessuna modifica ai minisiti, nessun redesign operativo, nessun commit/deploy sui siti.
+
+OUTPUT AUTORITATIVO
+tickets/CREATIVE/2026/IMC-CREATIVE-001/RESPONSE.txt
+
+La RESPONSE completa deve essere registrata nella Data Room. Dopo averla registrata, torna nella chat con Tom e fornisci una sintesi esecutiva in massimo 10 bullet point. La RESPONSE resta la fonte completa e autoritativa.
