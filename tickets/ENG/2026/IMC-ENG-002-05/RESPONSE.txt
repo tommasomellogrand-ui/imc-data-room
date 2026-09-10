@@ -1,0 +1,548 @@
+CASE_ID: IMC-ENG-002-05
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: DATA_ROOM_CASE_HIERARCHY_METADATA_BACKFILL_DESIGN
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+IMC DATA ROOM · CASE HIERARCHY + METADATA + LEGACY BACKFILL DESIGN RESPONSE
+
+SCOPE
+Solo design/proposta. Nessun backfill eseguito, nessun CASE rinominato, nessun fascicolo spostato, nessun ID corrente modificato. Nessuna modifica a MySQL, Supabase, Universal Gateway, importer, minisiti o Master Site.
+
+A. AS-IS RILEVANTE
+
+La Data Room corrente usa una struttura flat:
+tickets/<AREA>/<YYYY>/<CASE_ID>/
+con documenti REQUEST/RESPONSE/DECISION e registry generato da tools/build_data_room.py.
+
+Il parser corrente accetta soltanto CASE_ID nel formato:
+IMC-<AREA>-<NNN>
+tramite CASE_RE equivalente a ^IMC-([A-Z0-9]+)-(\d{3,})$.
+
+Il CASE IMC-ENG-002-05 è quindi intenzionalmente fuori dal formato accettato oggi e dimostra la necessità della nuova grammatica gerarchica.
+
+Il registry ticket corrente espone principalmente:
+- case_id;
+- area;
+- date;
+- topic;
+- status;
+- active_request;
+- documents.
+
+La UI corrente filtra per CASE_ID/testo, AREA, DATE, TOPIC e STATUS. Non esistono ancora DOMAIN, GW, TAGS o una relazione macro-case/iterazione.
+
+B. MODELLO CASE TO-BE
+
+Principio:
+- il macro-CASE rappresenta un progetto/argomento durevole;
+- ogni prosecuzione dello stesso problema/obiettivo diventa una ITERAZIONE del macro-CASE;
+- la gerarchia deve essere logica e ricercabile, non dipendere dal nesting fisico delle directory.
+
+FORMATO ID
+Macro-case:
+IMC-<AREA>-<NNN>
+Esempi:
+IMC-ENG-002
+IMC-DB-001
+
+Iterazione:
+IMC-<AREA>-<NNN>-<II>
+con II a due cifre.
+Esempi:
+IMC-ENG-002-01
+IMC-ENG-002-05
+IMC-DB-001-01
+
+Regex proposta:
+^IMC-([A-Z0-9]+)-(\d{3,})(?:-(\d{2}))?$
+
+REGOLE
+1. NNN identifica il macro-case e non viene riutilizzato per un altro macrotema nella stessa AREA.
+2. II identifica l'iterazione all'interno del macro-case.
+3. Le iterazioni sono a un solo livello: non introdurre IMC-ENG-002-01-01.
+4. I numeri di iterazione non devono essere necessariamente contigui. Un gap è valido e non va rinumerato retroattivamente.
+5. Un REQUEST revisionato nello stesso fascicolo (REQUEST_V2, REQUEST_V3) è una revisione documentale, NON una nuova iterazione CASE.
+6. Una nuova iterazione nasce solo quando esiste un nuovo incarico operativo/decisionale sullo stesso macrotema.
+
+C. DIRECTORY MODEL
+
+Raccomandazione: mantenere directory FLAT per CASE_ID.
+
+tickets/ENG/2026/IMC-ENG-002/
+tickets/ENG/2026/IMC-ENG-002-01/
+tickets/ENG/2026/IMC-ENG-002-02/
+...
+
+NON raccomandato:
+tickets/ENG/2026/IMC-ENG-002/iterations/01/...
+
+Motivazione:
+- preserva il pattern URL e resolver esistente;
+- ogni CASE resta un fascicolo autonomo;
+- evita spostamenti fisici obbligatori;
+- rende più semplice alias e compatibilità storica;
+- permette iterazioni create in anni successivi senza dipendere dalla directory del parent;
+- consente parser e registry semplici.
+
+La gerarchia deve vivere nei metadata e nel registry, non nella posizione filesystem.
+
+D. METADATA CASE-LEVEL
+
+Raccomandazione: introdurre un file separato CASE_META.txt nel fascicolo, invece di riscrivere REQUEST/RESPONSE storici.
+
+Questo mantiene immutabili i documenti operativi e consente il backfill aggiungendo classificazione senza alterare la cronologia.
+
+Schema proposto CASE_META.txt:
+
+CASE_ID: IMC-ENG-002-05
+AREA: ENG
+DOMAIN: DATA_ROOM
+GW: GLOBAL
+TOPIC: DATA_ROOM_CASE_HIERARCHY_METADATA_BACKFILL_DESIGN
+TAGS: data-room, case-hierarchy, metadata, registry, search, backfill
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-ENG-002
+ITERATION: 05
+
+Campi obbligatori:
+- CASE_ID
+- AREA
+- DOMAIN
+- GW
+- TOPIC
+- TAGS
+- CASE_KIND
+- ROOT_CASE_ID
+
+Campo condizionale:
+- ITERATION: obbligatorio solo per CASE_KIND=ITERATION.
+
+Per un macro-case:
+CASE_KIND: ROOT
+ROOT_CASE_ID: uguale a CASE_ID
+ITERATION: assente.
+
+I primi cinque metadata già presenti nei documenti REQUEST restano validi. Il registry deve considerare CASE_META.txt autoritativo per classificazione/gerarchia e il REQUEST attivo autoritativo per il contenuto dell'incarico.
+
+E. DOMAIN · VOCABOLARIO CONTROLLATO
+
+DOMAIN deve essere un valore primario stabile e controllato. Non deve diventare una frase libera.
+
+Vocabolario iniziale proposto:
+- DATA_ROOM
+- GATEWAY
+- DATABASE
+- RESULTS
+- SCHEDULE
+- MATCH_REPORT
+- TRANSFERS
+- PLAYER_CODEX
+- PLAYER_STATS
+- IMPORTER
+- SITE
+- MINISITE
+- DEPLOYMENT
+- COMPETITION
+- AUTHORITY
+- GENERAL
+
+Regola:
+- un CASE ha un solo DOMAIN primario;
+- relazioni trasversali secondarie si esprimono tramite TAGS;
+- nuovi DOMAIN si aggiungono solo quando rappresentano una famiglia stabile di lavoro, non per ogni nuovo ticket.
+
+Esempio:
+un audit Results con trigger MySQL avrà DOMAIN: RESULTS e TAGS: results, trigger, mysql, site-results, audit.
+
+F. TAGS
+
+Formato:
+TAGS: tag-1, tag-2, tag-3
+
+Regole proposte:
+- lowercase;
+- kebab-case;
+- separati da virgola;
+- niente duplicati;
+- massimo raccomandato 12 tag;
+- usare sostantivi/concetti tecnici stabili;
+- non duplicare sistematicamente AREA, STATUS o DATE;
+- GW resta nel campo GW, non serve come tag salvo eccezioni editoriali;
+- evitare sinonimi multipli per lo stesso concetto quando esiste già una forma canonica.
+
+Esempi validi:
+results, trigger, mysql, site-results, audit
+gateway, ingress-only, importer, routing, authorization
+data-room, metadata, registry, search, backfill
+
+G. GW
+
+GW deve essere sempre valorizzato.
+
+Formati ammessi:
+- GLOBAL
+- singolo GW canonico, es. GW001
+- lista CSV di GW canonici, es. GW001,GW004,GW009
+
+Non introdurre ALL, perché il significato diventerebbe ambiguo quando nasceranno nuovi Game World.
+
+GLOBAL significa: il CASE non è legato a uno specifico Game World oppure riguarda una regola trasversale.
+
+Per casi multi-GW specifici si elencano esplicitamente i GW coinvolti.
+
+H. CRITERIO NUOVO MACRO-CASE VS NUOVA ITERAZIONE
+
+NUOVO MACRO-CASE quando:
+- cambia l'oggetto principale del lavoro;
+- cambia il sistema/prodotto/domain principale;
+- il nuovo incarico avrebbe senso anche senza conoscere il CASE precedente;
+- la sua conclusione non rappresenta una prosecuzione naturale della decisione precedente.
+
+NUOVA ITERAZIONE quando:
+- prosegue una decisione o un lavoro del macro-case;
+- implementa una proposta approvata nel macro-case;
+- corregge/regredisce una funzione costruita nello stesso macrotema;
+- aggiunge una capability allo stesso prodotto/argomento;
+- formalizza una nuova fase dello stesso percorso.
+
+Esempio corretto:
+IMC-ENG-005 = architettura minima Gateway
+IMC-ENG-005-01 = piano ingress-only
+IMC-ENG-005-02 = implementazione ingress-only
+
+Esempio di nuovo macro-case:
+un futuro progetto Frontend Minisite Engine non deve diventare una iterazione del Gateway solo perché entrambi appartengono a ENG.
+
+I. REGISTRY TO-BE
+
+Ogni entry ticket dovrebbe aggiungere almeno:
+- canonical_case_id
+- original_case_id / aliases
+- case_kind
+- root_case_id
+- iteration
+- domain
+- gw[]
+- tags[]
+- searchable_text
+
+Esempio concettuale:
+{
+  "case_id": "IMC-ENG-002-05",
+  "canonical_case_id": "IMC-ENG-002-05",
+  "aliases": [],
+  "case_kind": "ITERATION",
+  "root_case_id": "IMC-ENG-002",
+  "iteration": 5,
+  "area": "ENG",
+  "domain": "DATA_ROOM",
+  "gw": ["GLOBAL"],
+  "topic": "DATA_ROOM_CASE_HIERARCHY_METADATA_BACKFILL_DESIGN",
+  "tags": ["data-room","case-hierarchy","metadata","registry","search","backfill"],
+  "status": "WAITING_REVIEW"
+}
+
+Il registry deve inoltre poter produrre una vista macro:
+- root CASE;
+- children/iterations;
+- stato più recente;
+- data ultima attività;
+- conteggio iterazioni.
+
+ORDINAMENTO DETERMINISTICO
+Per build/registry:
+AREA → root numeric id → iteration numeric.
+
+Per UI default:
+macro-case per ultima attività decrescente;
+iterazioni dentro il macro-case dalla più recente alla più vecchia, con opzione cronologica.
+
+J. SEARCH / UI
+
+La ricerca principale deve diventare trasversale e cercare almeno in:
+- CASE_ID;
+- alias/old CASE_ID;
+- ROOT_CASE_ID;
+- DOMAIN;
+- GW;
+- TOPIC;
+- TAGS.
+
+Filtri proposti:
+- AREA
+- DOMAIN
+- GW
+- STATUS
+- CASE_KIND
+- DATE
+- TAG
+
+La UI deve offrire due viste:
+1. FLAT SEARCH: risultati singoli per trovare velocemente qualunque ticket.
+2. MACRO VIEW: CASE root con iterazioni collassabili/espandibili.
+
+Esempio ricerca RESULTS:
+mostra tutti i CASE con DOMAIN=RESULTS o TAGS contenenti results, indipendentemente da ENG/DB/altre AREA.
+
+Esempio ricerca GW001:
+mostra tutti i CASE con GW=GW001 o lista multi-GW contenente GW001.
+
+La ricerca testuale libera può includere anche TOPIC/TAGS e, in una seconda fase, un indice build-time del testo dei documenti pubblici. Non è necessario introdurre un motore search esterno per la scala attuale.
+
+K. RESOLVER / URL / COMPATIBILITÀ
+
+Gli URL correnti devono continuare a funzionare:
+/data-room/cases/<OLD_CASE_ID>/request.txt
+/data-room/cases/<OLD_CASE_ID>/case.json
+
+Strategia proposta:
+1. introdurre data/case-aliases.json con mapping old_case_id → canonical_case_id;
+2. il builder genera sia il resolver canonico sia alias statici per gli ID storici;
+3. case.json dell'alias espone canonical_case_id;
+4. la UI mostra il canonical ID ma conserva OLD_CASE_ID nei riferimenti storici;
+5. nessun vecchio URL viene lasciato 404 silenziosamente.
+
+Esempio:
+IMC-ENG-003 → IMC-ENG-002-01
+
+Il path storico /cases/IMC-ENG-003/request.txt deve continuare a risolvere il REQUEST originale, mentre /cases/IMC-ENG-002-01/ diventa il resolver canonico della stessa unità storica dopo l'eventuale backfill approvato.
+
+L. MAPPA PROPOSTA DELLO STORICO ATTUALE
+
+Questa è una proposta di riclassificazione LOGICA, non eseguita.
+
+CLUSTER DATA ROOM
+
+1. IMC-ENG-002
+Canonical: IMC-ENG-002
+CASE_KIND: ROOT
+DOMAIN: DATA_ROOM
+GW: GLOBAL
+Macrotema: IMC Data Room / ticketing system.
+TAGS proposti: data-room, ticketing, registry, github, aruba
+
+2. IMC-ENG-003
+Canonical proposto: IMC-ENG-002-01
+Alias storico: IMC-ENG-003
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-ENG-002
+DOMAIN: DATA_ROOM
+GW: GLOBAL
+TOPIC: IMC_DATA_ROOM_KNOWLEDGE_LAYER
+TAGS: data-room, knowledge-layer, policy, playbook, reference, registry
+Motivo: estensione diretta della V1 Data Room con knowledge layer.
+
+3. IMC-ENG-004
+Canonical proposto: IMC-ENG-002-02
+Alias storico: IMC-ENG-004
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-ENG-002
+DOMAIN: DATA_ROOM
+GW: GLOBAL
+TOPIC: IMC_DATA_ROOM_LIVE_UI_RECOVERY
+TAGS: data-room, frontend, safari, mobile, ui, regression, recovery
+Motivo: correzione del prodotto Data Room appena esteso.
+
+4. IMC-ENG-007
+Canonical proposto: IMC-ENG-002-03
+Alias storico: IMC-ENG-007
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-ENG-002
+DOMAIN: DATA_ROOM
+GW: GLOBAL
+TOPIC: DATA_ROOM_SPECIALIST_RESPONSE_PROTOCOL
+TAGS: data-room, protocol, response, specialist, executive-summary, knowledge-layer
+Motivo: evoluzione del protocollo operativo della stessa Data Room.
+
+5. IMC-ENG-002-05
+Canonical: IMC-ENG-002-05
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-ENG-002
+DOMAIN: DATA_ROOM
+GW: GLOBAL
+TOPIC: DATA_ROOM_CASE_HIERARCHY_METADATA_BACKFILL_DESIGN
+TAGS: data-room, case-hierarchy, metadata, registry, search, backfill
+Nota: il gap 04 viene preservato. Non si rinumera per estetica; gli ID, una volta emessi, non sono un sudoku.
+
+CLUSTER UNIVERSAL GATEWAY
+
+6. IMC-ENG-005
+Canonical: IMC-ENG-005
+CASE_KIND: ROOT
+DOMAIN: GATEWAY
+GW: GLOBAL
+TOPIC: UNIVERSAL_GATEWAY_MINIMAL_ARCHITECTURE
+TAGS: gateway, architecture, ingress, aruba, boundary, review
+
+7. IMC-ENG-006
+Canonical proposto: IMC-ENG-005-01
+Alias storico: IMC-ENG-006
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-ENG-005
+DOMAIN: GATEWAY
+GW: GLOBAL
+TOPIC: UNIVERSAL_GATEWAY_INGRESS_REDUCTION_PROPOSAL
+TAGS: gateway, ingress-only, migration, routing, authorization, importer
+Motivo: prosecuzione esplicita della decisione architetturale di IMC-ENG-005.
+
+8. IMC-ENG-008
+Canonical proposto: IMC-ENG-005-02
+Alias storico: IMC-ENG-008
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-ENG-005
+DOMAIN: GATEWAY
+GW: GLOBAL
+TOPIC: UNIVERSAL_GATEWAY_INGRESS_ONLY_REBUILD
+TAGS: gateway, ingress-only, implementation, importer, routing, compatibility
+Motivo: implementazione operativa del percorso progettato nei CASE precedenti.
+
+CLUSTER DATABASE
+
+9. IMC-DB-001
+Canonical: IMC-DB-001
+CASE_KIND: ROOT
+DOMAIN: DATABASE
+GW: GLOBAL
+TOPIC: CORE_SQL1_TABLE_AUDIT
+TAGS: database, core, sql1956795-1, audit, mysql, tables
+
+Non esistono al momento, nello storico ispezionato, iterazioni DB da riclassificare sotto IMC-DB-001.
+
+M. BACKFILL STORICO · STRATEGIA
+
+FASE 0 · SNAPSHOT
+- congelare SHA GitHub pre-backfill;
+- esportare inventory di tutti i fascicoli/documenti;
+- calcolare hash SHA-256 di ogni REQUEST/RESPONSE/DECISION;
+- salvare manifest pre-backfill.
+
+FASE 1 · METADATA SIDECAR
+- aggiungere CASE_META.txt ai CASE storici;
+- nessun documento storico modificato;
+- parser ancora in modalità compatibility.
+
+FASE 2 · DUAL-ID REGISTRY
+- introdurre canonical_case_id + aliases;
+- il registry continua a esporre old ID e canonical ID;
+- validare old→new mapping uno-a-uno.
+
+FASE 3 · RESOLVER DUALI
+- generare resolver per canonical ID;
+- preservare tutti i resolver old ID;
+- test automatico HTTP/file-existence per entrambi.
+
+FASE 4 · UI GERARCHICA
+- introdurre DOMAIN/GW/TAGS e macro view;
+- verificare che ricerca old ID trovi ancora il CASE canonico.
+
+FASE 5 · EVENTUALE MOVE FISICO
+Raccomandazione: NON necessario nella prima implementazione.
+Se in futuro si desidera rinominare directory sorgente:
+- farlo solo dopo almeno un ciclo stabile con dual resolver;
+- mantenere alias permanenti nel build output;
+- non modificare il contenuto dei documenti storici.
+
+N. AUDIT DEL BACKFILL
+
+Produrre un manifest versionato, per esempio:
+backfill/case-hierarchy-2026-09/manifest.csv
+
+Campi minimi:
+- old_case_id
+- canonical_case_id
+- root_case_id
+- domain
+- gw
+- topic
+- tags
+- old_path
+- canonical_path
+- document_count
+- request_hash
+- response_hash
+- decision_hash
+- verification_status
+
+Criteri obbligatori:
+- ogni old CASE_ID compare una sola volta;
+- nessun canonical CASE_ID duplicato;
+- stesso numero di documenti prima/dopo;
+- hash documentali invariati;
+- tutti gli old resolver ancora validi;
+- tutti i canonical resolver validi;
+- registry count coerente;
+- ricerca per DOMAIN/GW/TAGS restituisce i casi attesi.
+
+O. ROLLBACK
+
+Poiché GitHub è fonte autoritativa, il rollback più robusto è commit-based e manifest-based.
+
+Prima del backfill:
+- annotare SHA pre-backfill;
+- creare manifest degli hash;
+- eseguire il backfill in commit separati e piccoli.
+
+Se fallisce la verifica:
+- revert dei commit di metadata/registry/UI;
+- ripristino builder precedente;
+- nessuna perdita documentale perché REQUEST/RESPONSE/DECISION non vengono riscritti.
+
+Questo è preferibile a un rollback basato su copie manuali di cartelle.
+
+P. RISCHI PRINCIPALI
+
+1. Parser incompatibile con ID gerarchici.
+Mitigazione: aggiornare CASE_RE prima di attivare la nuova generazione.
+
+2. Link storici rotti.
+Mitigazione: alias registry + dual resolver permanenti.
+
+3. Classificazione incoerente tra documenti.
+Mitigazione: CASE_META.txt unico a livello fascicolo; REQUEST/RESPONSE non duplicano DOMAIN/GW/TAGS.
+
+4. TAGS incontrollati e inutilizzabili.
+Mitigazione: normalizzazione kebab-case e vocabolario leggero.
+
+5. Confusione tra revisione REQUEST e iterazione CASE.
+Mitigazione: regola esplicita; REQUEST_Vn non cambia CASE_ID.
+
+6. Riclassificazione arbitraria dello storico.
+Mitigazione: manifest old→canonical revisionato e approvato prima dell'esecuzione.
+
+7. Move fisico prematuro.
+Mitigazione: prima backfill logico; eventuale move soltanto come fase separata.
+
+Q. IMPLEMENTAZIONE FUTURA MINIMA RACCOMANDATA
+
+Ordine consigliato dopo approvazione:
+1. supporto parser per ID root + iteration;
+2. parser CASE_META.txt;
+3. registry con hierarchy/domain/gw/tags/aliases;
+4. alias resolver;
+5. UI search/filters + macro view;
+6. backfill logico dei CASE esistenti;
+7. validazione automatica manifest/hash/link;
+8. eventuale decisione separata su move fisico.
+
+Non servono database, motori search esterni o nuovi servizi. Alla scala attuale il repository GitHub + builder Python + JSON registry sono sufficienti.
+
+R. RACCOMANDAZIONE FINALE
+
+Adottare una gerarchia a un solo livello:
+ROOT: IMC-AREA-NNN
+ITERATION: IMC-AREA-NNN-II
+
+Mantenere fascicoli flat e introdurre CASE_META.txt come classificazione autoritativa del CASE.
+
+Usare DOMAIN controllato, GW normalizzato e TAGS leggeri per la ricerca trasversale.
+
+Preservare per sempre i vecchi CASE_ID come alias risolvibili.
+
+Eseguire il futuro backfill prima come riclassificazione logica e solo eventualmente, in un secondo momento, come rinomina fisica delle directory.
+
+Questa soluzione consente di passare da una Data Room ordinata per numeri a una Data Room interrogabile per storia, dominio e contesto, senza sacrificare la tracciabilità già costruita.
+
+STATO
+DESIGN COMPLETATO · NESSUN BACKFILL ESEGUITO · IN ATTESA DI APPROVAZIONE DIREZIONE
