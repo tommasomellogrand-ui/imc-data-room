@@ -1,0 +1,69 @@
+CASE_ID: IMC-ENG-008
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: UNIVERSAL_GATEWAY_INGRESS_ONLY_REBUILD
+
+IMC | UNIVERSAL GATEWAY · INGRESS-ONLY REBUILD RESPONSE
+
+AS-IS RILEVANTE
+Il Gateway 2.2.13 instradava anche gli importer espliciti attraverso core.php/read.php/write.php/ddl.php. Nel percorso insert_many il Gateway ispezionava schema MySQL e payload business tramite imc_row(), imc_validate_import_value() e validatori specifici Transfer/Match Report/Player Codex. Aggiungere o cambiare campi leciti poteva quindi richiedere modifiche al Gateway. MINISITE e CHATGPT dipendono ancora dalle capability legacy e non potevano essere rimossi senza migrazione separata.
+
+MODIFICA ESEGUITA
+È stato aggiunto imc-universal-gateway/ingress.php e index.php ora intercetta il traffico ordinario degli importer con:
+- channel=IMPORT;
+- route_mode=explicit;
+- action=read oppure insert_many.
+
+Questo traffico non entra più in core.php/read.php/write.php/ddl.php. Il nuovo percorso controlla soltanto:
+- canale e action ammessi;
+- route_mode tecnico;
+- game_world_id come routing key;
+- target_database coerente con il routing infrastrutturale privato;
+- target_table confinato al namespace tecnico GWXXX_IMC ... del Game World;
+- identificatori SQL tecnicamente validi;
+- batch massimo 500;
+- atomicità transazionale;
+- JSON/scalari e gestione errori.
+
+INDIPENDENZA DAL PAYLOAD BUSINESS
+Il Gateway ingress-only non contiene liste di campi Results, Schedule, Match Report, Transfers, Player Codex o SM Player Stats. Non conosce competition_key, competition_group, country, division o altre semantiche IMC. Le colonne di ogni row sono trattate genericamente come identificatori tecnici e i valori come payload opaco/scalare; array/oggetti vengono serializzati JSON senza interpretazione di dominio. Aggiungere nuovi campi business leciti non richiede modifiche al Gateway.
+
+COMPATIBILITÀ
+Il contratto legacy degli importer espliciti è preservato: target_database, target_table, game_world_id, rows/items, where, order_by, limit/offset e atomic restano accettati. Il campo repository può continuare a essere inviato dai caller ma non viene usato dal nuovo percorso per interpretare il payload o costruire il target.
+
+CAPABILITY LEGACY TEMPORANEE
+MINISITE/minisite_read resta temporaneamente in index.php perché i minisiti attivi dipendono ancora da IMC_MINISITE_DATA → Universal Gateway. CHATGPT e le action amministrative/read/schema/write/DDL legacy restano nel fallback core.php finché non saranno migrate al Database Manager/control plane. Queste capability non fanno parte del percorso ordinario IMPORT explicit.
+
+DEPLOY WORKFLOW
+Il workflow .github/workflows/deploy-imc-universal-gateway-aruba.yml è stato aggiornato per:
+- validare sintassi PHP anche di ingress.php;
+- pubblicare ingress.php insieme al Gateway;
+- verificare byte-per-byte l'upload FTPS;
+- eseguire smoke test live dell'ingress-only;
+- eseguire smoke test live della compatibilità MINISITE.
+
+TEST LIVE
+Il run 34464663149 ha concluso SUCCESS:
+- Validate Universal Gateway: SUCCESS;
+- Deploy complete IMC Universal Gateway: SUCCESS;
+- Verify live ingress-only and legacy minisite compatibility: SUCCESS.
+
+Lo smoke ingress ha effettuato una vera richiesta IMPORT/read/explicit live verso GW005_IMC Results, includendo anche un campo business futuro sconosciuto al Gateway. La risposta ha confermato ok=true, mode=INGRESS_ONLY e action=read: il campo aggiuntivo non ha richiesto alcuna modifica né è stato interpretato. Il secondo smoke ha verificato MINISITE/minisite_read live con esito positivo.
+
+COMMIT
+- cef78db3128dcd38a6d7efd21a0ba9431388e34c · aggiunta ingress.php;
+- 5bc76605d8cceb7fe44bc3f52881bf458518a3b8 · routing IMPORT explicit verso ingress-only;
+- 625ed21e56a97996271dca588594334441c751b1 · deploy del nuovo modulo;
+- e149782fbc74c278cb699e345d3859a18237037a · smoke test live;
+- 9b69a7c53996caf6f70dbb7c5d1ca8541e85ed3e · preservazione path Aruba già operativo.
+
+LIMITI RESIDUI
+1. Il percorso legacy core.php/read.php/write.php/ddl.php esiste ancora per MINISITE/CHATGPT e caller non migrati; non viene usato dal traffico IMPORT explicit ordinario.
+2. Per evitare scritture artificiali o duplicati sui dati autoritativi, il test automatico post-deploy ha verificato end-to-end il percorso IMPORT explicit tramite una read reale, non ha inserito una fixture fittizia. L'action insert_many usa lo stesso resolver/connessione/target boundary e non contiene validazione business, ma la prova di una importazione reale completa resta affidata al successivo run naturale di un importer attivo. Non viene dichiarato un test che non è stato eseguito.
+3. L'autorizzazione degli importer mantiene per compatibilità la postura preesistente del canale IMPORT esplicito; una futura migrazione caller-specific token/action/target può irrigidire ulteriormente questo boundary senza reintrodurre semantica business.
+
+STATO FINALE
+ONLINE
+
+Il nuovo percorso ordinario IMPORT explicit è pubblicato e verificato live. Il Gateway è ora indipendente dai campi business per il traffico importer migrato al percorso explicit; le capability legacy sono mantenute soltanto come compatibilità transitoria per caller ancora dipendenti.
