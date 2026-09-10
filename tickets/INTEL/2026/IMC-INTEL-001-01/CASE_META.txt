@@ -1,0 +1,9 @@
+CASE_ID: IMC-INTEL-001-01
+AREA: INTEL
+DOMAIN: GENERAL
+GW: GLOBAL
+TOPIC: SOCCER_MANAGER_DEEP_KNOWLEDGE_REVIEW
+TAGS: soccer-manager, intelligence, deep-dive, match-engine, tactics, rating, fitness, morale, player-roles, squad-depth, rng, community-research
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-INTEL-001
+ITERATION: 01
