@@ -1,0 +1,8 @@
+CASE_ID: IMC-INTEL-001-04
+AREA: INTEL
+DOMAIN: MATCH_ENGINE
+GW: GLOBAL
+TOPIC: DATA_INFORMED_EXTERNAL_MATCH_ENGINE_RESEARCH
+TAGS: soccer-manager, intelligence, match-engine, external-research, rating, tactics, bench, squad, home-advantage, rng, match-report, player-codex
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-INTEL-001
