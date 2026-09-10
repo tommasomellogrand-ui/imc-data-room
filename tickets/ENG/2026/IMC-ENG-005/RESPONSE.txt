@@ -1,0 +1,265 @@
+CASE_ID: IMC-ENG-005
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: UNIVERSAL_GATEWAY_MINIMAL_ARCHITECTURE
+
+IMC | UNIVERSAL GATEWAY · ARCHITECTURAL RESPONSIBILITY REVIEW
+
+EXECUTIVE CONCLUSION
+La review dello stato reale porta a una conclusione netta: l'IMC Universal Gateway oggi svolge molte più responsabilità di quelle strettamente necessarie a una porta tecnica. Nel codice corrente concentra routing GW→database, risoluzione tabelle, validazione schema/valori, read, query, write, delete, DDL, audit, import route esplicite e un canale MINISITE dedicato. In parallelo, il Master Site dimostra già che un consumer ospitato su Aruba può leggere MySQL Aruba tramite un endpoint PHP server-side interno senza passare dal Universal Gateway.
+
+La soluzione TO-BE più minimale è quindi: mantenere il Universal Gateway come boundary controllato per operazioni che entrano dall'esterno nell'infrastruttura Aruba e, dove necessario, per operazioni amministrative remote autorizzate. I flussi interni Aruba→Aruba non hanno bisogno del Universal Gateway come componente universale. Devono usare piccoli adapter/API server-side read-only, specifici del consumer o condivisi, che leggono MySQL/Site Tables con credenziali private server-side.
+
+A. FOTOGRAFIA AS-IS
+
+1. Universal Gateway
+Il Gateway ufficiale è /imc-universal-gateway/. index.php instrada minisite_read verso minisite.php/minisite-site.php e tutte le altre operazioni verso core.php + read.php + write.php + ddl.php.
+
+core.php v2.2.13 espone oggi un catalogo molto ampio di azioni: health, probe, resolve_database, resolve_table, show_tables, read, read_one, sample, count, count_nulls, distinct, aggregate, show_columns, describe, schema, indexes, show_create_table, query, create_table, drop_table, rename_table, add_column, drop_column, rename_column, modify_column, add_index, drop_index, add_primary_key, drop_primary_key, insert, insert_many, upsert, upsert_many, update, delete_one, delete, clear_repository, clear_table, clone_table_structure, copy_rows, truncate_table, dry_run, validate, audit_repository, find_duplicates, foreign_keys, add_foreign_key, drop_foreign_key, table_status.
+
+Il Gateway contiene inoltre:
+- routing hardcoded GW→Sql1956795_2 / Sql1956795_3;
+- mapping repository→tabella fisica;
+- route_mode explicit per importer;
+- validazione tipi/required fields sui repository import;
+- introspezione schema;
+- accesso diretto PDO a MySQL;
+- logging/audit;
+- riferimento al Database Manager.
+
+Queste funzioni mostrano che il Gateway corrente è contemporaneamente porta, router, DB utility layer e parte del piano amministrativo.
+
+2. Normalizer / Database Manager
+La normalizzazione semantica esiste già fuori dal Gateway, in __imc-sm-master/admin/database-manager/normalizer.php. Il Normalizer calcola competition_group e competition_key, interpreta sm_action / source_competition_key e applica regole IMC come DOMESTIC / INTERNATIONAL / NATIONS. Questo è il posto concettualmente corretto per la semantica IMC, non il Gateway.
+
+3. Minisiti
+Il shared app-core.js espone window.IMC_MINISITE_DATA.read(...). Il browser invia POST same-origin a /imc-universal-gateway/ con channel=MINISITE e action=minisite_read. Il Gateway espone resource allowlist e legge direttamente CORE o Site Tables nei DB Aruba.
+
+Quindi oggi il Gateway è usato anche per un flusso interno Aruba-hosted frontend → Aruba-hosted PHP → MySQL Aruba.
+
+4. Master Site
+site-assets/master/api.php non usa il Universal Gateway. È un endpoint PHP server-side, ospitato sullo stesso dominio Aruba, che carica la configurazione privata e legge direttamente Sql1956795_1 e le Site Tables di Sql1956795_2 / Sql1956795_3 con prepared statements e contratti dataset espliciti.
+
+Questa implementazione dimostra concretamente che il Gateway non è tecnicamente necessario per ogni lettura Aruba→Aruba.
+
+B. DOVE È REALMENTE NECESSARIO IL GATEWAY NEL FLUSSO ESTERNO → MYSQL ARUBA
+
+Il Gateway è realmente utile al boundary quando la richiesta nasce fuori dall'infrastruttura Aruba e deve poter scrivere o interrogare MySQL senza esporre direttamente database e credenziali.
+
+Flusso consigliato:
+SOCCER MANAGER / IMPORTER ESTERNO
+→ UNIVERSAL GATEWAY
+→ validazione tecnica/autorizzazione minima
+→ risoluzione target infrastrutturale
+→ MySQL Aruba import tables
+→ trigger / Database Manager / Normalizer
+→ Site Tables
+
+Il Gateway deve proteggere questo ingresso con:
+- autenticazione del caller quando richiesta;
+- channel/action allowlist;
+- repository/resource allowlist;
+- validazione strutturale del payload;
+- limite di dimensione / rate / timeout ragionevoli;
+- risoluzione sicura della destinazione fisica;
+- prepared statements / chiamate interne sicure;
+- risposta normalizzata;
+- audit tecnico.
+
+Non deve decidere cosa significa una competizione, come si costruisce competition_key o quale regola sportiva applicare.
+
+C. MYSQL ARUBA → SITO / MINISITI
+
+Una volta che i dati sono già in MySQL Aruba e il consumer è anch'esso ospitato su Aruba, il Universal Gateway NON è architetturalmente necessario come passaggio universale.
+
+Il requisito reale resta: il browser non deve accedere direttamente a MySQL e non deve conoscere credenziali, schema fisico o SQL libero.
+
+Il percorso più semplice è:
+BROWSER
+→ endpoint PHP same-origin read-only del prodotto/shared data service
+→ MySQL Aruba / Site Tables
+
+Questo è già il modello del Master Site.
+
+Per i minisiti, il Gateway MINISITE attuale può essere mantenuto temporaneamente per compatibilità, ma nel TO-BE minimale la responsabilità di lettura pubblica dovrebbe essere separata dal Universal Gateway e diventare un servizio read-only interno/shared, con resource allowlist e contratti dati stabili. In questo modo il Gateway torna a essere boundary esterno, mentre i consumer Aruba usano un percorso interno Aruba→Aruba.
+
+D. RESPONSABILITÀ MINIME DEL UNIVERSAL GATEWAY
+
+Il minimo corretto è:
+1. ricevere richieste esterne autorizzate;
+2. autenticare/autorizzare il canale e l'azione;
+3. validare struttura e limiti del payload;
+4. risolvere una destinazione infrastrutturale consentita senza esporre SQL libero;
+5. inoltrare l'operazione a un adapter/database service;
+6. normalizzare errori e response tecniche;
+7. audit/log tecnico essenziale.
+
+Il Gateway non dovrebbe possedere regole di dominio.
+
+E. RESPONSABILITÀ DA ESCLUDERE ESPRESSAMENTE
+
+NON devono stare nel Gateway:
+- normalizzazione competition_group / competition_key;
+- mapping semantico DOMESTIC / INTERNATIONAL / NATIONS;
+- regole delle competizioni;
+- expected_match;
+- logiche single-league / multi-league oltre all'eventuale mero routing infrastrutturale;
+- backfill semantici;
+- dedup di dominio;
+- costruzione di classifiche;
+- aggregazioni editoriali;
+- logica sito/minisito;
+- trasformazioni di business;
+- policy di presentazione;
+- logica specifica di un Game World.
+
+Anche DDL, schema migration e amministrazione generale non dovrebbero far parte del percorso ordinario del Gateway. Possono restare temporaneamente come capability amministrative legacy, ma concettualmente appartengono al Database Manager e dovrebbero essere separate dal boundary di import.
+
+F. CHI DEVE ASSUMERE LE RESPONSABILITÀ ESCLUSE
+
+DATABASE MANAGER
+- schema management;
+- migration;
+- trigger;
+- introspezione DB;
+- operazioni amministrative controllate;
+- routing fisico/configurazione DB se centralizzato.
+
+NORMALIZER
+- competition_group;
+- competition_key;
+- normalizzazione post-import;
+- regole semantiche IMC sui dati importati.
+
+MYSQL / TRIGGER
+- persistenza;
+- vincoli;
+- sincronizzazioni deterministiche source→Site quando appropriate.
+
+SITE TABLES
+- contratto dati già pronto per consumo pubblico.
+
+SITE / MINISITE DATA API
+- read-only access;
+- resource allowlist;
+- pagination/filtering necessari al consumer;
+- response contract;
+- nessuna capacità write/DDL.
+
+FRONTEND
+- rendering, interazione, stato UI;
+- nessuna conoscenza di DB, credenziali o SQL.
+
+G. SCALABILITÀ DA 3 A 10+ DATABASE
+
+Il Gateway non deve crescere aggiungendo business logic per ogni database o GW.
+
+Il routing deve diventare data/config-driven e infrastrutturale. Esempio concettuale:
+GAME_WORLD_ID → DATABASE_ALIAS
+DATABASE_ALIAS → connessione privata
+
+Questa mappa può vivere in configurazione privata o nel Database Manager. Il Gateway deve chiedere/leggere la destinazione, non possedere decine di if/else e non conoscere il significato sportivo del database.
+
+Con 10+ DB il Gateway deve restare sostanzialmente invariato: cambia la registry infrastrutturale, non il codice di business del Gateway.
+
+H. BIDIREZIONALITÀ
+
+Raccomandazione: NO, non come principio generale.
+
+Il Universal Gateway non deve essere 'bidirezionale' per il solo fatto che esistono flussi in entrambe le direzioni logiche.
+
+Distinguere:
+ESTERNO → ARUBA
+serve un boundary forte: Gateway appropriato.
+
+ARUBA → ARUBA
+non serve attraversare lo stesso boundary: endpoint/server service interno read-only è più semplice.
+
+ARUBA → SISTEMA ESTERNO
+se in futuro esistesse un vero flusso outbound verso servizi esterni, sarebbe un'altra capability/boundary da progettare esplicitamente, non una giustificazione per rendere il Gateway genericamente bidirezionale.
+
+I. TO-BE MINIMALE
+
+FLUSSO INGRESSO
+Soccer Manager / importer esterno
+→ Universal Gateway
+→ validation/auth/routing tecnico
+→ raw/import repository MySQL Aruba
+→ Database Manager / Normalizer / trigger
+→ Site Tables
+
+FLUSSO INTERNO CONSUMER
+Site Tables / CORE MySQL Aruba
+→ read-only PHP data service same-origin
+→ sito / minisiti
+
+FLUSSO AMMINISTRATIVO
+ChatGPT / operatore autorizzato
+→ Supabase bridge / Database Manager Aruba
+→ MySQL Aruba
+
+Il Gateway non deve essere usato come scorciatoia amministrativa universale se esiste già il Database Manager come owner naturale di quelle operazioni.
+
+L. MODIFICHE CONSIGLIATE, PER PRIORITÀ E RISCHIO
+
+P0 · NESSUNA MODIFICA IMMEDIATA
+Non rompere importer o minisiti esistenti. L'incarico è architetturale e non autorizza refactor.
+
+P1 · BASSO RISCHIO
+Formalizzare ownership:
+- Gateway = external boundary;
+- Database Manager = DB administration/schema;
+- Normalizer = semantic normalization;
+- trigger = deterministic DB sync;
+- Site API = public/internal reads.
+
+P2 · BASSO/MEDIO RISCHIO
+Spostare la registry GW→DB da codice hardcoded a configurazione privata/Database Manager, mantenendo la stessa interfaccia verso i caller.
+
+P3 · MEDIO RISCHIO
+Estrarre dal Gateway le capability DDL/schema/general query verso il Database Manager, mantenendo compatibilità temporanea se necessaria.
+
+P4 · MEDIO RISCHIO
+Creare/standardizzare un read-only internal data service Aruba per sito e minisiti. Migrare minisite_read dal Universal Gateway solo dopo parity test completi.
+
+P5 · MEDIO/ALTO RISCHIO
+Ridurre il Gateway pubblico alle sole azioni realmente necessarie per ingress/remote boundary, dopo inventario completo degli importer e dei caller attivi.
+
+M. RACCOMANDAZIONE FINALE
+
+La soluzione più semplice e solida è un Universal Gateway deliberatamente piccolo.
+
+Deve essere una PORTA, non un'applicazione di dominio.
+
+Il Gateway deve sapere:
+- chi può entrare;
+- quale operazione tecnica è consentita;
+- quale destinazione infrastrutturale è ammessa;
+- come inviare una risposta sicura e tracciabile.
+
+Non deve sapere:
+- cosa significa il dato;
+- come normalizzarlo;
+- come presentarlo;
+- come funziona una competizione;
+- come devono comportarsi sito e minisiti.
+
+La direzione architetturale raccomandata è quindi:
+
+EXTERNAL SOURCE
+→ UNIVERSAL GATEWAY
+→ MYSQL IMPORT DATA
+→ NORMALIZER / TRIGGERS / DATABASE MANAGER
+→ SITE TABLES
+→ INTERNAL READ API
+→ SITE / MINISITES
+
+Questo mantiene il Gateway stabile anche quando i database cresceranno da 3 a 10 o più, riduce coupling e blast radius, e assegna ogni responsabilità al layer che già possiede il contesto necessario.
+
+STATO
+ANALISI COMPLETATA
+NESSUNA MODIFICA INFRASTRUTTURALE ESEGUITA
+NESSUN DEPLOY
+NESSUNA MIGRATION
+NESSUN REFACTOR
