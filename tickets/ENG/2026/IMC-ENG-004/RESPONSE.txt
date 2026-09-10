@@ -1,0 +1,49 @@
+CASE_ID: IMC-ENG-004
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: IMC_DATA_ROOM_LIVE_UI_RECOVERY
+
+IMC DATA ROOM · LIVE UI RECOVERY RESPONSE
+
+DIAGNOSI
+L'errore reale segnalato da Direzione su iPhone/Safari era coerente con un'inizializzazione fragile del frontend: optionize() assumeva sempre la presenza dell'elemento select e chiamava appendChild senza guardia. Un riferimento DOM nullo interrompeva init() e il catch sostituiva sia Tickets sia Knowledge Layer con "Registry non disponibile". I registry e il deploy potevano quindi risultare corretti mentre l'esperienza utente restava rotta.
+
+CORREZIONE
+Modifica minima a site/assets/data-room.js:
+- optionize() ora ignora in sicurezza un elemento DOM assente;
+- lettura dei filtri centralizzata in val() con fallback stringa vuota;
+- binding eventi centralizzato in bind() e applicato solo agli elementi realmente presenti;
+- render Tickets/Knowledge protetti per count/root mancanti;
+- gestione error message robusta anche per eccezioni senza message;
+- init eseguito esplicitamente dopo DOMContentLoaded quando il documento è ancora loading, mantenendo compatibilità con defer e Safari mobile.
+
+DATI E DOCUMENTI
+Nessun ticket, POLICY, PLAYBOOK o REFERENCE è stato modificato o rimosso. Nessuna modifica a MySQL, Supabase, Gateway, importer, minisiti o Master Site.
+
+COMMIT
+- da47b04489a990a3906802c2b03b9900cf1d2051 · IMC-ENG-004: fix Safari Data Room filter initialization
+
+ACTIONS
+- imc-data-room validate/build run 34457039031: SUCCESS. Metadata, ticket resolver, knowledge resolver e artifact build completati.
+- imc-aruba-ops OPS-004 run 34457077595: SUCCESS.
+
+DEPLOY E VERIFICA LIVE
+OPS-004 ha completato:
+- checkout della fonte autoritativa;
+- build/validazione;
+- deploy FTPS;
+- verifica byte-per-byte dei file pubblicati;
+- Verify live Data Room SUCCESS.
+La verifica live automatizzata controlla pagina Data Room, release SHA, ticket registry, resolver ticket, knowledge registry e resolver knowledge.
+
+COMPATIBILITA MOBILE / SAFARI
+La causa specifica osservata su Safari (appendChild su riferimento nullo) è stata eliminata dal codice: inizializzazione, filtri e rendering non dereferenziano più elementi DOM mancanti. L'avvio è inoltre agganciato in modo esplicito a DOMContentLoaded quando necessario. Questo intervento è mirato al comportamento Safari/iPhone segnalato dalla Direzione e preserva il comportamento desktop.
+
+LIMITI DELLA VERIFICA
+Il workflow può verificare HTTP, contenuti e artifact pubblicati ma non emula WebKit/iPhone reale. La compatibilità Safari è quindi verificata tecnicamente rispetto alla causa riprodotta dal messaggio runtime e alla nuova inizializzazione difensiva; la conferma visuale finale su dispositivo reale resta una verifica utente/browser distinta.
+
+STATO FINALE
+ONLINE
+
+La versione corretta è pubblicata e il ciclo GitHub → Actions → Aruba → verifica live è concluso con SUCCESS.
