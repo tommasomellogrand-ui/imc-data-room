@@ -1,0 +1,93 @@
+CASE_ID: IMC-DB-001-04
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-10
+TOPIC: CORE_NON_IMC_TABLES_COMPLETE_REMOVAL
+
+IMC | DATABASE MANAGER
+CORE Sql1956795_1 · COMPLETE NON-IMC TABLE REMOVAL
+
+DECISIONE AUTORITATIVA DELLA DIREZIONE
+La Direzione ha concluso la review delle strutture legacy del CORE.
+
+DECISIONE DEFINITIVA:
+In Sql1956795_1 NON deve rimanere alcuna tabella non-IMC.
+
+Devono rimanere esclusivamente tabelle appartenenti al modello IMC, identificate dal prefisso/naming IMC.
+
+TUTTE le tabelle attualmente presenti in Sql1956795_1 che non appartengono al modello IMC devono essere eliminate completamente.
+
+Non vogliamo conservarne traccia nel database CORE.
+Non vogliamo migrare i loro dati nel modello IMC salvo quanto strettamente necessario per sostituire riferimenti tecnici esistenti con strutture IMC già presenti.
+Non creare nuove tabelle IMC allo scopo di salvare dati legacy.
+Non creare nuove colonne IMC allo scopo di salvare dati legacy.
+Non effettuare backfill di dati legacy nelle IMC.
+
+Le strutture IMC esistenti sono la fonte canonica.
+Eventuali informazioni future mancanti verranno ricostruite separatamente dalla Direzione attraverso le sorgenti appropriate e secondo il modello IMC corrente.
+
+AUTORIZZAZIONE WRITE / DROP
+Questo CASE AUTORIZZA ESPLICITAMENTE le modifiche necessarie per completare la rimozione delle tabelle non-IMC dal CORE, inclusi DROP delle tabelle non-IMC e rimozione delle dipendenze DB che impediscono tali DROP.
+
+PRIMA DI ELIMINARE
+Per ciascuna tabella non-IMC:
+1. rileva eventuali FK, constraint, trigger, view o altre dipendenze DB;
+2. rileva eventuali riferimenti nel codice autoritativo GitHub tommasomellogrand-ui/imc-website;
+3. quando esiste una sostituzione semanticamente chiara verso una tabella IMC GIÀ ESISTENTE, sostituisci il riferimento affinché punti alla struttura IMC canonica;
+4. non inventare equivalenze semantiche incerte;
+5. non creare nuove strutture IMC per rendere possibile la sostituzione.
+
+REGOLA IN CASO DI RIFERIMENTO NON SOSTITUIBILE
+Se un riferimento/dipendenza a una tabella non-IMC NON può essere sostituito in modo certo con una struttura IMC già esistente:
+- NON conservare la tabella legacy per questo motivo;
+- elimina comunque la tabella non-IMC come deciso dalla Direzione;
+- registra con precisione nella RESPONSE quale collegamento/consumer è rimasto rotto o non sostituibile;
+- indica esattamente cosa dovrà essere ricreato successivamente secondo il modello IMC.
+
+In altre parole: l'impossibilità di sostituire un vecchio riferimento NON blocca la cancellazione della tabella non-IMC.
+
+PROTEZIONE DEL MODELLO IMC
+NON eliminare alcuna tabella IMC.
+NON sovrascrivere dati canonici IMC con dati legacy.
+NON alterare semanticamente i dati IMC per adattarli alle vecchie strutture.
+NON creare copie legacy dentro le IMC.
+
+Se una modifica di codice può essere risolta semplicemente sostituendo un reader/writer legacy con la corrispondente tabella IMC esistente, esegui la modifica minima necessaria.
+
+PROCEDURA RICHIESTA
+A. fotografa SHOW TABLES iniziale;
+B. identifica l'elenco completo live delle tabelle non-IMC;
+C. mappa dipendenze DB e riferimenti codice;
+D. sostituisci dove possibile i riferimenti con strutture IMC esistenti;
+E. rimuovi FK/constraint/dipendenze DB necessarie al DROP;
+F. elimina TUTTE le tabelle non-IMC;
+G. verifica SHOW TABLES finale;
+H. verifica che non esista più alcuna tabella non-IMC;
+I. verifica che tutte le tabelle IMC preesistenti siano ancora presenti;
+J. verifica il codice modificato e segnala eventuali consumer non ricostruibili;
+K. se vengono effettuate modifiche GitHub, esegui commit e verifica GitHub Actions pertinenti; non dichiarare online nulla senza verifica live positiva.
+
+CRITERIO DI COMPLETAMENTO DB
+Il CASE lato database è completato soltanto quando:
+- COUNT tabelle non-IMC in Sql1956795_1 = 0;
+- tutte le tabelle IMC preesistenti risultano ancora presenti;
+- SHOW TABLES finale contiene esclusivamente strutture IMC.
+
+OUTPUT RESPONSE
+La RESPONSE deve contenere almeno:
+1. elenco tabelle iniziali;
+2. elenco completo delle tabelle non-IMC eliminate;
+3. eventuali dipendenze DB rimosse;
+4. riferimenti codice sostituiti e relativa destinazione IMC;
+5. riferimenti NON sostituibili / funzionalità eventualmente interrotte;
+6. elenco preciso di ciò che dovrà essere ricreato successivamente;
+7. eventuali commit GitHub effettuati;
+8. stato Actions/verifiche pertinenti;
+9. SHOW TABLES finale;
+10. conteggio finale tabelle IMC e non-IMC;
+11. certificazione finale che nessuna tabella non-IMC è rimasta nel CORE.
+
+OUTPUT AUTORITATIVO
+tickets/DB/2026/IMC-DB-001-04/RESPONSE.txt
+
+Esegui il CASE fino alla verifica finale e registra integralmente la consegna nella Data Room.
