@@ -1,0 +1,83 @@
+CASE_ID: IMC-DB-001-02
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-10
+TOPIC: CORE_TARGET_AUDIT_3
+
+IMC | DATABASE MANAGER · CORE TARGET AUDIT 3
+
+CONTESTO
+Partendo dalle RESPONSE di IMC-DB-001 e IMC-DB-001-01, eseguire un ulteriore audit completo di Sql1956795_1.
+
+OBIETTIVO
+Definire esattamente come portare il CORE dall'AS-IS attuale al modello IMC definitivo, senza lasciare indietro neanche una singola tabella.
+
+PRINCIPIO TARGET
+Le 11 tabelle IMC* Global esistenti restano autoritative e intoccabili.
+Non proporre nuove tabelle Global se il concetto può essere correttamente rappresentato attraverso le Global già esistenti.
+
+Quando necessario puoi proporre:
+- estensioni delle IMC Global esistenti;
+- tabelle IMC figlie per informazioni subordinate, storiche, one-to-many, configurazioni o regole;
+- tabelle IMC Mapping per relazioni, identificativi locali/esterni e collegamenti tra entità.
+
+AUDIT ESAUSTIVO
+Devi prendere tutte le 49 tabelle attualmente presenti nel CORE, una per una, senza eccezioni.
+
+Per ciascuna devi indicare:
+- cosa contiene;
+- perché esiste;
+- chi la legge;
+- chi la scrive;
+- dipendenze DB e codice;
+- se deve rimanere;
+- se deve confluire in una IMC Global esistente;
+- se richiede una IMC Child;
+- se richiede una IMC Mapping;
+- quali campi/dati devono essere preservati;
+- dove devono finire;
+- cosa deve essere migrato nel codice;
+- quando la vecchia tabella potrebbe essere eliminata;
+- quale verifica dimostrerebbe che può essere eliminata senza perdita di dati o funzionalità.
+
+Nessuna tabella può essere omessa dal risultato finale.
+
+TABELLE TECNICHE
+Per source, provenance, staging, ingestion, audit e log non assumere automaticamente che debbano rimanere non-IMC.
+Analizzale comunque una per una e spiega:
+- se devono realmente esistere;
+- se possono essere eliminate;
+- se devono essere mantenute come infrastruttura tecnica;
+- se avrebbe senso ricondurle a una struttura IMC Child/Mapping senza alterarne la funzione.
+
+Non vogliamo doppie fonti canoniche.
+
+OUTPUT FINALE
+Restituisci:
+- AS-IS: tutte le 49 tabelle;
+- TO-BE: elenco completo delle tabelle che esisterebbero nel CORE finale;
+- MIGRATION MAP: per ogni tabella attuale, destinazione e trasformazione proposta;
+- RETIREMENT MAP: quali tabelle potrebbero essere eliminate e soltanto dopo quali condizioni;
+- DEPENDENCY MAP: codice/API/importer/servizi da migrare;
+- ORDER OF EXECUTION: ordine preciso che seguiresti in una futura esecuzione autorizzata.
+
+Alla fine deve essere possibile verificare matematicamente:
+ogni tabella AS-IS -> una destinazione TO-BE oppure una motivazione esplicita per la sua permanenza.
+
+VINCOLO ASSOLUTO
+AUDIT ONLY.
+
+Non creare tabelle.
+Non aggiungere colonne.
+Non copiare dati.
+Non fare backfill.
+Non modificare codice.
+Non modificare FK o trigger.
+Non cancellare, rinominare o svuotare nulla.
+
+La Direzione deciderà cosa autorizzare solo dopo aver letto il piano completo.
+
+OUTPUT AUTORITATIVO
+tickets/DB/2026/IMC-DB-001-02/RESPONSE.txt
+
+Dopo aver registrato la RESPONSE completa nella Data Room, tornare nella chat con Tom e fornire una sintesi esecutiva in massimo 10 bullet point. La RESPONSE resta la fonte completa e autoritativa.
