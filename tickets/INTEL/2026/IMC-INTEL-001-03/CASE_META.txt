@@ -1,0 +1,8 @@
+CASE_ID: IMC-INTEL-001-03
+AREA: INTEL
+DOMAIN: MATCH_ENGINE
+GW: GLOBAL
+TOPIC: PLAYER_HISTORY_MATCH_REPORT_JOIN_FEASIBILITY_AUDIT
+TAGS: soccer-manager, intelligence, match-report, player-codex, rating-history, player-id, join, historical-rating, position, tactics, statistics, audit
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-INTEL-001
