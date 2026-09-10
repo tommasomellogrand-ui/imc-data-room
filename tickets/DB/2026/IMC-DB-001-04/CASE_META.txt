@@ -1,0 +1,9 @@
+CASE_ID: IMC-DB-001-04
+AREA: DB
+DOMAIN: CORE
+GW: GLOBAL
+TOPIC: CORE_NON_IMC_TABLES_COMPLETE_REMOVAL
+TAGS: core, mysql1, cleanup, drop, legacy-removal, imc-canonical, github-dependencies
+CASE_KIND: EXECUTION
+ROOT_CASE_ID: IMC-DB-001
+WRITE_AUTHORIZED: YES
