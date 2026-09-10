@@ -1,0 +1,93 @@
+CASE_ID: IMC-ENG-002-05
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: DATA_ROOM_CASE_HIERARCHY_METADATA_BACKFILL_DESIGN
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+IMC DATA ROOM · CASE HIERARCHY + METADATA + LEGACY BACKFILL DESIGN
+
+CONTESTO
+La Direzione Centrale vuole evolvere il modello dei CASE della Data Room prima che il numero di ticket cresca. Questo incarico appartiene al macrotema IMC Data Room e viene quindi aperto come iterazione IMC-ENG-002-05, sperimentando già il principio gerarchico che deve essere progettato.
+
+OBIETTIVO
+Progettare un modello in cui:
+- il CASE principale rappresenta un macro-argomento/progetto;
+- le continuazioni dello stesso lavoro diventano iterazioni/sotto-case dello stesso macro-argomento;
+- i ticket siano ricercabili trasversalmente per dominio e parole chiave, non soltanto per CASE_ID;
+- tutto lo storico esistente possa essere riclassificato tramite backfill senza perdere documenti o tracciabilità.
+
+1. GERARCHIA CASE
+La Direzione propone come concetto:
+IMC-ENG-005 = macrotema
+IMC-ENG-005-01
+IMC-ENG-005-02
+IMC-ENG-005-03 = iterazioni/continuazioni dello stesso argomento.
+
+Lo stesso principio deve poter valere per DB e altre AREA.
+
+Prima di implementare, valutare e proporre il formato definitivo più robusto per directory, parser, registry, ordinamento, resolver e UI.
+
+2. CLASSIFICAZIONE RICERCABILE
+Il CASE_ID non basta per trovare trasversalmente gli argomenti. Progettare metadata strutturati almeno per:
+- AREA;
+- DOMAIN;
+- GW;
+- TOPIC;
+- TAGS.
+
+Esempio concettuale:
+DOMAIN: RESULTS
+GW: GW001
+TOPIC: RESULTS_TRIGGER_AUDIT
+TAGS: results, trigger, mysql, site-results, audit
+
+La Data Room deve permettere di cercare, per esempio, RESULTS e trovare tutti i CASE pertinenti anche se distribuiti tra ENG, DB o altre aree.
+
+3. PROPOSTA RICHIESTA
+Analizzare lo stato attuale della Data Room e proporre:
+- modello definitivo CASE principale + iterazioni;
+- formato degli identificativi;
+- metadata obbligatori e opzionali;
+- eventuale vocabolario controllato per DOMAIN;
+- regole e formato TAGS;
+- gestione GW: GLOBAL, singolo GW ed eventuali casi multi-GW;
+- ricerca e filtri UI;
+- criterio per decidere nuovo macro-CASE vs nuova iterazione;
+- compatibilità di resolver, URL, registry e link esistenti;
+- strategia di alias/redirect/mapping per preservare riferimenti storici.
+
+4. BACKFILL STORICO DA PROGETTARE
+La soluzione deve includere un piano completo per riclassificare tutto lo storico già presente.
+
+I CASE esistenti devono poter essere ricondotti ai rispettivi macro-argomenti e ricevere DOMAIN, GW, TOPIC e TAGS appropriati.
+
+Vincoli assoluti del futuro backfill:
+- nessun REQUEST, RESPONSE o DECISION perso;
+- relazione verificabile old CASE_ID → new CASE_ID;
+- nessuna perdita di cronologia;
+- nessun link/resolver lasciato silenziosamente rotto;
+- possibilità di audit del backfill;
+- rollback o strategia equivalente prima di una futura esecuzione distruttiva/ristrutturante.
+
+5. RISULTATO FUNZIONALE DESIDERATO
+La Data Room finale deve consentire ricerche semplici come:
+RESULTS
+GATEWAY
+GW001
+TRIGGER
+DATABASE
+
+e recuperare immediatamente tutta la storia pertinente, indipendentemente da AREA, macro-CASE o iterazione.
+
+IMPORTANTE · SOLO DESIGN
+Questa è la PRIMA FASE. Non eseguire ancora il backfill, non rinominare CASE esistenti, non spostare fascicoli storici e non modificare gli ID correnti.
+
+La Direzione vuole prima ricevere e approvare la proposta completa. Solo dopo verrà autorizzata l'implementazione e il backfill.
+
+Non modificare MySQL, Supabase, Universal Gateway, importer, minisiti o Master Site.
+
+OUTPUT AUTORITATIVO
+tickets/ENG/2026/IMC-ENG-002-05/RESPONSE.txt
+
+La RESPONSE deve contenere proposta TO-BE, schema metadata, regole di gerarchia, strategia UI/search, mappa proposta per riclassificare i CASE storici attuali e piano di backfill con rischi e verifiche. Dopo aver registrato la RESPONSE, tornare nella chat con Tom e fornire una sintesi esecutiva in massimo 10 bullet point; la RESPONSE resta la fonte completa e autoritativa.
