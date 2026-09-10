@@ -1,0 +1,22 @@
+DOC_ID: IMC-GITHUB-DELIVERY
+DOC_TYPE: PLAYBOOK
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: GITHUB_DELIVERY_PROTOCOL
+VERSION: V001
+STATUS: ACTIVE
+ACTIVITY: github,modify,deploy,release,verification,rollback
+
+IMC GITHUB DELIVERY PLAYBOOK
+
+1. Leggere lo stato corrente del repository e il file reale prima di modificare.
+2. Isolare il problema e applicare la modifica minima necessaria.
+3. Verificare il diff risultante.
+4. Creare un commit tracciabile.
+5. Eseguire o verificare GitHub Actions pertinenti.
+6. Verificare il deploy sul runtime reale.
+7. Eseguire verifica live HTTP/browser coerente con la modifica.
+8. Dichiarare ONLINE solo dopo Action SUCCESS e verifica live positiva.
+
+REGOLA
+Action verde non equivale automaticamente a pagina funzionante. La verifica live è un passaggio separato e obbligatorio.
