@@ -1,0 +1,54 @@
+CASE_ID: IMC-ENG-005
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: UNIVERSAL_GATEWAY_MINIMAL_ARCHITECTURE
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+UNIVERSAL GATEWAY · ARCHITECTURAL RESPONSIBILITY REVIEW
+
+CONTESTO
+La Direzione Centrale vuole ridefinire con precisione il ruolo dell'IMC Universal Gateway e mantenerlo deliberatamente al minimo indispensabile.
+
+Architettura reale da assumere:
+1. Esiste una sorgente esterna, Soccer Manager / sito esterno.
+2. I dati provenienti dall'esterno devono entrare nell'infrastruttura Aruba e vengono persistiti nei database MySQL Aruba. Oggi i database principali sono Sql1956795_1, Sql1956795_2 e Sql1956795_3; l'architettura deve poter crescere a molti più database.
+3. Il dominio italianmastersclub.it e i minisiti IMC sono anch'essi ospitati su Aruba.
+4. Una volta persistiti, i dati devono essere utilizzati dal sito principale e dai minisiti, restando quindi all'interno dell'infrastruttura Aruba.
+
+PRINCIPIO DIREZIONE
+Il Gateway deve essere una PORTA / GARANTE tecnico, non il cervello semantico del sistema.
+Deve conoscere soltanto ciò che è necessario per consentire in sicurezza operazioni contemplate dall'architettura. La Direzione vuole evitare che nel Gateway vengano accumulate normalizzazione, business logic, regole delle competizioni o altre responsabilità non strettamente necessarie.
+
+INCARICO
+Eseguire una review dell'architettura attuale e proporre l'architettura minima corretta del Universal Gateway.
+
+La Direzione NON prescrive la soluzione tecnica. L'ingegnere deve analizzare lo stato reale dei repository, del Gateway, dei flussi Aruba e dei consumer prima di formulare la proposta.
+
+DOMANDE A CUI LA RESPONSE DEVE RISPONDERE
+- Dove è realmente necessario il Gateway nel flusso Soccer Manager / sorgente esterna → MySQL Aruba?
+- Una volta che i dati sono già in MySQL Aruba, il Gateway serve ancora per MySQL Aruba → sito/minisiti ospitati su Aruba? Se sì, perché e in quali punti precisi? Se no, quale percorso interno è più semplice, sicuro e corretto?
+- Qual è il MINIMO insieme di responsabilità che il Universal Gateway deve mantenere?
+- Quali responsabilità presenti oggi nel Gateway sono superflue o appartengono ad altri layer?
+- Quali responsabilità NON devono mai entrare nel Gateway, in particolare normalizzazione e semantica IMC?
+- Come deve comportarsi l'architettura quando i database Aruba passeranno dagli attuali 3 a 10 o più, evitando di trasformare il Gateway in un catalogo di business logic?
+- Quale deve essere il confine tra Gateway, Database Manager/Normalizer, MySQL/trigger e sito/minisiti?
+- Il Gateway deve essere realmente bidirezionale oppure deve limitarsi al boundary esterno → Aruba, lasciando i flussi interni Aruba → Aruba fuori dal Gateway?
+
+RISULTATO ATTESO
+Una proposta architetturale semplice e concreta che descriva:
+A. flusso di ingresso dati;
+B. flusso interno verso sito/minisiti;
+C. responsabilità minime del Gateway;
+D. responsabilità esplicitamente escluse dal Gateway;
+E. componenti che devono assumere le responsabilità escluse;
+F. eventuali modifiche consigliate rispetto allo stato attuale, ordinate per priorità e rischio.
+
+IMPORTANTE
+Questo è un incarico di ANALISI E PROPOSTA. Non sono autorizzate modifiche al Gateway, Database Manager, MySQL, Supabase, importer, trigger, sito o minisiti. Nessun deploy. Nessuna migration. Nessun refactor.
+
+Prima di rispondere leggere lo stato corrente reale del codice e dei flussi rilevanti. Non assumere che la descrizione teorica coincida con l'implementazione attuale.
+
+OUTPUT AUTORITATIVO
+tickets/ENG/2026/IMC-ENG-005/RESPONSE.txt
+La RESPONSE deve contenere fotografia AS-IS, proposta TO-BE, motivazione delle scelte, confini di responsabilità e raccomandazione finale della soluzione più minimale possibile.
