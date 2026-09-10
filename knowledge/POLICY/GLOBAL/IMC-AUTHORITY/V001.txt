@@ -1,0 +1,19 @@
+DOC_ID: IMC-AUTHORITY
+DOC_TYPE: POLICY
+AREA: GLOBAL
+DATE: 2026-09-10
+TOPIC: IMC_SYSTEM_AUTHORITY
+VERSION: V001
+STATUS: ACTIVE
+ACTIVITY: architecture,data,code,gateway,source-of-truth
+
+IMC SYSTEM AUTHORITY POLICY
+
+1. MySQL Aruba è la fonte dati autoritativa IMC.
+2. Supabase è un ponte tecnico verso MySQL Aruba e non è fonte dati autoritativa.
+3. GitHub è la fonte autoritativa per codice, sito e gateway.
+4. Il repository IMC Data Room su GitHub è fonte autoritativa per ticket e knowledge documentale; Aruba è la copia pubblicata consultabile online.
+5. Nessun documento pubblico deve contenere secret, token, password o credenziali.
+
+PRECEDENZA
+Le POLICY hanno precedenza su PLAYBOOK e REFERENCE in caso di conflitto. Una revisione successiva dello stesso DOC_ID sostituisce la precedente come versione attiva senza alterare lo storico.
