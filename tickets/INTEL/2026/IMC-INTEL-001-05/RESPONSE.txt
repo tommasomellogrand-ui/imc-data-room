@@ -1,0 +1,421 @@
+CASE_ID: IMC-INTEL-001-05
+DOC_TYPE: RESPONSE
+AREA: INTEL
+DATE: 2026-09-10
+TOPIC: GW002_HUMAN_VS_COMPUTER_MATCH_ENGINE_ANALYSIS
+STATUS: COMPLETED
+
+IMC | SOCCER MANAGER INTELLIGENCE
+GW002 · HUMAN vs HUMAN vs COMPUTER · MATCH ENGINE ANALYSIS
+
+============================================================
+0. EXECUTIVE VERDICT
+============================================================
+
+Il segnale osservazionale HUMAN vs COMPUTER in GW002 è enorme: nei match HUMAN-COMPUTER disponibili, il lato HUMAN vince circa l'82% delle partite, genera circa 20.5 tiri contro 7.9, circa 10.0 SOT contro 2.1, mantiene circa 62.6% di possesso e segna circa 3.16 gol contro 0.66.
+
+Tuttavia NON emerge evidenza sufficiente per affermare che il Match Engine applichi un trattamento intrinseco diverso alle squadre HUMAN rispetto alle COMPUTER. Il dataset mostra invece differenze comportamentali drastiche: le squadre COMPUTER utilizzano schemi tattici iniziali molto standardizzati e, nella fotografia analizzata, non effettuano alcun cambio tattico osservabile negli snapshot; gli HUMAN mostrano molte più configurazioni e cambiano tattica in circa l'8.8% dei lati-partita.
+
+La forza storica XI non è ricostruibile con copertura sufficiente su tutto il dataset attraverso una singola query perché Rating History è nel CORE e il Gateway vieta cross-database SQL. Di conseguenza il risultato corretto è:
+
+DESCRIPTIVE DIFFERENCE: fortissima.
+CONTROLLED FOR HOME/AWAY: resta fortissima.
+CONTROLLED FOR HISTORICAL XI STRENGTH: non conclusivo in questo CASE.
+CAUSAL CLAIM HUMAN BONUS/PENALTY: NON SUPPORTATO.
+
+La spiegazione più plausibile, coerente con i dati osservati, è una combinazione di selection/roster strength + decisioni tattiche + comportamento gestionale umano, non un flag nascosto HUMAN nel Match Engine.
+
+============================================================
+1. DATASET SNAPSHOT
+============================================================
+
+Prima operazione obbligatoria eseguita con COUNT(*) reale su `GW002_IMC Match Report`:
+- Match Report disponibili all'inizio dell'analisi: 4,186
+- match_date: 2026-07-07 -> 2026-09-09
+- ultimo imported_at osservato: 2026-09-10 14:47:37
+
+IMPORTANTE: GW002 era in importazione continua durante il CASE. Tra la prima COUNT e le query aggregate il dataset è cresciuto. La matrice principale è stata calcolata quando erano presenti 4,224 Match Report; le query tattiche finali hanno osservato 4,269 lati? No: 5,812 COMPUTER + 2,726 HUMAN = 8,538 lati, quindi 4,269 match in quel passaggio. Questo drift è esplicitamente dichiarato.
+
+Non esisteva un meccanismo READ ONLY di snapshot/isolation esposto dal Gateway per congelare fisicamente i 4,186 record iniziali, e `imported_at` non distingue affidabilmente i record aggiunti durante l'audit perché i nuovi record possono condividere lo stesso timestamp di importazione. Per non inventare una fotografia artificiale, l'analisi usa sempre tutti i record disponibili al momento della singola query e quantifica il drift.
+
+Drift tra COUNT iniziale e matrice principale: +38 match (+0.91%).
+
+============================================================
+2. CONTROL-TYPE CLASSIFICATION METHOD
+============================================================
+
+HUMAN vs COMPUTER:
+- se `*_sm_manager_id IS NULL` e `*_manager_name = 'Senza allenatore'` -> COMPUTER;
+- se `*_sm_manager_id IS NOT NULL` -> HUMAN;
+- UNKNOWN sarebbe stato usato per casi incoerenti/ambigui.
+
+Verifica empirica: tutti i lati con manager_id NULL osservati avevano `manager_name='Senza allenatore'`. Non sono emersi UNKNOWN nella classificazione di controllo.
+
+HUMAN IMC vs HUMAN NON-IMC:
+- elenco autoritativo da CORE `IMC Manager Assignment Global` + `IMC Manager Codex Global` per GW002;
+- il `sm_manager_id` del Match Report è confrontato con `sm_manager_id` globale IMC;
+- IMC è soltanto una segmentazione interna. Soccer Manager non conosce questa categoria.
+
+Gli sm_manager_id IMC rilevanti osservati nel CORE includono, tra gli altri, Tommaso Mello, Tommaso Prisco, Vincenzo Martorano, Giovanni Iodice, Giuseppe Esposito, Igor Zanotto, Luciano Catalano, Matteo Sartori, Max Palace, Saverio Cordiano, Sir Simone, Giovanni Cabrioli, Ringhio Gattuso, Francesco Senesi, Oleksandr Medvid, Carlo Colombo, Giuseppe Trovato, Simone Campanella, Raffaele Manzo, Nicolae Sasarman, Lorenzo Errico, Chris Fenech, Chicco Belin e Marco Aloisi.
+
+============================================================
+3. MATCHUP MATRIX
+============================================================
+
+Matrice principale (4,224 match):
+
+COMPUTER vs COMPUTER: 2,253
+HUMAN_IMC vs HUMAN_IMC: 66
+HUMAN_IMC vs HUMAN_NON_IMC: 121 complessivi
+HUMAN_IMC vs COMPUTER: 124 complessivi
+HUMAN_NON_IMC vs HUMAN_NON_IMC: 542
+HUMAN_NON_IMC vs COMPUTER: 1,118 complessivi
+UNKNOWN: 0 osservati
+
+Dettaglio orientato home/away:
+- COMPUTER home vs COMPUTER away: 2,253
+- COMPUTER home vs IMC away: 57
+- COMPUTER home vs NON-IMC HUMAN away: 561
+- IMC home vs COMPUTER away: 67
+- IMC home vs IMC away: 66
+- IMC home vs NON-IMC HUMAN away: 60
+- NON-IMC HUMAN home vs COMPUTER away: 557
+- NON-IMC HUMAN home vs IMC away: 61
+- NON-IMC HUMAN home vs NON-IMC HUMAN away: 542
+
+============================================================
+4. DESCRIPTIVE RESULTS
+============================================================
+
+4.1 HUMAN vs COMPUTER AGGREGATO
+
+Totale HUMAN-COMPUTER nella matrice principale: 1,242.
+
+Dal punto di vista HUMAN:
+- W 1,024
+- D 102
+- L 116
+- win rate 82.45%
+- non-loss 90.66%
+
+Medie approssimate pesate sulle quattro orientazioni IMC/non-IMC e home/away:
+- goals HUMAN 3.16 vs COMPUTER 0.66
+- possession HUMAN 62.61% vs COMPUTER 37.39%
+- shots HUMAN 20.51 vs COMPUTER 7.90
+- SOT HUMAN 10.01 vs COMPUTER 2.06
+- shot accuracy HUMAN ~48.8% vs COMPUTER ~26.1%
+- goals/SOT HUMAN ~31.6% vs COMPUTER ~31.9%
+
+Questa è una scoperta importante: il gap principale non appare nella conversione SOT->goal, che è quasi identica. Il divario emerge soprattutto PRIMA della finalizzazione: possesso, volume tiri e capacità di portare i tiri nello specchio.
+
+Questo pattern è coerente con due grandi famiglie di spiegazioni:
+A. squadre HUMAN mediamente molto più forti / meglio costruite;
+B. tattiche HUMAN che generano più territorio, tiri e SOT;
+probabilmente entrambe.
+
+4.2 COMPUTER vs COMPUTER
+
+n=2,253
+- home wins 903 (40.08%)
+- draws 558 (24.77%)
+- away wins 792 (35.15%)
+- goals home 1.334 vs away 1.216
+- possession home 51.22% vs away 48.78%
+- shots home 12.34 vs away 11.78
+- SOT home 4.74 vs away 4.38
+
+Qui compare un home signal pulito e coerente con il fatto ufficialmente documentato che home/away è input del Match Engine.
+
+4.3 HUMAN vs HUMAN
+
+Combinando IMC-IMC, IMC-NONIMC e NONIMC-NONIMC:
+- n=729
+- home wins 303 (41.56%)
+- draws 108 (14.81%)
+- away wins 318 (43.62%)
+
+Nel sottoinsieme HUMAN-HUMAN non emerge nella fotografia un vantaggio home aggregato: le vittorie away sono leggermente superiori. Questo non contraddice l'home input ufficiale: composizione squadre, manager e schedule sono fortemente confondenti.
+
+4.4 IMC vs COMPUTER
+
+n=124
+Dal punto di vista IMC:
+- W 115
+- D 2
+- L 7
+- win rate 92.74%
+
+IMC home vs COMPUTER: 63-0-4 su 67.
+IMC away vs COMPUTER: 52-2-3 su 57.
+
+Output molto sbilanciati:
+- IMC home: 3.507 gol, 64.78% possesso, 21.37 shots, 10.94 SOT
+- COMPUTER away: 0.448 gol, 35.22% possesso, 7.22 shots, 1.81 SOT
+- IMC away: 3.140 gol, 62.26% possesso, 20.46 shots, 9.93 SOT
+- COMPUTER home: 0.632 gol, 37.74% possesso, 7.67 shots, 1.84 SOT
+
+4.5 HUMAN NON-IMC vs COMPUTER
+
+n=1,118
+Dal punto di vista HUMAN NON-IMC:
+- W 909
+- D 100
+- L 109
+- win rate 81.31%
+
+Quindi gli HUMAN non-IMC dominano anch'essi i COMPUTER. Il dominio HUMAN non è un fenomeno esclusivo IMC.
+
+============================================================
+5. CONTROLLED ANALYSIS
+============================================================
+
+5.1 CONTROLLO HOME/AWAY
+
+HUMAN home vs COMPUTER away:
+- n=624
+- HUMAN wins 517
+- draws 46
+- HUMAN losses 61
+- HUMAN win rate 82.85%
+
+COMPUTER home vs HUMAN away:
+- n=618
+- HUMAN away wins 507
+- draws 56
+- HUMAN losses 55
+- HUMAN win rate 82.04%
+
+Conclusione: il vantaggio HUMAN vs COMPUTER resta praticamente invariato invertendo casa/trasferta. L'home advantage non spiega il gap HUMAN-COMPUTER.
+
+Effect size descrittivo: differenza win-rate HUMAN home vs HUMAN away soltanto ~0.81 punti percentuali in questi matchup, contro un vantaggio HUMAN complessivo enorme.
+
+5.2 CONTROLLO STRENGTH / RATING
+
+Rating History è disponibile nel CORE e il CASE precedente ha verificato che il player ID Match Report appartiene allo stesso namespace globale. Tuttavia:
+- il Gateway vieta cross-database SQL;
+- il dataset Match Report è cresciuto continuamente durante l'analisi;
+- una ricostruzione rigorosa di XI historical strength per tutti i 4k+ match richiede estrazione/batch join applicativo player-by-player/data-by-data;
+- non è autorizzata creazione di tabelle/materializzazioni.
+
+Per questo CASE non è stato possibile produrre un controllo strength completo e temporalmente valido senza introdurre proxy o campionamenti non richiesti.
+
+VERDETTO STRENGTH: INSUFFICIENT CONTROL. Non usare rating corrente come storico è stato rispettato.
+
+5.3 INTERPRETAZIONE CONTROLLATA
+
+Dopo controllo home/away il gap HUMAN resta enorme.
+Dopo controllo strength: non determinabile.
+Quindi non si può distinguere quantitativamente quanto del gap derivi da roster strength e quanto da tactical/manager behavior.
+
+============================================================
+6. HOME ADVANTAGE × CONTROL TYPE
+============================================================
+
+HUMAN vs HUMAN:
+- n=729
+- home W 41.56%
+- draw 14.81%
+- away W 43.62%
+- nessun home advantage aggregato osservato.
+
+HUMAN home vs COMPUTER away:
+- HUMAN win 82.85%
+
+COMPUTER home vs HUMAN away:
+- HUMAN away win 82.04%
+- COMPUTER home win 8.90%
+
+COMPUTER vs COMPUTER:
+- home W 40.08%
+- draw 24.77%
+- away W 35.15%
+- home minus away win-rate +4.93 pp
+- home goals +0.118
+
+VERDETTO: il segnale home è più leggibile nei COMPUTER-COMPUTER, dove la composizione tattica è molto più standardizzata. Nei HUMAN matchup viene facilmente sommerso da differenze di forza e comportamento.
+
+============================================================
+7. TACTICAL BEHAVIOR
+============================================================
+
+7.1 COMPUTER
+
+La tattica COMPUTER iniziale è estremamente standardizzata.
+Configurazioni più frequenti:
+- 4-2-3-1 A / Normale / tempo Normale / pressing Propria metà campo / passaggi Misto / counter No / tight marking No: 2,440 lati
+- 4-3-3 A stessa struttura: 1,082
+- 5-3-2 A stessa struttura: 503
+- 4-5-1 A stessa struttura: 469
+- 4-2-3-1 B stessa struttura: 463
+- 4-3-3 B stessa struttura: 443
+- 4-4-2 A stessa struttura: 287
+
+In altre parole, COMPUTER varia principalmente la formation, mentre molte istruzioni restano quasi congelate sul preset Normale/Misto/No.
+
+7.2 HUMAN
+
+Gli HUMAN mostrano molte più combinazioni. Tra le più frequenti:
+- 4-2-3-1 B / Offensivo / Normale / pressing Ovunque / Misto / counter Sì: 221
+- 4-2-3-1 B / Normale / preset più standard: 214
+- 4-2-3-1 A / Normale: 125
+- 4-4-2 A / Normale: 116
+- 4-3-3 B / Normale: 98
+- configurazioni Offensivo + Veloce + pressing Ovunque + Diretto + counter Sì compaiono ripetutamente.
+
+Gli HUMAN quindi esplorano una regione tattica molto più ampia dello spazio disponibile.
+
+7.3 TACTICAL CHANGES DURING MATCH
+
+Query finale sugli snapshot tattici:
+- COMPUTER sides: 5,812; sides con almeno una configurazione diversa rispetto agli altri snapshot: 0 (0.00%); avg distinct tactical variants 1.000
+- HUMAN sides: 2,726; sides con tactical change: 240 (8.80%); avg distinct variants 1.094
+
+Questo è uno dei risultati più forti del CASE: COMPUTER, nella fotografia osservata, è tatticamente statico durante la partita; HUMAN modifica realmente la propria configurazione in una quota non trascurabile di match.
+
+ATTENZIONE: gli snapshot sono a finestre discrete (es. 0/45/60/75), quindi cambi effettuati e poi annullati tra snapshot possono non essere osservati.
+
+============================================================
+8. SUBSTITUTIONS / STARTER-SUBSTITUTE USAGE
+============================================================
+
+`players_json` distingue correttamente starter/substitute, ma nel dataset GW002 analizzato `sub_on_minute` non è popolato in modo utile per l'aggregazione richiesta: la query ha restituito avg_subs=0 e first_sub=NULL sia HUMAN sia COMPUTER.
+
+Le sostituzioni possono comparire nel commentary/events, ma il campo `team_side` dell'evento non è sempre semanticamente affidabile per attribuire la sostituzione: in un esempio reale il testo descrive sostituzioni Ipswich mentre l'event record porta `team_side='away'` per l'azione successiva nello stesso blocco.
+
+Per evitare falsa precisione non è stato forzato un conteggio substitution behavior dai commentary.
+
+VERDETTO sostituzioni: NON ROBUSTAMENTE QUANTIFICABILE con i campi normalizzati attuali di GW002.
+
+============================================================
+9. IMC vs OTHER HUMAN
+============================================================
+
+IMC vs NON-IMC HUMAN complessivo: n=121.
+Dal punto di vista IMC:
+- W 52
+- D 18
+- L 51
+- win rate 42.98%
+- loss rate 42.15%
+
+Praticamente equilibrio.
+
+Quando IMC è home vs NON-IMC:
+- n=60
+- IMC W 22, D 9, L 29
+- goals 1.533 vs 1.767
+- possession 50.70 vs 49.30
+- shots 13.27 vs 13.92
+- SOT 5.13 vs 5.60
+
+Quando NON-IMC è home vs IMC:
+- n=61
+- IMC away W 30, D 9, L 22
+- IMC goals 1.885 vs 1.656
+- IMC possession 50.80 vs 49.20
+- IMC shots 14.20 vs 12.89
+- IMC SOT 5.61 vs 4.75
+
+Il dato mostra un curioso pattern di IMC migliore da away e peggiore da home, ma il campione è piccolo e completamente confondibile da forza squadra/opponente/schedule.
+
+Conclusione: nessun vantaggio IMC strutturale evidente contro altri HUMAN. Il vantaggio IMC vs COMPUTER è in gran parte una versione più estrema del vantaggio HUMAN generale.
+
+============================================================
+10. DISCIPLINE / CORNERS / CONVERSION
+============================================================
+
+Nei COMPUTER-COMPUTER:
+- corners home 6.64 vs away 4.96
+- yellow 0.96 vs 1.00
+- red 0.079 vs 0.074
+
+Nei HUMAN-COMPUTER i cartellini non mostrano una firma semplice che spieghi il dominio HUMAN.
+
+Il dato più informativo resta la conversion chain:
+HUMAN vs COMPUTER
+- shots: 20.51 vs 7.90
+- SOT: 10.01 vs 2.06
+- SOT/shots: ~48.8% vs ~26.1%
+- goals/SOT: ~31.6% vs ~31.9%
+
+Quindi il gap HUMAN non sembra essere un misterioso moltiplicatore finale di finishing. È soprattutto produzione e qualità apparente delle occasioni fino al SOT.
+
+============================================================
+11. CONFOUNDERS / LIMITATIONS
+============================================================
+
+1. Dataset in importazione continua: +0.9% già tra snapshot iniziale e matrice principale; ulteriore crescita nelle query successive.
+2. Nessun immutable snapshot READ ONLY disponibile via Gateway.
+3. Strength storica XI non controllata sull'intera base.
+4. Gli HUMAN scelgono/ottengono club e rose non casualmente.
+5. I COMPUTER possono essere più frequenti in squadre strutturalmente deboli.
+6. Competition/country/division non sono bilanciati tra control type.
+7. Manager identity, club identity e opponent identity non sono randomizzati.
+8. Tactics sono endogene: gli HUMAN scelgono tattiche in base alla propria forza e a quella avversaria.
+9. Tactical snapshots discreti possono perdere micro-cambi.
+10. Substitution minute normalizzato non utilizzabile nel dataset corrente.
+11. Nessuna prova di causalità da semplice differenza HUMAN-COMPUTER.
+
+============================================================
+12. VERDICT · DOMANDE FINALI OBBLIGATORIE
+============================================================
+
+1. HUMAN vs COMPUTER mostra differenze reali negli output?
+SÌ, descrittivamente enormi. HUMAN ~82.5% win, 3.16 vs 0.66 goals, 62.6% possession, 20.5 vs 7.9 shots.
+
+2. Restano dopo controllo home/away e strength?
+HOME/AWAY: sì, quasi immutate (82.85% HUMAN home vs 82.04% HUMAN away).
+STRENGTH: non conclusivo; controllo storico completo non disponibile in questa esecuzione.
+
+3. HUMAN modifica tattiche/sostituzioni diversamente dal COMPUTER?
+TACTICS: sì nettamente; 8.8% lati HUMAN con tactical change vs 0% COMPUTER.
+SUBSTITUTIONS: non quantificabile robustamente dai campi normalizzati osservati.
+
+4. COMPUTER usa pattern tattici differenti?
+SÌ. Molto più standardizzati: mentality Normale, tempo Normale, pressing propria metà, passing Misto, counter No, tight marking No, con variazione principalmente della formation.
+
+5. Home advantage cambia per control type?
+SÌ osservazionalmente. COMPUTER-COMPUTER mostra +4.93 pp home-vs-away win rate. HUMAN-HUMAN non mostra home advantage aggregato. Nei HUMAN-COMPUTER l'enorme gap di controllo domina l'effetto casa.
+
+6. IMC vs altri HUMAN mostra differenze?
+Non un vantaggio complessivo netto: 52W-18D-51L su 121.
+
+7. Se sì, cosa spiega il gap IMC?
+Non emerge un gap IMC generale da spiegare. Il dominio IMC vs COMPUTER è coerente con il dominio HUMAN generale e può riflettere soprattutto selection/roster/tactics.
+
+8. Esiste qualcosa che suggerisca trattamento diverso del Match Engine per HUMAN e COMPUTER?
+NESSUNA PROVA DIRETTA. Esistono output molto diversi, ma anche comportamento tattico e probabilmente roster strength molto diversi. Il dato non richiede un bonus/penalty nascosto HUMAN per essere spiegato.
+
+9. Nuove ipotesi emerse?
+- HUMAN advantage potrebbe agire soprattutto sulla generazione SOT, non sulla conversione goal/SOT.
+- COMPUTER sembra operare come policy tattica quasi statica/preset-driven.
+- home advantage è più facilmente misurabile quando entrambi i lati sono COMPUTER e quindi tatticamente omogenei.
+- tactical adaptation HUMAN può contribuire alla superiorità osservata, ma serve confronto matched per strength.
+
+10. Prossimo test con massimo valore informativo?
+Costruire un matched HUMAN-vs-COMPUTER analysis con historical XI rating ricostruito, stesso country/division/competition, home/away controllato e opponent/club strength comparabile. Outcome principale: shots, SOT, goals/SOT e result. Se il gap HUMAN persiste dopo matching stretto sulla forza, allora la tactical/manager layer diventa molto più plausibile come causa.
+
+============================================================
+13. NEXT HIGHEST-VALUE TESTS
+============================================================
+
+1. HUMAN vs COMPUTER matched on historical XI rating gap ±1 punto.
+2. Stesso club in periodi HUMAN vs COMPUTER, ove esistano manager turnover temporali: quasi-natural experiment ad altissimo valore.
+3. COMPUTER-COMPUTER home advantage stratificato per rating gap e competition.
+4. HUMAN tactical-change vs no-change matched per score state al minuto precedente e strength.
+5. Conversion pipeline rating attackers -> shots -> SOT -> goals, separata HUMAN/COMPUTER.
+6. Normalizzare substitution events in un campo affidabile e ripetere behavioral comparison.
+7. Fixed effects per club/competition/division quando il dataset si stabilizza.
+8. IMC vs NON-IMC HUMAN con matching su opponent strength e club strength; il confronto grezzo è sostanzialmente pari.
+
+============================================================
+14. FINAL CONCLUSION
+============================================================
+
+GW002 non suggerisce che Soccer Manager "premi gli umani" nel codice. Suggerisce qualcosa di più concreto e testabile: HUMAN e COMPUTER giocano, nella pratica osservata, due tipi di calcio statisticamente molto diversi.
+
+Gli HUMAN dominano territorio e creazione: più possesso, molti più tiri e soprattutto una quota molto maggiore di tiri nello specchio. Una volta arrivati al SOT, però, la conversione in gol è quasi identica tra HUMAN e COMPUTER. Questo sposta la domanda investigativa dal fantomatico bonus HUMAN verso la pipeline che genera le occasioni.
+
+Inoltre il COMPUTER appare tatticamente quasi statico e fortemente preset-driven, mentre gli HUMAN variano molto di più e in circa un lato-partita su undici cambiano effettivamente configurazione durante la gara.
+
+Il prossimo salto di qualità è quindi controllare la forza XI storica. Se a parità di rating/strength HUMAN continua a produrre 2-3 volte i SOT del COMPUTER, allora avremo una firma empirica molto più interessante del manager/tactical layer del Match Engine. Fino ad allora: associazione fortissima, causalità non dimostrata.
