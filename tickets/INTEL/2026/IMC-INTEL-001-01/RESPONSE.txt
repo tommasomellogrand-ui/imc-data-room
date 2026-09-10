@@ -1,0 +1,209 @@
+CASE_ID: IMC-INTEL-001-01
+DOC_TYPE: RESPONSE
+AREA: INTEL
+DATE: 2026-09-10
+TOPIC: SOCCER_MANAGER_DEEP_KNOWLEDGE_REVIEW
+STATUS: COMPLETED
+
+IMC | SOCCER MANAGER INTELLIGENCE
+SOCCER MANAGER INTELLIGENCE REPORT #002 · DEEP KNOWLEDGE REVIEW
+
+============================================================
+0. SCOPO, METODO E AVVERTENZA CRITICA
+============================================================
+
+Questo report approfondisce IMC-INTEL-001 concentrandosi sul Soccer Manager Worlds (SMW) multiplayer persistente, non sulla serie annuale single-player Soccer Manager 20xx. La distinzione è essenziale perché molte guide web apparentemente pertinenti descrivono in realtà SM22/SM23/SM24/SM25 e non costituiscono prova sul motore di Worlds.
+
+Metodo: ricerca pubblica multi-pass su Help/FAQ ufficiali, pagine pubbliche Soccer Manager, storico Answer Centre, blog/update rintracciabili, thread RedCafe 2012-2026, Reddit, community e materiale storico. Per ogni affermazione importante è stata cercata anche evidenza contraria. Nessun accesso privato, account, cookie, token, bypass o scraping protetto.
+
+Scala evidenze:
+[UFFICIALE] dichiarazione primaria Soccer Manager/Help.
+[FORTE] osservazione ripetibile o più evidenze indipendenti coerenti.
+[CONSENSO] convinzione ricorrente di giocatori esperti ma non dimostrata.
+[IPOTESI] plausibile ma non provata.
+[CONTRADDITTORIA] testimonianze incompatibili.
+[OBSOLETA/POTENZIALMENTE OBSOLETA] vera o documentata storicamente, ma versione corrente non garantita.
+
+RISULTATO CENTRALE
+Il match engine è una black box solo parziale. Soccer Manager documenta esplicitamente numerosi input e descrive qualitativamente come alcuni di essi agiscono. Quello che non pubblica sono pesi, formule, interazioni, distribuzione della casualità e quasi tutti gli eventuali modificatori latenti. La strategia corretta per IMC non è quindi cercare una fantomatica formula completa sul web, ma separare gli input confermati dagli input sospetti e testarli sui nostri dataset.
+
+============================================================
+1. MATCH ENGINE · MODELLO RICOSTRUITO
+============================================================
+
+INPUT CONFERMATI O DIRETTAMENTE COLLEGATI ALLA SIMULAZIONE
+
+1) SELEZIONE DEL MATCH DAY SQUAD [UFFICIALE]
+L'Help tattico definisce il match-day squad e la starting XI come base della preparazione. Storicamente documentava 11 titolari + 7 sostituti; nel ciclo di aggiornamenti 2025 la community RedCafe ha verificato l'aumento delle sostituzioni utilizzabili a cinque. Il numero storico di posti/sub può quindi essere cambiato, ma il principio è stabile: esiste un gruppo convocato, una XI e sostituzioni.
+Fonti:
+https://soccermanager.co.uk/help.php?action=loadarticle&aid=21
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/page-1352
+
+2) RATING [UFFICIALE come caratteristica del giocatore; FORTE come input prestazionale]
+Il rating SM è la misura sintetica fondamentale della qualità del giocatore. È legato alla valutazione del calciatore reale e non cresce perché il giocatore rende bene nel proprio Game World. Le community competitive costruiscono sistematicamente previsioni e gerarchie di XI usando rating e distribuzione del rating per reparto, forte evidenza empirica che la qualità nominale conti. Non esiste però una formula pubblica rating -> probabilità di evento.
+Fonte ufficiale:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=76
+Pagina dati pubblica esemplificativa con Rating History:
+https://data.soccermanager.com/player.php?pid=93915
+
+3) POSIZIONE NATURALE / FUORI RUOLO [UFFICIALE, MOLTO FORTE]
+È una delle poche penalità descritte esplicitamente. L'Help afferma che il giocatore rende meglio nella posizione preferita (verde), soffre se schierato fuori posizione naturale (arancione), e più ci si allontana dalla posizione naturale (rosso), maggiore è la perdita di performance. Questo prova non solo che la posizione entra nel sistema, ma che esiste una penalità graduata.
+Fonti:
+https://soccermanager.co.uk/help.php?action=loadarticle&aid=78
+https://soccermanager.co.uk/help.php?action=loadarticle&aid=21
+
+4) TEAM INSTRUCTIONS / TATTICHE [UFFICIALE, MOLTO FORTE]
+Le istruzioni non sono semplici etichette cosmetiche: l'Help attribuisce conseguenze qualitative specifiche.
+- Tackling: Timid/Soft riducono aggressività, infortuni e disciplina; Hard/Aggressive aumentano capacità di disturbare ma attirano il referee.
+- Passing: Short/Mixed/Direct/Long Ball modificano il tipo di distribuzione; Long Ball può cedere più possesso; Direct ricerca rapidamente il passaggio in avanti.
+- Tempo: Slow/Normal/Fast; giocare veloce può aumentare errori di passaggio.
+- Mentality: Very Defensive -> Very Attacking modifica l'approccio complessivo.
+- Attacking Style: flanks/left/right/mixed/middle indirizza l'area privilegiata dell'attacco.
+- Pressing: Own Area/Own Half/All Over modifica dove la squadra tenta il recupero e quindi la struttura.
+- Counter Attack: ricerca transizioni rapide dopo perdita di possesso avversaria.
+- Tight Marking: ogni giocatore segue più strettamente un avversario, con possibile costo offensivo.
+- Use Playmaker: nomina un giocatore che controlla prevalentemente la costruzione offensiva.
+- Men Behind Ball: struttura difensiva, cede possesso.
+- Offside Trap: linea sale per mettere l'attaccante in fuorigioco.
+- Target Man: i compagni cercano più frequentemente passaggi in avanti verso il riferimento.
+Fonte primaria fondamentale:
+https://soccermanager.net/help.php?action=loadarticle&aid=140
+Glossario:
+https://soccermanager.net/help.php?action=glossary
+
+CONCLUSIONE: sappiamo che queste istruzioni entrano nel comportamento simulato; NON sappiamo quanto pesino e non esiste evidenza seria che una singola combinazione sia universalmente ottimale.
+
+5) CONDITION / FITNESS [UFFICIALE]
+Condition è una variabile visibile percentuale. L'Help giocatori e la documentazione storica la collegano alla disponibilità/prestazione e prescrivono riposo/rotazione per recuperarla. La pagina pubblica player espone Condition accanto a morale, concerns, injuries e suspensions. Le facilities introdotte nel nuovo ciclo di sviluppo includono esplicitamente il miglioramento della velocità di recupero fitness, ulteriore prova che fitness è un sistema attivo e non decorativo.
+Fonti:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=76
+https://data.soccermanager.com/player.php?pid=164146
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/page-1374
+
+Nota: RedCafe registra anche anomalie storiche, ad esempio perdita di fitness di un giocatore rimasto in panchina senza entrare (2021). È evidenza di bug/edge case, non prova che la panchina venga valutata nel match engine.
+Fonte:
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/page-1269
+
+6) MORALE [UFFICIALE]
+L'Help dice che il morale può aumentare se il giocatore gioca con continuità, viene schierato correttamente, il club va bene, il giocatore rende bene o firma un nuovo contratto. Morale è mostrato come Selection Detail nel profilo pubblico. La documentazione ufficiale storica collega morale/condition alla capacità di rendere. Nessuna formula quantitativa trovata.
+Fonte:
+https://www.soccermanager.net/help.php?action=loadarticle&aid=76
+
+7) INFORTUNI, SQUALIFICHE, CUP-TIED [UFFICIALE]
+Agiscono almeno come vincoli di selezione. Non è necessario ipotizzare un modificatore nascosto: se il giocatore non è disponibile cambia la XI possibile.
+Fonti:
+https://soccermanager.co.uk/help.php?action=loadarticle&aid=21
+https://data.soccermanager.com/player.php?pid=93915
+
+8) SOSTITUZIONI E CAMBI TATTICI [UFFICIALE/FORTE]
+Le sostituzioni entrano ovviamente nella partita perché modificano i giocatori in campo. Le community usano da anni istruzioni temporali/condizionali e cambi di formazione; RedCafe documenta, per esempio, una trasformazione 4-2-2-2 -> 5-4-1B dopo 75 minuti per chiudere le partite. Nel febbraio 2025 RedCafe ha verificato il nuovo sistema a cinque sostituzioni e testato sostituzioni multiple sulla stessa posizione con istruzioni differenti.
+Fonti:
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/page-1088
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/page-1352
+
+9) PLAYER ROLES [SISTEMA CORRENTE CONFERMATO DA UPDATE/COMMUNITY; EFFETTO QUANTITATIVO NON NOTO]
+Nel ciclo 2025-26 sono comparsi ruoli specifici per posizione. RedCafe, citando la sequenza di update ufficiali, elenca:
+GK: Modern Keeper, Keeper.
+FB: Fullback, Wingback.
+CB: Stopper, General Defender, Ball Playing Defender.
+MID: Ball-Winning Midfielder, Deep Playmaker, General Midfielder, Box-To-Box Midfielder, Play Maker.
+AM: Advanced Playmaker, Support Striker, Wide Midfielder, Winger.
+ST: General Forward, Finisher, Deep Forward, Target Man.
+Fonte:
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/page-1374
+
+ATTENZIONE: guide SM22/SM23 descrivono ruoli quasi omonimi, ma non possono essere usate come prova automatica del comportamento del motore Worlds. Possono servire solo come ipotesi di design da testare.
+
+============================================================
+2. RATING · COSA SAPPIAMO DAVVERO
+============================================================
+
+[UFFICIALE]
+- rating e cambi rating dipendono dal calcio reale/Soccer Wiki, non dalla performance del giocatore nel Game World;
+- esiste una Rating History pubblica;
+- un giocatore può salire o scendere nel tempo.
+
+[FORTE]
+- rating elevato aumenta la qualità attesa di una XI, ma non determina deterministicamente il risultato;
+- la distribuzione per reparto conta operativamente: community longeve identificano ripetutamente difese o attacchi più deboli come colli di bottiglia pur in squadre forti complessivamente.
+
+[NON SAPPIAMO]
+- se il motore usa il rating puro o una trasformazione interna;
+- se esistono coefficienti diversi per posizione;
+- se una differenza 95-94 equivale, in effetto, a 85-84;
+- se il rating entra separatamente in fasi offensive/difensive;
+- se esistono cap/diminishing returns.
+
+[CONFUTAZIONE DI UNA SEMPLIFICAZIONE]
+“Vince la squadra con rating medio più alto” è falsa come regola deterministica. RedCafe contiene anni di upset, risultati “against the run of play” e casi in cui manager con XI inferiori attribuiscono la competitività alle tattiche. Questo non dimostra quanto valgano le tattiche; dimostra solo che il rating non è l'unico input e/o esiste casualità.
+Fonti:
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/page-1133
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/page-1351
+
+============================================================
+3. TATTICHE · DA OPZIONI A RELAZIONI CAUSALI
+============================================================
+
+La pagina Team & Player Instructions è la fonte tecnica pubblica più preziosa trovata. Non offre pesi, ma descrive relazioni causali esplicite. Esempi:
+- Fast tempo -> possibilità di più errori di passaggio.
+- Long Ball -> rischio di regalare più possesso.
+- Press All Over -> pressione più alta e strategia più offensiva.
+- Tight Marking -> meno spazio all'avversario ma potenziale costo offensivo.
+- Men Behind Ball -> maggiore protezione ma cessione di possesso.
+- Playmaker -> concentrazione delle sequenze di costruzione su un giocatore.
+- Target Man -> aumento dei passaggi cercati verso quel giocatore.
+
+Questo permette di formulare una prima rete di interazioni, NON una matrice “tattica X batte tattica Y”.
+
+EVIDENZA COMMUNITY
+RedCafe mostra manager che per anni utilizzano tattiche riconoscibili, cambiano sistemi in base all'avversario e attribuiscono risultati a matchup tattici. Nel 2018 un manager dichiara di usare 4-2-2-2 per saltare il centrocampo verso ali/attaccanti e passare a 5-4-1B dopo 75' per chiudere. È esperienza interessante ma non test controllato.
+
+CONTRO-EVIDENZA
+Altri giocatori descrivono risultati apparentemente casuali o “match engine specials”; Reddit 2024 contiene nuovi giocatori che non riescono a percepire una relazione chiara tra decisioni tattiche e risultati. Questa frustrazione dimostra opacità/varianza, non che le tattiche siano irrilevanti, perché l'Help ufficiale documenta effetti specifici.
+Fonti:
+https://www.reddit.com/r/Soccermanager/comments/1exn1yw
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/page-1086
+
+VERDETTO: [UFFICIALE] le tattiche modificano la simulazione; [NON NOTO] peso e combinazioni ottimali; [NON DIMOSTRATO] sistema universale di counter-formations.
+
+============================================================
+4. PANCHINA, ROSA COMPLETA E “AVERAGE SQUAD”
+============================================================
+
+Questa è una delle questioni più importanti per IMC.
+
+COSA ABBIAMO TROVATO
+- L'Help tattico centra la preparazione sul Match Day Squad, starting XI e substitutes.
+- La penalità di posizione è descritta per il giocatore schierato.
+- Le istruzioni tattiche si applicano alla XI e ai giocatori che entrano.
+- Non è stata trovata alcuna dichiarazione ufficiale che dica che il rating dei NON convocati, la media della rosa completa o la qualità della panchina non utilizzata entri direttamente nel calcolo del risultato.
+- Non è stato trovato nemmeno un esperimento pubblico robusto che dimostri tale effetto.
+
+COSA PUÒ FARE LA PANCHINA [CERTO]
+- determina qualità delle sostituzioni disponibili;
+- permette copertura di infortuni/condizione/squalifiche;
+- influenza la capacità di cambiare assetto durante la gara;
+- può incidere indirettamente sulla gestione fitness e rotazione nel calendario.
+
+COSA NON POSSIAMO AFFERMARE
+“Una panchina di rating basso abbassa automaticamente la forza della squadra anche se non entra” = IPOTESI NON DIMOSTRATA.
+“Una rosa enorme con riserve scarse abbassa la media usata dal match engine” = IPOTESI NON DIMOSTRATA.
+
+IMPORTANTE: l'introduzione di squad caps nel ciclo recente prova che la dimensione della rosa è una variabile regolatoria del Game World, NON che sia un input del match engine.
+
+VERDETTO: domanda ad altissimo valore da testare sui dati IMC.
+
+============================================================
+5. ETÀ, ESPERIENZA E FORMA
+============================================================
+
+ETÀ
+[UFFICIALE come dato giocatore; NON PROVATO come modificatore diretto del match]
+L'età influenza strategia di rosa, sviluppo atteso nel calcio reale, mercato e longevità del rating. Non è stata trovata documentazione primaria che dica “un 32enne rende meglio/peggio di un 22enne a parità di rating, posizione, condition e morale”. Le community parlano di peak age soprattutto in chiave valore/tenuta rating, non come coefficiente dimostrato del motore.
+
+ESPERIENZA
+[IPOTESI]
+Nessuna prova pubblica robusta di un hidden experience modifier indipendente dal rating.
+
+FORMA IN-GAME
+La UI pubblica espone “Form (last 6 games)” e statistiche di performance. Questo prova che la forma viene tracciata. Non prova da sola che il valore storico di forma sia un input causale del match successivo. L'Help rating usa “form” anche riferendosi al calcio reale,
