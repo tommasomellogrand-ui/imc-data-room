@@ -1,0 +1,57 @@
+CASE_ID: IMC-ENG-006
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: UNIVERSAL_GATEWAY_INGRESS_REDUCTION_PROPOSAL
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+UNIVERSAL GATEWAY · INGRESS-ONLY REDUCTION PROPOSAL
+
+CONTESTO
+La Direzione Centrale ha esaminato e accettato come principio architetturale la RESPONSE di IMC-ENG-005: il Universal Gateway deve essere ridotto al ruolo di porta tecnica di ingresso dall'esterno verso Aruba, non deve essere il cervello semantico del sistema e non deve essere il passaggio universale dei flussi interni Aruba→Aruba.
+
+FOCUS DI QUESTO CASE
+Questo incarico riguarda SOLO il Universal Gateway. Non affrontare ancora Normalizer, trigger, Site API, Database Manager o altre responsabilità oltre quanto necessario per definire i confini del Gateway.
+
+INCARICO
+1. Fotografare con precisione cosa fa OGGI il Universal Gateway nel codice reale e quali caller dipendono da ciascuna capability.
+2. Confrontare l'AS-IS con il principio TO-BE deciso dalla Direzione: Gateway = porta d'ingresso tecnica minimale per richieste esterne autorizzate verso Aruba.
+3. Formulare una proposta concreta di riduzione del Gateway dall'AS-IS al TO-BE, indicando cosa mantenere, cosa rimuovere dal Gateway, cosa deprecare e in quale ordine farlo senza rompere importer o altri caller attivi.
+
+PRINCIPIO NON NEGOZIABILE
+Il Gateway deve conoscere il minimo indispensabile per consentire il passaggio sicuro di una richiesta contemplata. Deve garantire accesso, autorizzazione, routing tecnico e trasporto. Non deve interpretare il significato dei dati né imporre logiche di dominio.
+
+FLESSIBILITÀ DEL PAYLOAD
+La Direzione vuole evitare che il Gateway diventi fragile quando cambiano i payload degli importer o dei controlli rapidi/mobile. Se domani un importer aggiunge 10 nuovi campi leciti, il Gateway non deve richiedere un refactor solo perché contiene una validazione rigida di business/schema specifica del repository.
+
+L'ingegnere deve quindi proporre il livello MINIMO di validazione che il Gateway deve fare per restare sicuro senza accoppiarsi alla forma semantica dei dati. La Direzione vuole distinguere chiaramente:
+- validazione tecnica/envelope necessaria al Gateway;
+- validazione di dominio/schema business che deve vivere altrove.
+
+DOMANDE A CUI RISPONDERE
+- Quali action/capability esistono oggi nel Gateway e quali sono realmente usate?
+- Quali caller attivi dipendono oggi da esse?
+- Quali capability sono indispensabili per il ruolo ingress-only?
+- Quali capability possono essere eliminate dal Gateway senza perdere funzioni necessarie?
+- Quali capability devono essere mantenute solo temporaneamente per compatibilità?
+- Come rendere routing e autorizzazione scalabili a 10+ database senza hardcodare logica di dominio?
+- Qual è il contratto minimo che un importer/caller esterno deve rispettare?
+- Quali controlli deve fare il Gateway su un payload e quali NON deve fare?
+- Come evitare che l'aggiunta/rimozione di campi business richieda modifiche al Gateway?
+- Quale piano di transizione minimizza rischio e regressioni?
+
+RISULTATO ATTESO
+Una proposta operativa, NON una implementazione, con:
+A. inventario AS-IS del Gateway;
+B. inventario dei caller/capability realmente attivi;
+C. contratto TO-BE ingress-only minimale;
+D. elenco KEEP / MOVE-OUT / DEPRECATE / REMOVE;
+E. proposta di validazione minima e payload pass-through sufficientemente flessibile;
+F. piano di migrazione per fasi con rischi e dipendenze;
+G. criteri per considerare completata la futura riduzione del Gateway.
+
+VINCOLI
+Solo analisi e proposta. Non modificare Gateway, importer, Database Manager, MySQL, Supabase, trigger, sito o minisiti. Nessun deploy, refactor o migration in questo CASE.
+
+OUTPUT AUTORITATIVO
+tickets/ENG/2026/IMC-ENG-006/RESPONSE.txt
