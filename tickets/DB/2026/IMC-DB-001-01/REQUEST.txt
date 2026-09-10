@@ -1,0 +1,82 @@
+CASE_ID: IMC-DB-001-01
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-10
+TOPIC: CORE_CONSOLIDATION_AUDIT_2
+
+IMC | DATABASE MANAGER · CORE CONSOLIDATION AUDIT 2
+
+CONTESTO
+Il primo audit READ-ONLY di Sql1956795_1 ha fotografato 49 tabelle, di cui 11 con prefisso IMC da considerare INTOCCABILI e prioritarie. La Direzione vuole ora capire quanto del layer non-IMC possa essere assorbito nelle tabelle IMC esistenti, con l'obiettivo futuro di arrivare, per quanto realisticamente possibile, a un CORE in cui le tabelle operative e canoniche siano IMC*.
+
+OBIETTIVO
+Eseguire un secondo audit READ-ONLY, più profondo e orientato alla futura consolidazione.
+
+Analizzare tutte le tabelle NON-IMC presenti in Sql1956795_1 e verificare:
+1. quali dati contengono che non sono ancora presenti nelle corrispondenti tabelle IMC*;
+2. quali di questi dati possono essere migrati/coperti dentro tabelle IMC* esistenti;
+3. quali tabelle IMC* potrebbero diventare la destinazione canonica di quei dati;
+4. dove esistono incompatibilità di schema, campi mancanti o modelli non equivalenti;
+5. quali tabelle non-IMC potrebbero diventare completamente eliminabili dopo la migrazione;
+6. quali invece non possono ancora essere eliminate perché svolgono una funzione distinta o sono dipendenze attive;
+7. quali dipendenze di codice, FK, API, importer o servizi dovrebbero essere migrate prima di poterle cancellare.
+
+PRINCIPIO DIREZIONE
+Le tabelle IMC* restano INTOCCABILI e prioritarie.
+
+Se una tabella non-IMC replica o estende dati che possono vivere correttamente in una IMC*, la direzione preferita è:
+preservare/completare la IMC* → migrare i dati mancanti → migrare le dipendenze → eliminare la tabella non-IMC.
+
+Non assumere equivalenza automatica: ogni migrazione deve essere dimostrata campo per campo e funzione per funzione.
+
+OUTPUT RICHIESTO
+Per ogni tabella non-IMC, classificare almeno in una delle seguenti categorie:
+A. MIGRABILE COMPLETAMENTE
+Tutti i dati/funzioni possono confluire in una o più IMC*.
+
+B. MIGRABILE PARZIALMENTE
+Parte dei dati può confluire nelle IMC*, ma restano funzioni o campi distinti da gestire.
+
+C. NON MIGRABILE OGGI
+La tabella ha ancora una funzione propria, una dipendenza attiva o un modello non rappresentabile correttamente nelle IMC*.
+
+D. CANDIDATA A ELIMINAZIONE DOPO MIGRAZIONE
+
+Per ogni caso indicare:
+- tabella sorgente non-IMC;
+- tabella/e IMC destinazione;
+- righe coinvolte;
+- campi mappabili;
+- campi non mappabili;
+- dati presenti solo nella sorgente;
+- dipendenze da migrare;
+- rischio;
+- ordine corretto di migrazione.
+
+RISULTATO FINALE
+Produrre una proposta concreta di CORE target mostrando:
+- quali tabelle IMC* rimarrebbero come canoniche;
+- quali tabelle non-IMC potrebbero essere eliminate;
+- quali devono temporaneamente restare;
+- cosa manca ancora alle IMC* per assorbire completamente il vecchio layer.
+
+VINCOLO ASSOLUTO
+Questa fase è AUDIT E PIANO SOLTANTO.
+
+NON eseguire:
+- INSERT/copie dati;
+- UPDATE;
+- DELETE;
+- DROP;
+- ALTER;
+- RENAME;
+- migration;
+- modifiche a trigger/FK;
+- cambi al codice.
+
+La Direzione vuole prima approvare il piano di consolidazione completo. Solo dopo verranno eventualmente autorizzati backfill/migrazioni e, separatamente, le cancellazioni delle tabelle non-IMC.
+
+OUTPUT AUTORITATIVO
+tickets/DB/2026/IMC-DB-001-01/RESPONSE.txt
+
+Dopo aver registrato la RESPONSE, tornare nella chat con Tom e fornire una sintesi esecutiva in massimo 10 bullet point. La RESPONSE resta la fonte completa e autoritativa.
