@@ -1,0 +1,32 @@
+DOC_ID: IMC-DB-ROUTING
+DOC_TYPE: REFERENCE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: DATABASE_ROUTING
+VERSION: V001
+STATUS: ACTIVE
+ACTIVITY: mysql,database,routing,game-world,data-read
+
+IMC DATABASE ROUTING REFERENCE
+
+CORE
+Sql1956795_1
+Contiene informazioni globali condivise.
+
+GOLD / MULTI
+Sql1956795_2
+GW002
+GW003
+GW007
+GW008
+
+CUSTOM / SINGLE
+Sql1956795_3
+GW001
+GW004
+GW005
+GW006
+GW009
+
+REGOLA
+Se il Game World è noto, il routing è determinato da questa mappa e non deve essere inventato o richiesto nuovamente. MySQL Aruba resta la fonte dati autoritativa.
