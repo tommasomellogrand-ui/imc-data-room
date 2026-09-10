@@ -1,0 +1,72 @@
+CASE_ID: IMC-DB-001
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-10
+TOPIC: CORE_SQL1_TABLE_AUDIT
+
+IMC | DATABASE MANAGER
+CORE Sql1956795_1 · READ-ONLY TABLE AUDIT
+
+OBIETTIVO
+Rimettere ordine nel database CORE Sql1956795_1 partendo da una fotografia completa e affidabile dello stato attuale.
+
+SCOPE
+Analizzare esclusivamente Sql1956795_1.
+Questa fase è AUDIT READ-ONLY.
+Non sono autorizzate modifiche, cancellazioni, rename, migration, alterazioni di trigger o altre WRITE.
+
+ATTIVITÀ RICHIESTE
+Analizza tutte le tabelle presenti in Sql1956795_1 e per ciascuna determina, per quanto possibile:
+- nome tabella;
+- funzione/scopo reale;
+- struttura principale;
+- numero di righe;
+- trigger, view o dipendenze rilevanti;
+- stato apparente: attiva/utilizzata, legacy, dubbia;
+- eventuali sovrapposizioni o duplicazioni con altre tabelle;
+- eventuali contenuti/funzioni replicati altrove;
+- classificazione: necessaria, dubbia, duplicata/sovrapposta, candidata a futura razionalizzazione.
+
+REGOLA ASSOLUTA · TABELLE IMC*
+Le tabelle il cui nome inizia con IMC sono INTOCCABILI.
+Devono avere priorità nell'analisi.
+È consentito leggerle, censirle e confrontarle con il resto del CORE, ma NON è consentito proporne cancellazione, modifica, rinomina, accorpamento, svuotamento o sostituzione.
+
+Se una tabella non-IMC replica o sovrappone dati/funzioni presenti in una tabella IMC*, evidenzialo chiaramente: la tabella IMC* ha priorità ed è quella da preservare.
+
+OUTPUT ATTESO
+Restituisci una mappa chiara del CORE divisa almeno in:
+
+1. IMC* INTOCCABILI
+   - elenco completo;
+   - scopo;
+   - struttura/ruolo;
+   - dipendenze rilevanti.
+
+2. TABELLE NECESSARIE NON-IMC
+   - funzione distinta e reale;
+   - motivazione per cui risultano necessarie.
+
+3. TABELLE SOVRAPPOSTE / DUPLICATE
+   - cosa replicano;
+   - con quale altra tabella si sovrappongono;
+   - indicare esplicitamente quando la controparte da preservare è IMC*.
+
+4. TABELLE LEGACY / DUBBIE / APPARENTEMENTE INUTILIZZATE
+   - motivazione della classificazione;
+   - eventuali rischi/dipendenze da verificare prima di qualsiasi futura azione.
+
+5. PROPOSTA DI CORE PULITO
+   - descrivere come dovrebbe apparire idealmente Sql1956795_1 dopo una futura razionalizzazione;
+   - nessuna modifica deve essere eseguita in questo CASE.
+
+VINCOLI
+- READ ONLY.
+- Nessun DELETE, DROP, ALTER, TRUNCATE, RENAME, migration, modifica trigger o altra WRITE.
+- Le tabelle IMC* sono intoccabili.
+- Non assumere che una tabella sia inutile solo dal nome: verificare dati, struttura e dipendenze.
+- MySQL Aruba è la fonte dati autoritativa.
+
+OUTPUT AUTORITATIVO
+tickets/DB/2026/IMC-DB-001/RESPONSE.txt
+La RESPONSE deve contenere audit completo, classificazione finale e proposta di razionalizzazione futura, senza eseguire alcuna modifica.
