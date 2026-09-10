@@ -1,0 +1,38 @@
+CASE_ID: IMC-ENG-002-05
+DOC_TYPE: DECISION
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: DATA_ROOM_CASE_HIERARCHY_METADATA_BACKFILL_DESIGN
+STATUS: APPROVED
+
+IMC | DIREZIONE CENTRALE
+DECISION · CASE HIERARCHY + METADATA + LEGACY BACKFILL DESIGN
+
+La proposta contenuta nella RESPONSE di IMC-ENG-002-05 è APPROVATA.
+
+Sono approvati in particolare:
+- modello macro-CASE + iterazioni a un solo livello;
+- formato IMC-<AREA>-<NNN>-<II> per le iterazioni;
+- gerarchia logica nei metadata/registry mantenendo directory fisiche flat;
+- introduzione di CASE_META.txt;
+- metadata DOMAIN, GW, TOPIC, TAGS, CASE_KIND, ROOT_CASE_ID, ITERATION;
+- vocabolario DOMAIN controllato;
+- ricerca trasversale e doppia vista FLAT SEARCH / MACRO VIEW;
+- alias old CASE_ID → canonical CASE_ID;
+- preservazione dei resolver e dei riferimenti storici;
+- mappa di riclassificazione proposta per i CASE storici Data Room e Gateway;
+- strategia di backfill con tracciabilità, audit e preservazione integrale dei documenti.
+
+AUTORIZZAZIONE
+La Direzione autorizza la fase successiva di IMPLEMENTAZIONE + BACKFILL STORICO secondo la proposta approvata.
+
+Vincoli permanenti:
+- nessun REQUEST, RESPONSE o DECISION deve andare perso;
+- ogni vecchio CASE_ID deve restare risolvibile e tracciabile verso il canonical CASE_ID;
+- nessun link storico deve essere lasciato silenziosamente rotto;
+- il backfill deve essere verificabile e auditabile;
+- nessuna modifica a MySQL, Supabase, Universal Gateway, importer, minisiti o Master Site salvo nuovo incarico esplicito.
+
+ESITO
+APPROVED
+PROCEED_TO_IMPLEMENTATION_AND_BACKFILL
