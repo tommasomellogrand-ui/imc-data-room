@@ -1,0 +1,8 @@
+CASE_ID: IMC-DB-001-03
+AREA: DB
+DOMAIN: CORE
+GW: GLOBAL
+TOPIC: CORE_SMALL_TABLES_SEMANTIC_CONSOLIDATION_AUDIT
+TAGS: core, mysql1, cleanup, semantic-audit, small-tables, imc-canonical, child, mapping, retirement
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-DB-001
