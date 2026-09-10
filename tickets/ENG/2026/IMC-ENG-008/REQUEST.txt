@@ -1,0 +1,61 @@
+CASE_ID: IMC-ENG-008
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: UNIVERSAL_GATEWAY_INGRESS_ONLY_REBUILD
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+UNIVERSAL GATEWAY · INGRESS-ONLY REBUILD
+
+OBIETTIVO
+Rimettere il Universal Gateway nel ruolo corretto: una porta tecnica minimale di ingresso verso Aruba.
+
+PRINCIPIO DIREZIONE
+Se una richiesta arriva da un importer/caller autorizzato, il Gateway deve lasciarla passare verso il repository/target previsto.
+
+Il Gateway NON deve interpretare il payload business e NON deve dipendere dai campi contenuti al suo interno.
+
+REQUISITI ESSENZIALI
+- Se oggi un import manda 20 campi e domani ne manda 60, il Gateway non deve richiedere modifiche solo per questo.
+- Il Gateway non deve validare semantica IMC, schema business, competition_key, competition_group, country, division, tipi applicativi o altri contenuti di dominio.
+- Deve controllare solo ciò che serve alla funzione di porta: caller/import autorizzato, operazione ammessa, target consentito, formato tecnico valido, limiti tecnici ragionevoli e instradamento corretto.
+- Deve inoltrare il payload e restituire una risposta tecnica chiara.
+- Aggiungere, rimuovere o cambiare campi business leciti negli importer non deve comportare modifiche al Gateway.
+
+INCARICO OPERATIVO
+Prendere il Gateway attuale, leggere e analizzare lo stato reale, identificare tutto ciò che eccede il ruolo di porta d'ingresso e portarlo al modello ingress-only minimale definito sopra.
+
+Non vogliamo un refactor cosmetico. Vogliamo che il Gateway finale sia realmente indipendente dai campi business.
+
+VINCOLI DI ESECUZIONE
+Prima di modificare:
+- leggere integralmente lo stato corrente del Gateway;
+- individuare i caller ancora dipendenti dalle capability legacy;
+- evitare di rompere gli importer attivi;
+- definire ed eseguire una migrazione compatibile;
+- preservare le funzioni necessarie durante la transizione finché i caller non sono migrati.
+
+VALIDAZIONE TECNICA AMMESSA NEL GATEWAY
+Solo controlli tecnici come autenticazione/autorizzazione, envelope minimo, target consentito, JSON/formato richiesta, dimensione/batch/rate/timeout, routing tecnico, trace/audit ed error handling.
+
+VALIDAZIONE ESPLICITAMENTE FUORI DAL GATEWAY
+Qualunque logica business o semantica sui campi del payload, incluse regole di competizione, schema business, normalizzazione, dedup di dominio, trasformazioni IMC e logica specifica dei repository.
+
+RISULTATO ATTESO
+Un Universal Gateway minimale, stabile, permissivo rispetto al contenuto business del payload ma rigido rispetto ad autorizzazione, operazione, destinazione e sicurezza tecnica.
+
+CICLO OBBLIGATORIO
+stato corrente → inventario dipendenze → piano compatibile → modifica minima ma completa → commit → Actions → deploy → verifica reale end-to-end con importer attivi → RESPONSE.
+
+CRITERI DI ACCETTAZIONE
+- Gateway indipendente dai campi business;
+- nessuna modifica Gateway necessaria quando un importer aggiunge nuovi campi leciti;
+- importer attivi ancora funzionanti;
+- autorizzazione caller/action/target preservata o migliorata;
+- nessuna semantica IMC residua nel percorso ordinario del Gateway;
+- deploy riuscito e verificato;
+- nessuna regressione nota sui flussi di ingresso autorizzati.
+
+OUTPUT AUTORITATIVO
+tickets/ENG/2026/IMC-ENG-008/RESPONSE.txt
+La RESPONSE deve indicare AS-IS rilevante, modifiche eseguite, compatibilità mantenuta, eventuali capability legacy lasciate temporaneamente e perché, commit, Actions/run, deploy, test end-to-end, limiti residui e stato finale ONLINE / NON ONLINE.
