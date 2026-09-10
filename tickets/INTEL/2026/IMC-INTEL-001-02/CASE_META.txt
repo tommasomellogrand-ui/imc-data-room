@@ -1,0 +1,8 @@
+CASE_ID: IMC-INTEL-001-02
+AREA: INTEL
+DOMAIN: MATCH_ENGINE
+GW: GLOBAL
+TOPIC: EMPIRICAL_MATCH_ENGINE_ANALYSIS
+TAGS: soccer-manager, intelligence, match-engine, empirical-analysis, mysql-aruba, results, match-report, player-codex, player-stats, rating, tactics, squad-depth, home-advantage
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-INTEL-001
