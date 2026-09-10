@@ -1,0 +1,9 @@
+CASE_ID: IMC-ENG-009-01
+AREA: ENG
+DOMAIN: MINISITE
+GW: GLOBAL
+TOPIC: MINISITE_REPOSITORY_STRUCTURE_PROPOSAL
+TAGS: minisite, architecture, repository-structure, shared-core, multi, single, gw001, gw007, migration
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-ENG-009
+ITERATION: 01
