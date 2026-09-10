@@ -1,0 +1,98 @@
+CASE_ID: IMC-INTEL-001-01
+DOC_TYPE: REQUEST
+AREA: INTEL
+DATE: 2026-09-10
+TOPIC: SOCCER_MANAGER_DEEP_KNOWLEDGE_REVIEW
+
+IMC | SOCCER MANAGER INTELLIGENCE
+SOCCER MANAGER INTELLIGENCE REPORT #002 · DEEP KNOWLEDGE REVIEW
+
+CONTESTO
+La Direzione considera positiva la prima ricognizione IMC-INTEL-001, ma la considera un primo landscape e non ancora una conoscenza sufficientemente profonda.
+
+La prima ricerca ha aperto numerose piste molto interessanti. Ora vogliamo una seconda investigazione molto più profonda, partendo integralmente dalla RESPONSE precedente.
+
+OBIETTIVO
+Non limitarti a ripetere o ampliare superficialmente il primo report.
+
+Riprendi tutti gli argomenti importanti che hai individuato e scandaglia molto più profondamente le fonti.
+
+Cerca ulteriormente in forum storici e contemporanei, community internazionali, Reddit, Help/FAQ ufficiali, archivi, blog, guide, discussioni molto lunghe, account social pubblici, video, materiale in lingue diverse e qualsiasi altra fonte pubblicamente accessibile pertinente.
+
+Segui anche riferimenti, nomi, termini e community scoperti durante il primo CASE per trovare materiale che una ricerca iniziale può avere mancato.
+
+PRIORITÀ INVESTIGATIVA
+Approfondisci soprattutto ciò che può aiutarci a capire come Soccer Manager prende le proprie decisioni e simula le partite:
+- rating;
+- match engine;
+- tattiche;
+- condition / fitness;
+- morale;
+- posizione naturale e fuori ruolo;
+- player roles;
+- titolari;
+- sostituzioni;
+- panchina;
+- dimensione e qualità della rosa;
+- età ed esperienza;
+- forma;
+- home advantage;
+- RNG;
+- momentum;
+- eventuali modificatori nascosti;
+- comportamento AI.
+
+Non limitarti a questo elenco. Se nel primo report hai individuato altre meccaniche rilevanti, approfondiscile.
+
+EVIDENZE RICHIESTE
+Per ogni meccanica cerca:
+- dichiarazioni ufficiali;
+- spiegazioni storiche degli sviluppatori;
+- cambiamenti documentati nel tempo;
+- test effettuati dalla community;
+- esperimenti ripetuti;
+- dataset o statistiche pubblicate;
+- testimonianze indipendenti concordanti;
+- testimonianze contrarie;
+- eventuali differenze tra vecchie e nuove versioni del gioco.
+
+Quando trovi un'affermazione interessante, prova deliberatamente anche a smentirla cercando evidenza contraria.
+
+DISCIPLINA DELLE CONCLUSIONI
+Alla fine vogliamo distinguere molto meglio:
+- COSA SAPPIAMO;
+- COSA È MOLTO PROBABILE;
+- COSA PENSA LA COMMUNITY;
+- COSA È SOLO UNA TEORIA;
+- COSA È STATO VERO IN PASSATO MA POTREBBE NON ESSERLO PIÙ;
+- COSA NON SAPPIAMO ANCORA.
+
+Dedica particolare attenzione alle zone opache del Match Engine e cerca di ricostruire il maggior numero possibile di input che potrebbero concorrere alla simulazione.
+
+Non inventare percentuali o pesi quando non esistono evidenze.
+
+Se non è possibile sapere quanto pesa una variabile, vogliamo sapere che cosa permette almeno di affermare che quella variabile entra o non entra nel sistema.
+
+SICUREZZA E ACCESSO
+Restano validi i vincoli di IMC-INTEL-001:
+- solo web pubblico;
+- nessun accesso all'account Soccer Manager di Tom;
+- nessuna sessione privata;
+- nessun bypass di login, CAPTCHA, Cloudflare o anti-bot;
+- nessun utilizzo di cookie, token o credenziali;
+- nessuno scraping aggressivo di aree protette.
+
+OUTPUT AUTORITATIVO
+Produci nello stesso fascicolo:
+tickets/INTEL/2026/IMC-INTEL-001-01/RESPONSE.txt
+
+La RESPONSE deve costituire il SOCCER MANAGER INTELLIGENCE REPORT #002 · DEEP KNOWLEDGE REVIEW, molto più approfondito del precedente.
+
+Mantieni fonti precise e indica per ogni conclusione il livello di evidenza.
+
+Aggiungi obbligatoriamente una sezione finale:
+HIGHEST-VALUE UNRESOLVED QUESTIONS
+
+Questa sezione deve contenere le domande che, dopo questa seconda ricerca, rimangono realmente senza risposta e che meritano CASE investigativi autonomi.
+
+Dopo aver registrato la RESPONSE, torna nella chat con Tom e fornisci una sintesi esecutiva in massimo 10 bullet point. La RESPONSE resta la fonte completa e autoritativa.
