@@ -1,0 +1,9 @@
+CASE_ID: IMC-DB-001-02
+AREA: DB
+DOMAIN: DATABASE
+GW: GLOBAL
+TOPIC: CORE_TARGET_AUDIT_3
+TAGS: database, core, sql1956795-1, audit, consolidation, migration-map, retirement-map, imc-tables
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-DB-001
+ITERATION: 02
