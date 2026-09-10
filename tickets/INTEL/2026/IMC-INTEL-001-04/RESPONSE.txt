@@ -1,0 +1,239 @@
+CASE_ID: IMC-INTEL-001-04
+DOC_TYPE: RESPONSE
+AREA: INTEL
+DATE: 2026-09-10
+TOPIC: DATA_INFORMED_EXTERNAL_MATCH_ENGINE_RESEARCH
+STATUS: COMPLETED
+
+IMC | SOCCER MANAGER INTELLIGENCE
+SOCCER MANAGER INTELLIGENCE REPORT #004 · DATA-INFORMED EXTERNAL MATCH ENGINE RESEARCH
+
+============================================================
+0. EXECUTIVE CONCLUSION
+============================================================
+
+Questa ricerca riparte dal web sapendo finalmente cosa IMC può osservare. Il risultato più importante è una conferma ufficiale più forte di quanto emerso nei CASE precedenti: l'Help Soccer Manager dichiara esplicitamente che il Match Engine considera, tra gli esempi di fattori usati per calcolare il risultato, player fitness, player rating, player morale, tactics e "who is home and away". Quindi il segnale home advantage trovato empiricamente da IMC non è più soltanto un pattern osservazionale: esiste una fonte ufficiale che conferma home/away come INPUT del Match Engine. La grandezza dell'effetto resta ignota e va stimata con i dati IMC.
+
+Secondo risultato: una risposta storica dell'Answer Centre da Community Admin elenca anche average rating, formazione, in-game instructions, morale, condition, concerns, injuries e debolezze/formazione avversaria come aspetti rilevanti. È evidenza storica autorevole ma non documentazione di formula e va classificata POTENTIALLY OBSOLETE per il 2026.
+
+Terzo risultato: una risposta Community Admin del 2011 propone esplicitamente che una squadra possa creare più tiri ma convertire peggio se gli attaccanti sono meno forti del resto della squadra. Non è prova del codice, ma genera una delle migliori ipotesi falsificabili disponibili a IMC: shot generation e shot conversion potrebbero dipendere da componenti differenti della qualità XI.
+
+Quarto risultato: la community longeva RedCafe contiene osservazioni estremamente utili perché spesso registra XI con rating, sostituzioni, risultati e persino statistiche di conversione. È materiale storico, non prova causale, ma può guidare test IMC. Esistono inoltre testimonianze opposte sulla profondità della rosa: alcuni utenti sostengono che squad coherence e depth aiutino, mentre non è stata trovata alcuna fonte ufficiale che dica che i non convocati influenzano il calcolo del match.
+
+Quinto risultato: le tattiche sono certamente input, ma il web continua a non offrire una teoria quantitativa affidabile. La documentazione ufficiale afferma che squadre organizzate possono battere squadre più forti e definisce semanticamente le istruzioni; le community riportano sia pattern ripetuti sia casi assurdi/random. Questo rende il dataset IMC, con snapshot tattici a minuto 0/45/60/75 e output shots/SOT/goals, molto più prezioso della letteratura community esistente.
+
+VERDETTO: il web non consegna la formula del Match Engine, ma consegna una lista di ipotesi testabili molto migliore. IMC può trasformare affermazioni vaghe in regressioni, matched comparisons e quasi-esperimenti.
+
+============================================================
+1. METODO E VERSIONING
+============================================================
+
+Ricerca esclusivamente pubblica. Nessun login, cookie, account privato, bypass anti-bot o accesso a gruppi chiusi.
+
+Fonti esplorate:
+- Help ufficiale Soccer Manager corrente e mirror/endpoint storici;
+- Answer Centre storico Soccer Manager;
+- pagine pubbliche Soccer Manager Worlds;
+- RedCafe SM League, thread iniziato nel 2012 e ancora attivo nel 2026;
+- Reddit r/Soccermanager;
+- The Soccermanager Experience;
+- pagine/archivi pubblici indicizzati e risultati multilingua in inglese, spagnolo, italiano, francese, turco, portoghese/polacco quando reperibili.
+
+Nota: molte query multilingua riportano descrizioni del gioco ma pochissimi esperimenti sul Match Engine. Non viene quindi gonfiata artificialmente la qualità delle evidenze solo perché una pagina è in un'altra lingua.
+
+CLASSI VERSIONE:
+CURRENT = pagina ufficiale corrente o evidenza 2025-2026 chiaramente relativa a SM Worlds attuale.
+LIKELY CURRENT = meccanica ancora esposta nell'Help corrente ma pagina con stratificazione storica possibile.
+HISTORICAL = evidenza datata riferibile al motore dell'epoca.
+POTENTIALLY OBSOLETE = claim storico che può essere cambiato.
+VERSION UNKNOWN = data/versione non ricostruibile.
+
+EVIDENCE LEVEL:
+A = ufficiale esplicito.
+B = admin/moderatore/community source molto forte ma non specifica del codice.
+C = osservazione community ripetuta/longitudinale.
+D = aneddoto/ipotesi.
+
+============================================================
+2. NUOVE FONTI / COMMUNITY AD ALTO VALORE
+============================================================
+
+A. OFFICIAL TACTICS / HOW RESULTS ARE DECIDED
+https://ftp.soccermanager.com/help.php?action=loadarticle&aid=78
+Valore: massimo. Frase esplicita: il Match Engine guarda molti fattori, con esempi fitness, rating, morale, tactics, home/away.
+Versione: LIKELY CURRENT, pagina Help ancora servita nel 2026.
+
+B. OFFICIAL TACTICS HUB
+https://soccermanager.net/help.php?pname=tactics
+Valore: massimo per selezione, natural position, fitness, match-day squad e principi tattici.
+Versione: CURRENT/LIKELY CURRENT.
+
+C. OFFICIAL PLAYER PROFILE
+https://www.soccermanager.net/help.php?action=loadarticle&aid=31
+Valore: massimo per condition, morale, match rating, statistiche e rating history.
+Versione: CURRENT/LIKELY CURRENT.
+
+D. OFFICIAL MATCH REPORT
+https://www.soccermanager.net/help.php?action=loadarticle&aid=58
+Valore: massimo per definire output osservabili del motore.
+Versione: CURRENT/LIKELY CURRENT.
+
+E. OFFICIAL PLAYER CONCERNS
+https://www.soccermanager.net/help.php?action=loadarticle&aid=83
+Valore: alto. Fornisce soglie per status/rating e precisa che un ingresso da sub conta metà presenza ai fini concern. Non prova un effetto match-engine diretto dei concerns.
+
+F. ANSWER CENTRE 2011 · MATCH ENGINE
+https://soccermanager.net/help.php?action=view&qid=6279
+Community Admin Georgio Pulopulos: formation, in-game instructions, morale, condition, concerns, injuries, opponent weaknesses/formation, average rating.
+Versione: HISTORICAL / POTENTIALLY OBSOLETE.
+
+G. ANSWER CENTRE 2011 · SHOTS/CONVERSION
+https://www.soccermanager.net/help.php?action=addwatchlist&qid=3767
+Community Admin Ryan Brown: più possession/shots non garantiscono risultato; ipotesi che striker meno rated possano sprecare occasioni.
+Versione: HISTORICAL / POTENTIALLY OBSOLETE.
+
+H. REDCAFE SM LEAGUE
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/
+Community longeva dal 2012 al 2026. Alcuni utenti conservano XI/rating, sostituzioni, risultati, statistiche e analisi stagionali. Valore eccezionale come generatore di ipotesi e archivio storico, non come fonte causale.
+
+Pagine specifiche utili:
+- page 659: discussione 2015 su rating gap, possession, pressing, pace, RNG e risultati estremi;
+- page 1088: 2018, uso di cambio tattico al 75' verso 5-4-1B "to kill a game" e riferimento a classifica converted shots on target;
+- page 1083: XI con rating, subs e average match-rating individuali;
+- page 1084/1088: osservazioni su conversione SOT;
+- page 1351/1352/1371/1374: materiale 2025-2026 e aggiornamenti recenti del gioco.
+
+I. REDDIT r/Soccermanager · TACTICS IN WORLDS
+https://www.reddit.com/r/Soccermanager/comments/1exn1yw
+2024: disaccordo esplicito tra "tactics matter a lot" e impressione che il gioco usi soprattutto rating + probabilità/dice. Ottimo esempio di claim contraddittorio da testare.
+
+J. THE SOCCERMANAGER EXPERIENCE
+https://thesoccermanageronline.sport.blog/
+Community/blog specialistico che alterna SM single-player e Worlds. Le pagine tattiche Worlds sono utili per semantica e teorie; le review SM24 NON vanno trasferite automaticamente al motore Worlds.
+
+K. REDCAFE CURRENT UPDATE TRACKING
+https://www.redcafe.net/threads/the-sm-redcafe-league.349538/page-1374
+Nel marzo 2026 la community cataloga modifiche 2025: 5 subs, quick strategies, player roles, facilities, squad caps, transfer caps e roadmap match reports. È fondamentale per versioning: evidenze tattiche pre-2025 possono descrivere un sistema diverso.
+
+============================================================
+3. CLAIM CHAINS · EXTERNAL CLAIM -> IMC TEST
+============================================================
+
+CLAIM 1 · HOME/AWAY È INPUT DEL MATCH ENGINE
+SOURCE: Official Help, How are results decided.
+VERSION: LIKELY CURRENT.
+EVIDENCE: A.
+CONTRARY: nessuna fonte ufficiale contraria trovata; community raramente quantifica.
+IMC VARIABLES: home/away, score, rating history, manager, tactics, competition, date.
+TEST: matched/controlled model su team-strength gap, manager, competition e tactics; stima home coefficient.
+EXPECTED SIGNAL: home dummy positivo su goal difference/win probability dopo controlli.
+STATUS: PRIORITÀ MASSIMA. È la prima variabile invisibile che IMC aveva già rilevato empiricamente e che ora ha conferma ufficiale come input.
+
+CLAIM 2 · AVERAGE PLAYER RATING CONTA, MA NON DETERMINA DA SOLO IL RISULTATO
+SOURCE: Official Help include player rating; 2011 Community Admin include average rating e avverte che 95 average non garantisce vittoria.
+VERSION: LIKELY CURRENT per rating come input; HISTORICAL per formulazione average rating.
+EVIDENCE: A/B.
+CONTRARY: Reddit 2024 percepisce il gioco quasi come rating+dice; molti upset RedCafe mostrano rating non deterministico.
+IMC: historical rating per player + XI identification.
+TEST: XI mean, median, max, top3/top5, min, dispersion, opponent gap; confrontare predictive power out-of-sample.
+EXPECTED: rating strength significativo ma non perfetto.
+
+CLAIM 3 · NON È NECESSARIAMENTE LA SOLA MEDIA XI: LA DISTRIBUZIONE PUÒ CONTARE
+SOURCE: nessuna formula ufficiale; RedCafe discute gap specifici (es. due 94 forwards contro difesa inferiore) e squad coherence.
+VERSION: UNKNOWN/HISTORICAL.
+EVIDENCE: C/D.
+CONTRARY: vecchio linguaggio admin parla di average rating.
+IMC: rating di ogni starter.
+TEST: modelli concorrenti mean XI vs top3/top5 vs weakest3 vs positional/reparto proxies vs dispersion.
+EXPECTED: se media è sufficiente, termini top-k/dispersion non aggiungono predictive power.
+
+CLAIM 4 · DIMINISHING RETURNS DEL RATING
+SOURCE: nessuna prova pubblica robusta trovata.
+VERSION: UNKNOWN.
+EVIDENCE: D, ipotesi generata.
+CONTRARY: nessuna.
+IMC: rating storico continuo 60-99.
+TEST: spline/non-linear model; confrontare marginal effect 88->89, 92->93, 93->94 ecc. con controlli.
+EXPECTED: curva concava se diminishing returns; soglie se discontinuità.
+
+CLAIM 5 · QUALITÀ DEGLI ATTACCANTI PUÒ INFLUENZARE LA CONVERSIONE PIÙ DELLA GENERAZIONE TIRI
+SOURCE: Community Admin Ryan Brown, 2011, suggerisce esplicitamente striker rating come spiegazione di tanti tiri ma pochi gol.
+VERSION: HISTORICAL/POTENTIALLY OBSOLETE.
+EVIDENCE: B come ipotesi, non prova codice.
+CONTRARY: RNG/bad luck indicata dalla stessa risposta come alternativa.
+IMC: rating XI, goals, shots, SOT, player goals, formation/tactics.
+TEST: separare modello shots, SOT/shots, goals/SOT; usare rating di attaccanti/players coinvolti vs XI mean.
+EXPECTED: attacking-rating più forte su conversion che su volume se claim vero.
+
+CLAIM 6 · TACTICS SONO INPUT REALI
+SOURCE: Official Help.
+VERSION: CURRENT/LIKELY CURRENT.
+EVIDENCE: A.
+CONTRARY: Reddit 2024 mostra scetticismo; RedCafe documenta risultati tatticamente incoerenti.
+IMC: formation + tutte instructions + snapshots + outputs.
+TEST: fixed effects/matched comparisons e cambi tattici within-match.
+EXPECTED: alcune istruzioni modificano distribuzione possession/shots/cards anche a parità di strength.
+
+CLAIM 7 · HIGH PRESS + FAST PACE AUMENTA POSSESSION/OUTPUT MA COSTA CONDITION/INJURY
+SOURCE: RedCafe page 659, 2015, utente descrive fast pace/high pressing con forte calo condition/injuries e buoni risultati.
+VERSION: HISTORICAL/POTENTIALLY OBSOLETE.
+EVIDENCE: C/D.
+CONTRARY: non prova causale; self-selection.
+IMC: pressing, tempo, possession, shots, result; condition non ancora nel Match Report.
+TEST NOW: pressing/tempo -> possession/shots/cards. FUTURE: aggiungere pre/post condition e injury.
+EXPECTED: maggiore possession/shot intensity e, se acquisito, maggiore fitness cost.
+
+CLAIM 8 · TACTICAL CHANGE LATE TO DEFENSIVE SHAPE PUÒ "KILL A GAME"
+SOURCE: RedCafe page 1088, 2018: manager passa da 4-2-2-2 a ultra defensive 5-4-1B al 75'.
+VERSION: HISTORICAL.
+EVIDENCE: D ma direttamente testabile.
+CONTRARY: nessun controllo.
+IMC: tactical snapshots minute 0/45/60/75 + events minute.
+TEST: difference-in-event-rate pre/post switch, matched against games without switch and game state.
+EXPECTED: lower shots/events for both sides, possibly reduced concession hazard.
+
+CLAIM 9 · TACKLING/AGGRESSION INFLUENZA DISCIPLINA
+SOURCE: official tactical semantics + RedCafe 2023 comment linking Liverpool tactics to yellow/red volume.
+VERSION: LIKELY CURRENT + community.
+EVIDENCE: A for tactic existence, C for effect magnitude.
+IMC: tackling_style, yellow/red cards team/player, event minute.
+TEST: card rate by tackling style controlling opponent, manager, referee if preservable, competition.
+EXPECTED: harder tackling -> higher card hazard.
+
+CLAIM 10 · CONDITION INFLUENZA PERFORMANCE
+SOURCE: Official Player Profile explicitly says current condition affects match performance.
+VERSION: CURRENT/LIKELY CURRENT.
+EVIDENCE: A.
+CONTRARY: no quantitative public evidence.
+IMC NOW: Match Report does not preserve pre-match condition.
+TEST: requires condition snapshot per selected player pre-match.
+EXPECTED: lower condition -> lower match rating/output, team performance conditional on strength.
+
+CLAIM 11 · MORALE INFLUENZA PERFORMANCE
+SOURCE: Official Player Profile.
+VERSION: CURRENT/LIKELY CURRENT.
+EVIDENCE: A.
+CONTRARY: magnitude unknown.
+IMC NOW: no uniform pre-match morale snapshot.
+TEST FUTURE: player-match morale + rating interaction.
+EXPECTED: monotonic or threshold effect on match rating/team output.
+
+CLAIM 12 · CONCERNS POSSONO ESSERE UN INPUT DIRETTO
+SOURCE: 2011 Community Admin includes concerns among aspects; current Help describes concerns but non dice esplicitamente che concern level entra nel Match Engine.
+VERSION: HISTORICAL for direct-input claim.
+EVIDENCE: B historical.
+CONTRARY: current official docs emphasize morale; concerns may operate only through morale/availability.
+IMC: currently insufficient pre-match concern snapshot.
+TEST FUTURE: concern level + morale simultaneously; if concern coefficient vanishes controlling morale, mediation likely.
+
+CLAIM 13 · PANCHINA FORTE INFLUENZA IL MATCH PRIMA DEI CAMBI
+SOURCE: community scattered; RedCafe 2018 claim "squad coherence... depth" helps.
+VERSION: HISTORICAL/UNKNOWN.
+EVIDENCE: D.
+CONTRARY: nessuna documentazione ufficiale trovata; Official Help parla di starting XI + match-day substitutes ma non dichiara bench-strength modifier.
+IMC: substitutes IDs + historical ratings + minutes.
+TEST: restrict games before first substitution or outcomes/events pre-sub; match XI strength/tactics/opponent/home, vary bench mean/top ratings.
+EXPECTED: if direct bench modifier exists, bench strength predicts first-half/pre-sub outputs despite no bench player entering.
+
+CLAIM 14 · ROSA COMPLETA / NON CONVOCATI INFLUENZANO IL MATCH
+SOURCE: nessuna fonte ufficiale o esperimento pubblico
