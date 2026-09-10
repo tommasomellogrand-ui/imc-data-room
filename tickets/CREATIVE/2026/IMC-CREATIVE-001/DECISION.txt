@@ -1,0 +1,23 @@
+CASE_ID: IMC-CREATIVE-001
+DOC_TYPE: DECISION
+AREA: CREATIVE
+DATE: 2026-09-10
+TOPIC: GAME_WORLD_CREATIVE_UX_DIRECTION_REVIEW
+DECISION: APPROVED
+STATUS: CLOSED
+
+IMC | DIREZIONE CENTRALE
+
+La RESPONSE di IMC-CREATIVE-001 è approvata.
+
+La Direzione accetta come riferimento creativo e UX:
+- un unico IMC Minisite Core configurabile;
+- due profili strutturali principali: MULTI e SINGLE;
+- identità visuale autonoma per ogni Game World;
+- GW002 come riferimento principale della famiglia GOLD/MULTI;
+- GW001 come riferimento principale della famiglia SINGLE;
+- preservazione delle specificità forti dei singoli GW, in particolare GW007 con il proprio modello Kingdom/Territory.
+
+La fase creativa di audit e raccomandazione è conclusa. La traduzione tecnica dell'indirizzo approvato viene demandata a un nuovo CASE ENG dedicato.
+
+ESITO: APPROVED / CLOSED.
