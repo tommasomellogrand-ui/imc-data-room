@@ -1,0 +1,913 @@
+CASE_ID: IMC-ENG-009-02
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: MINISITE_UX_FAMILY_ARCHITECTURE_CONVERGENCE_AUDIT
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+MINISITE CORE · UX FAMILY ARCHITECTURE CONVERGENCE AUDIT
+
+1. EXECUTIVE VERDICT
+
+La decisione della Direzione è tecnicamente coerente e richiede una precisazione importante rispetto a IMC-ENG-009 e IMC-ENG-009-01.
+
+Non basta più pensare:
+
+ONE CORE
++ GW CONFIG
++ GW THEME
+
+La struttura definitiva raccomandata diventa:
+
+ONE IMC MINISITE CORE
+→ TWO UX FAMILY CONTRACTS
+   → SINGLE FAMILY
+   → MULTI/GOLD FAMILY
+→ GW CREATIVE PACKAGE
+→ OPTIONAL FEATURES / SIGNATURE COMPONENTS
+
+Il Core resta uno solo e non conosce GW specifici.
+Le due famiglie NON sono due codebase: sono due contratti dichiarativi/comportamentali sopra lo stesso Core.
+Il GW package continua a possedere identità, composizione, rendering, theme, typography, motion, asset e storytelling.
+
+Formula definitiva:
+
+CORE OWNS UNIVERSAL BEHAVIOR
+UX FAMILY OWNS CROSS-GW PREDICTABILITY
+GW PACKAGE OWNS CREATIVE IDENTITY
+FEATURES OWN OPTIONAL CAPABILITIES
+
+La famiglia SINGLE assume GW001 come riferimento UX fondativo.
+La famiglia MULTI/GOLD assume GW007 come riferimento UX fondativo, generalizzandone il principio dei quattro ingressi prioritari attraverso una Top-4 Country dinamica derivata dai manager IMC attivi.
+
+Questa convergenza è realizzabile senza degradare GW001 e senza banalizzare GW007 a normale Country UX, a condizione che il confine fra FAMILY CONTRACT e CREATIVE FREEDOM sia formalizzato prima dell'implementazione.
+
+2. MODELLO ONE CORE / TWO UX FAMILIES
+
+L'architettura raccomandata ha quattro livelli.
+
+LIVELLO 1 · UNIVERSAL CORE
+Responsabile di:
+- bootstrap;
+- route engine;
+- navigation state;
+- URL/deep-link parsing;
+- context state/persistence;
+- data access;
+- loading/error/empty/not-found;
+- focus/keyboard/accessibility behavior;
+- responsive state primitives;
+- capability registry;
+- semantic component models;
+- lifecycle;
+- telemetry/test hooks.
+
+Il Core non conosce SINGLE, MULTI o GW specifici come branching procedurale. Conosce soltanto contratti registrati.
+
+LIVELLO 2 · UX FAMILY CONTRACT
+Due registry/configurazioni di famiglia:
+- SINGLE;
+- MULTI_GOLD.
+
+La family definisce ciò che un manager deve ritrovare prevedibilmente passando da un GW della stessa famiglia a un altro:
+- primary destinations;
+- navigation placement/behavior contract;
+- context hierarchy;
+- mobile navigation pattern;
+- deep-link/back rules;
+- entry-point semantics;
+- required shared capabilities;
+- minimum information hierarchy.
+
+La family NON definisce:
+- palette;
+- typography;
+- materials;
+- visual hierarchy interna delle composizioni;
+- hero;
+- score skin;
+- motion grammar;
+- editorial pacing.
+
+LIVELLO 3 · GW CREATIVE PACKAGE
+Responsabile di:
+- theme;
+- renderer registry;
+- composition;
+- typography;
+- motion;
+- imagery/assets;
+- creative tokens;
+- signature components;
+- editorial storytelling;
+- local feature enablement.
+
+LIVELLO 4 · OPTIONAL FEATURE MODULES
+Capability sportive/editoriali riusabili:
+- archive;
+- records/honours;
+- playoffs;
+- promotion/relegation;
+- progression;
+- comparison;
+- territory map;
+- rivalries;
+- cup bracket;
+- reports.
+
+La family può richiedere una capability minima; il GW decide come renderizzarla.
+
+3. SINGLE UX FAMILY CONTRACT
+
+GW001 diventa il reference implementation funzionale della famiglia SINGLE, non un template grafico.
+
+ELEMENTI OBBLIGATORI DA STANDARDIZZARE PER TUTTI I SINGLE
+
+A. PRIMARY DESTINATIONS
+Devono essere semanticamente stabili e immediatamente riconoscibili:
+- Home;
+- Competitions;
+- Results;
+- Schedule;
+- Standings;
+- Clubs;
+- Managers;
+- Players;
+- Transfers;
+- More/Archive/Data/Reports quando presenti.
+
+Non è necessario mostrarli tutti contemporaneamente nella primary nav, ma il loro significato e accesso devono essere prevedibili.
+
+B. COMPETITION-FIRST INFORMATION MODEL
+Gerarchia minima:
+GAME WORLD
+→ COMPETITION / DIVISION quando pertinente
+→ CONTENT
+→ DETAIL.
+
+Il Single non introduce Country artificiale.
+
+C. MATCH AS FIRST-CLASS OBJECT
+Results e Schedule devono condurre a un Match Detail/Match Center coerente semanticamente.
+Il match non è soltanto una riga di score: può avere source state, competition context, clubs, manager/player data, report, timeline/statistiche quando disponibili.
+
+D. HUB → DETAIL PATTERN
+Competition, Club, Manager, Player e Match devono avere route/detail semanticamente stabili.
+
+E. ARCHIVE/NARRATIVE COMPATIBILITY
+La famiglia deve consentire che il contenuto sportivo diventi memoria/storia, come in GW001. Archive non è obbligatorio per ogni GW, ma il Core/family non deve impedirne la profondità narrativa.
+
+F. NAVIGATION PREDICTABILITY
+Desktop e mobile devono conservare le stesse destinazioni fondamentali e regole di back/deep-link.
+Il rendering della navigation può cambiare entro il Creative Freedom Contract, ma posizione e comportamento fondamentali della family devono restare riconoscibili.
+
+G. MOBILE CONTRACT
+Home, Results, Schedule e Standings devono essere accessibili con pattern di primo livello coerente nella famiglia; More raccoglie destinazioni secondarie.
+
+H. CONTEXT
+Se il Single usa divisioni o competition scope, il contesto deve persistere durante la navigazione quando semanticamente valido.
+
+4. MULTI/GOLD UX FAMILY CONTRACT
+
+GW007 diventa il reference UX fondativo per il principio degli ingressi prioritari e della navigazione per contesto.
+
+ELEMENTI OBBLIGATORI DA STANDARDIZZARE PER TUTTI I MULTI/GOLD
+
+A. FOUR PRIMARY CONTEXT ENTRIES
+La superficie primaria presenta esattamente quattro ingressi prioritari quando i dati lo permettono.
+
+Per GW007:
+- gli ingressi restano i quattro Kingdom fondativi definiti dal concept.
+
+Per gli altri MULTI/GOLD:
+- gli ingressi sono i quattro Country con maggior numero di manager IMC attivi nel Game World.
+
+B. COMPLETE CONTEXT ACCESS
+I Country non Top-4 restano sempre raggiungibili tramite selector/menu/index completo.
+La Top-4 è priorità, non filtraggio del mondo.
+
+C. CONTEXT HIERARCHY
+Per MULTI standard:
+WORLD
+→ COUNTRY
+→ DIVISION
+→ COMPETITION
+→ CONTENT.
+
+Per GW007:
+WORLD
+→ KINGDOM/TERRITORY
+→ DIVISION/COMPETITION secondo il modello del GW
+→ CONTENT.
+
+Il Core tratta Country e Territory come context dimensions con contratti diversi; non rinomina una stringa.
+
+D. PERSISTENT CONTEXT
+Country/Territory e Division devono essere URL-preserved e mantenuti tra Results, Schedule, Standings e altre destinazioni compatibili.
+
+E. FAMILY NAVIGATION
+Le destinazioni fondamentali e il comportamento della primary navigation devono restare nello stesso luogo/logica all'interno della famiglia.
+La creatività può cambiare skin e composizione interna, non spostare arbitrariamente l'accesso fondamentale da un'estremità all'altra del prodotto.
+
+F. MOBILE
+Bottom/primary mobile navigation coerente nella famiglia:
+Home
+Results
+Schedule
+Standings
+More
+
+Il Context Selector resta sempre visibile/raggiungibile senza gesture occulte.
+
+G. CONTEXT-FIRST ENTRY
+L'utente deve capire in quale Country/Kingdom/Division sta operando prima di interpretare Results, Schedule o Standings.
+
+5. DYNAMIC TOP-4 COUNTRY MODEL
+
+La Top-4 deve essere una capability shared del MULTI/GOLD family layer, non codice locale dei singoli GW.
+
+5.1 INPUT SEMANTICO
+
+Serve un dataset di manager assignment attivi per Game World contenente almeno:
+- game_world_id;
+- manager_id;
+- assignment_type;
+- club_id;
+- start_date;
+- end_date;
+- Country del club/assignment, direttamente o derivabile tramite mapping autorevole.
+
+Il modello deve utilizzare esclusivamente manager IMC attivi nel GW.
+
+Definizione raccomandata di ACTIVE:
+- assignment appartenente al game_world_id corrente;
+- assignment di club valido per il ranking Country;
+- start_date <= data di riferimento;
+- end_date assente o >= data di riferimento;
+- manager_id valido e appartenente al Manager Codex IMC.
+
+Questa definizione deve essere formalizzata nel data contract e non reinventata nel frontend.
+
+5.2 PIPELINE
+
+Manager Assignments
+→ filter ACTIVE
+→ join Club/Country mapping
+→ group by Country
+→ distinct manager_id per Country
+→ count
+→ deterministic sort
+→ first four
+→ Family Context Entries.
+
+Il conteggio deve usare manager distinti, non assignment rows, per evitare doppio conteggio in presenza di duplicazioni/storico.
+
+5.3 NO HARDCODING
+
+Il frontend non contiene:
+Italia, Francia, Germania, Belgio.
+
+Riceve un view model:
+[
+  {contextId, label, activeManagerCount, rank},
+  ...
+]
+
+generato dal family data selector/shared domain function.
+
+Nessun if(GW002), if(GW003), ecc.
+
+GW007 non usa questo selector per scegliere i quattro Kingdom: la sua config dichiara un context provider di tipo FIXED_TERRITORY_SET perché i quattro Kingdom sono struttura fondativa del prodotto. È una capability dichiarativa generale, non branching sul GW.
+
+Quindi il family contract supporta due provider:
+- RANKED_ACTIVE_MANAGER_COUNTRIES;
+- FIXED_CONTEXT_SET.
+
+5.4 FALLBACK < 4 COUNTRY ATTIVI
+
+Ordine raccomandato:
+1. mostrare tutti i Country con almeno un manager IMC attivo;
+2. completare fino a quattro con Country esistenti nel Game World ordinati deterministicamente per rilevanza strutturale disponibile;
+3. marcare gli entry supplementari come 0 manager attivi senza inventare attività;
+4. se il Game World possiede in totale meno di quattro Country, mostrare il numero reale di entry senza creare placeholder fittizi.
+
+Per la rilevanza strutturale di fallback, preferenza:
+- numero di club attivi nel Country;
+- poi numero di divisioni/competizioni;
+- poi ordine alfabetico normalizzato.
+
+Il fallback deve essere dichiarato nel contratto e testato.
+
+5.5 PARITÀ
+
+Sort deterministico raccomandato:
+1. active_manager_count DESC;
+2. active_club_count DESC, se disponibile;
+3. normalized_country_name ASC;
+4. stable_country_id ASC.
+
+La parità non deve dipendere dall'ordine restituito dal DB.
+
+5.6 STALE/MISSING DATA
+
+Se il dato manager assignment non è disponibile:
+- non inventare una Top-4;
+- mostrare fallback strutturale dichiarato con stato informativo;
+- registrare data state = degraded;
+- mantenere accessibile l'intero Country selector.
+
+6. GW CREATIVE FREEDOM BOUNDARY
+
+COMPLETAMENTE LIBERO NEL GW PACKAGE
+
+- palette;
+- font families;
+- type scale entro requisiti di leggibilità;
+- spacing rhythm;
+- surfaces/materials;
+- border/radius language;
+- shadow/glow/translucency;
+- textures;
+- photography;
+- generative imagery;
+- iconography;
+- chart styling;
+- score styling;
+- hero composition;
+- editorial breaks;
+- narrative sequencing;
+- motion grammar;
+- responsive density;
+- component skinning;
+- signature components;
+- layout interno delle detail page;
+- homepage composition.
+
+NON LIBERO
+
+- significato delle route condivise;
+- destinazioni fondamentali della family;
+- back/deep-link semantics;
+- context persistence;
+- active/inactive state semantics;
+- accessibility minima;
+- touch target;
+- loading/error/empty semantics;
+- Top-4 selection semantics nei MULTI/GOLD standard;
+- Match/Competition/Club/Manager/Player semantic contracts;
+- family navigation placement/behavior contract.
+
+7. GW001 PRESERVATION STRATEGY
+
+GW001 non deve essere riscritto immediatamente sul nuovo Core.
+Deve diventare il GOLDEN MASTER SINGLE.
+
+Strategia:
+
+A. FREEZE BEHAVIORAL BASELINE
+Documentare prima della migrazione:
+- route map;
+- navigation map;
+- home composition;
+- Competition Hub;
+- Results/Schedule;
+- Match Center;
+- Standings;
+- Manager/Player/Club detail;
+- Archive;
+- mobile behavior;
+- editorial sections;
+- focus/back/deep-link behavior.
+
+B. CONTRACT EXTRACTION
+Estrarre dai comportamenti di GW001 i requisiti family/shared senza cambiarne output o composizione.
+
+C. ADAPTER FIRST
+Inizialmente il Core può fornire router/context/data models dietro l'attuale rendering GW001.
+
+D. COMPOSITION OWNERSHIP
+Home, Competition, Match e Archive di GW001 restano renderer/composition del package GW001.
+
+E. SIGNATURE COMPONENTS
+Devono essere ufficialmente registrabili:
+- Titanium Score Plate;
+- Historical Annotation;
+- Archive Chapter;
+- eventuali dossier/editorial object approvati.
+
+F. VISUAL REGRESSION AS CONTRACT
+La migrazione è accettata soltanto se il prima/dopo di GW001 resta equivalente nel comportamento e preserva la qualità visuale/editoriale approvata.
+
+GW001 non viene adattato al Core; il Core viene validato contro GW001.
+
+8. GW007 PRESERVATION + GENERALIZATION STRATEGY
+
+GW007 deve avere un doppio ruolo:
+- GOLDEN MASTER MULTI/GOLD per UX family;
+- SPECIALIZED CONTEXT IMPLEMENTATION per Four Kingdoms.
+
+DA GENERALIZZARE
+- quattro ingressi prioritari;
+- context-first navigation;
+- persistent context;
+- context-aware Results/Schedule/Standings;
+- accesso completo agli altri contesti;
+- mobile navigation predictability;
+- map/network capability come optional feature pattern.
+
+DA NON GENERALIZZARE
+- quattro Kingdom specifici;
+- nomi ENGLAND/ESPAÑA/DEUTSCHLAND/ITALIA;
+- territorial palette;
+- Border/Confrontation language;
+- abstract geography;
+- rivalry narrative;
+- map composition;
+- visual hierarchy specifica.
+
+GW007 config usa:
+family = MULTI_GOLD
+primaryContextProvider = FIXED_CONTEXT_SET
+contextType = TERRITORY
+territoryModel = KINGDOM
+
+Gli altri MULTI/GOLD usano:
+family = MULTI_GOLD
+primaryContextProvider = RANKED_ACTIVE_MANAGER_COUNTRIES
+contextType = COUNTRY
+
+Nessun branching per GW.
+
+9. CORE BEHAVIOR CONTRACT
+
+Documento da congelare prima dell'implementazione.
+
+Deve specificare almeno:
+
+ROUTING
+- canonical route IDs;
+- URL format;
+- unknown route behavior;
+- deep-link restoration;
+- browser back/forward.
+
+NAVIGATION
+- active state;
+- primary/secondary semantics;
+- family contract binding;
+- focus after route change;
+- keyboard behavior.
+
+CONTEXT
+- context dimensions;
+- hierarchy;
+- serialization;
+- validation;
+- inheritance;
+- reset rules;
+- switching behavior.
+
+DATA
+- resource access boundary;
+- loading/error/stale/empty;
+- cancellation;
+- pagination;
+- cache policy;
+- normalized view models.
+
+STATE
+- URL state vs ephemeral UI state;
+- no hidden cross-page globals;
+- deterministic restoration.
+
+ACCESSIBILITY
+- landmarks;
+- focus;
+- keyboard;
+- labels;
+- reduced motion;
+- touch target;
+- responsive overflow.
+
+EXTENSION
+- feature registration;
+- renderer registration;
+- signature components;
+- lifecycle hooks pubblici.
+
+REGRESSION
+- versioned contracts;
+- compatibility rules;
+- golden master tests.
+
+10. GW CREATIVE FREEDOM CONTRACT
+
+Documento complementare al Core Behavior Contract.
+
+Deve garantire formalmente al GW package il controllo di:
+- composition;
+- renderer markup;
+- visual hierarchy;
+- typography;
+- imagery;
+- asset loading entro performance budget;
+- creative tokens;
+- motion;
+- signature components;
+- responsive composition;
+- storytelling.
+
+Deve anche dichiarare cosa il GW package NON può fare:
+- bypassare data layer;
+- ridefinire route semantics condivise;
+- rompere family navigation behavior;
+- copiare/forkare component behavior shared;
+- modificare Core internals;
+- introdurre monkey patch DOM sul Core;
+- cambiare Top-4 algorithm locale;
+- introdurre GW branching nel platform code.
+
+11. COMPONENT SEMANTIC CONTRACTS
+
+Ogni componente/domain object condiviso deve essere separato in:
+
+MODEL / CONTRACT
+→ RENDERER
+
+Esempio MATCH CONTRACT:
+- fixtureId;
+- competition;
+- context;
+- home;
+- away;
+- date/time;
+- status;
+- score;
+- penalty/aggregate se applicabile;
+- managers;
+- events;
+- stats;
+- report state;
+- source state;
+- navigation actions;
+- accessibility description hooks.
+
+GW001 renderer:
+Titanium/archive language.
+
+GW007 renderer:
+Border Score/territorial language.
+
+GW009 renderer:
+CRT/pixel language.
+
+Il Core non impone il markup finale.
+
+Lo stesso approccio vale per:
+- Competition;
+- Standings;
+- Club;
+- Manager;
+- Player;
+- Transfer;
+- Ranking;
+- Context Entry.
+
+12. NAVIGATION + COMPOSITION + SIGNATURE COMPONENTS
+
+La navigation deve essere separata in tre livelli:
+
+A. NAVIGATION MODEL
+Core: route IDs, state, actions, active semantics.
+
+B. FAMILY NAVIGATION CONTRACT
+Family: quali destinazioni devono essere primary, dove devono essere raggiungibili, comportamento desktop/mobile.
+
+C. NAVIGATION RENDERER
+GW package: visual treatment entro il contract della family.
+
+Esempio: due SINGLE possono avere materiali radicalmente diversi, ma Home/Results/Schedule/Standings non possono essere nascosti o spostati in pattern incompatibili.
+
+Signature components operano dentro composition slot liberi, ma non sostituiscono la semantica della navigation.
+
+13. RESPONSIVE / MOBILE CONTRACT
+
+La Direzione richiede prevedibilità, mentre il Creative Director richiede responsive composition libera. Le due cose sono compatibili separando behavior e composition.
+
+CORE/FAMILY IMPONE
+- viewport/safe-area handling;
+- touch target minimo;
+- focus-visible;
+- keyboard behavior;
+- overflow safety;
+- state preservation;
+- family mobile primary destinations;
+- More behavior;
+- context selector reachability;
+- back behavior;
+- semantic content priority minima.
+
+GW PACKAGE DECIDE
+- ordine visuale interno dei blocchi;
+- hero size;
+- stack/grid/list;
+- rail collapse;
+- editorial sections;
+- data density;
+- signature object adaptation;
+- typography scale within constraints;
+- motion.
+
+Mobile non è desktop compresso, ma deve restare riconoscibile come membro della stessa UX family.
+
+14. REPOSITORY IMPACT
+
+La struttura proposta in IMC-ENG-009-01 resta valida ma deve aggiungere un layer esplicito families/.
+
+TO-BE aggiornato:
+
+minisite/
+├── platform/
+│   ├── core/
+│   ├── data/
+│   ├── components/
+│   ├── features/
+│   ├── families/
+│   │   ├── single/
+│   │   │   ├── contract.js
+│   │   │   ├── navigation.js
+│   │   │   ├── context.js
+│   │   │   └── defaults.js
+│   │   └── multi-gold/
+│   │       ├── contract.js
+│   │       ├── navigation.js
+│   │       ├── context.js
+│   │       ├── primary-context-selector.js
+│   │       └── defaults.js
+│   ├── styles/
+│   └── utilities/
+│
+├── worlds/
+│   ├── GW001/
+│   │   ├── config.js
+│   │   ├── theme.css
+│   │   ├── compositions/
+│   │   ├── renderers/
+│   │   ├── signatures/
+│   │   ├── assets/
+│   │   └── extensions/
+│   ├── ...
+│   └── GW009/
+│
+└── public/
+    └── GWXXX/
+
+Il family layer appartiene a platform perché è condiviso da più GW, ma è separato dal universal core per impedire che il Core stesso diventi pieno di condizioni SINGLE/MULTI.
+
+15. MIGRATION PLAN · NON ESEGUITO
+
+PHASE 0 · CONTRACT FREEZE
+- formalizzare Core Behavior Contract;
+- formalizzare Single Family Contract;
+- formalizzare Multi/Gold Family Contract;
+- formalizzare Creative Freedom Contract;
+- formalizzare primi Component Semantic Contracts;
+- definire Top-4 data contract.
+
+PHASE 1 · TEST HARNESS
+- snapshot route/navigation di GW001 e GW007;
+- visual baselines desktop/mobile;
+- deep-link test matrix;
+- accessibility baseline;
+- performance baseline.
+
+PHASE 2 · PLATFORM SKELETON
+- Core minimale senza rendering visuale;
+- data adapter;
+- router/context/state;
+- family registry;
+- nessun cambio live ai GW.
+
+PHASE 3 · GW001 PILOT SINGLE
+- adapter del renderer esistente;
+- estrazione comportamenti;
+- confronto golden master;
+- zero redesign.
+
+PHASE 4 · SECOND SINGLE
+- migrare un GW diverso per dimostrare che il family contract è riusabile senza clonare GW001.
+
+PHASE 5 · GW007 PILOT MULTI/GOLD
+- preservare Fixed Territory Set;
+- estrarre family navigation/context patterns;
+- validare territory context come first-class dimension.
+
+PHASE 6 · STANDARD MULTI/GOLD PILOT
+- implementare RANKED_ACTIVE_MANAGER_COUNTRIES;
+- verificare Top-4, fallback e tie-break;
+- usare un GW Gold reale diverso da GW007.
+
+PHASE 7 · MIGRAZIONE RESTANTI GW
+- uno per volta;
+- no big-bang;
+- feature extraction solo quando il secondo consumer dimostra riuso reale.
+
+PHASE 8 · LEGACY CLEANUP
+- eliminare core duplicati;
+- eliminare app.js behavior duplicato;
+- consolidare source-of-truth;
+- aggiornare workflow/deploy solo dopo equivalenza verificata.
+
+16. REGRESSION / PRESERVATION TESTS
+
+16.1 AUTOMATICI CORE
+
+Contract tests:
+- canonical route IDs;
+- URL parse/serialize round-trip;
+- context persistence;
+- back/forward;
+- loading/error/empty;
+- active navigation;
+- feature registration;
+- renderer registration.
+
+16.2 FAMILY TESTS
+
+SINGLE:
+- required destinations presenti;
+- competition-first hierarchy preservata;
+- Match Detail raggiungibile da Results;
+- mobile primary destinations coerenti;
+- context persistence per division/competition.
+
+MULTI/GOLD:
+- exactly Top-4 quando >=4 Country disponibili;
+- all-country selector completo;
+- active manager distinct count;
+- deterministic ties;
+- <4 fallback;
+- no manager data fallback;
+- context preserved tra Results/Schedule/Standings;
+- GW007 Fixed Context Set non passa dal ranked-country selector.
+
+16.3 GOLDEN MASTER
+
+GW001:
+- screenshot/visual regression per Home, Competition, Results, Match, Archive su desktop/mobile;
+- route/deep-link matrix;
+- content hierarchy review manuale;
+- interaction regression.
+
+GW007:
+- Home/Four Kingdoms/Territory Map/Kingdom/Results/Match su desktop/mobile;
+- territory color/context preservation;
+- fixed four-entry behavior;
+- rivalry/map modules.
+
+16.4 ACCESSIBILITY
+
+- keyboard-only navigation;
+- focus order;
+- focus restoration after route;
+- screen-reader labels;
+- dialog/menu semantics;
+- touch targets;
+- reduced motion;
+- table/visualization alternatives.
+
+16.5 RESPONSIVE
+
+Viewport matrix almeno:
+- narrow phone;
+- standard phone;
+- tablet portrait;
+- tablet landscape;
+- desktop;
+- wide desktop.
+
+Testare family navigation behavior separatamente dalla composition visuale.
+
+16.6 MANUAL CREATIVE PRESERVATION REVIEW
+
+Necessaria perché una visual regression pixel-perfect non misura da sola qualità editoriale.
+Creative Director/Direzione deve verificare che:
+- GW001 non sembri una dashboard skin nata male;
+- GW007 non sembri un normale Gold con quattro card colorate;
+- ogni GW mantenga il proprio ritmo e signature language.
+
+17. RISCHI E TRADE-OFF
+
+RISCHIO 1 · FAMILY CONTRACT TROPPO VISUALE
+Se impone markup/layout, distrugge la libertà creativa.
+Mitigazione: family contract definisce destination/behavior/placement semantics, non skin/layout interno.
+
+RISCHIO 2 · FAMILY CONTRACT TROPPO DEBOLE
+Se dice soltanto quali route esistono, i manager continueranno a trovare menu e comportamenti diversi.
+Mitigazione: formalizzare primary navigation placement/behavior e mobile contract.
+
+RISCHIO 3 · TOP-4 INSTABILE
+Ingressi che cambiano continuamente possono disorientare.
+Mitigazione: derivazione deterministica; eventuale snapshot/cache per sessione/release; mostrare conteggio manager e accesso completo agli altri Country.
+
+RISCHIO 4 · DATI MANAGER NON AFFIDABILI
+Assignment incompleti produrrebbero priorità errate.
+Mitigazione: data quality state e fallback strutturale trasparente.
+
+RISCHIO 5 · GW007 TRATTATO COME ECCEZIONE HARDCODED
+Mitigazione: provider generale FIXED_CONTEXT_SET + context type TERRITORY.
+
+RISCHIO 6 · GW001 RISCRITTO TROPPO PRESTO
+Mitigazione: golden master, adapter-first, zero redesign nel pilot.
+
+RISCHIO 7 · FEATURE EXTRACTION PREMATURA
+Mitigazione: estrarre una feature shared quando esiste almeno un secondo consumer reale o un contratto chiaramente universale.
+
+RISCHIO 8 · TROPPI LAYER
+Core + family + feature + GW package può diventare burocratico.
+Mitigazione: ogni layer deve possedere una responsabilità esclusiva e piccola; niente framework/plugin system generale oltre i bisogni osservati.
+
+18. STANDARDIZZARE SUBITO VS LASCIARE LOCALE
+
+STANDARDIZZARE SUBITO
+- canonical route IDs;
+- URL/context model;
+- data access contract;
+- loading/error/empty;
+- back/deep-link behavior;
+- focus/accessibility;
+- Single primary destinations;
+- Multi/Gold primary destinations;
+- mobile family navigation;
+- context selector semantics;
+- Top-4 algorithm/data contract;
+- Match/Competition/entity semantic models;
+- feature/renderer registration interface.
+
+LASCIARE LOCALE NELLA PRIMA FASE
+- Home composition;
+- Match renderer;
+- Competition renderer;
+- Archive storytelling;
+- typography;
+- theme;
+- motion;
+- hero;
+- page density;
+- charts appearance;
+- score plate appearance;
+- signature components;
+- editorial modules;
+- asset systems specifici.
+
+19. RISPOSTE DIRETTE ALLE 15 DOMANDE
+
+1. Architettura: Universal Core + Single/MultiGold Family Contracts + GW Creative Packages + Optional Features.
+2. SINGLE standardizza destination semantics, competition-first hierarchy, Match/detail behavior, navigation/back/context/mobile patterns.
+3. MULTI/GOLD standardizza four-entry primary context, complete context access, hierarchy, persistence, navigation/mobile behavior.
+4. GW package mantiene visual system, composition, renderer, typography, motion, assets, storytelling, signature components.
+5. Top-4 tramite active assignments → Country mapping → distinct manager count → deterministic ranking.
+6. Fallback: active countries disponibili, poi structural countries; tie-break manager count, club count, name, stable ID.
+7. GW001: golden master, adapter-first, zero redesign, preservation test.
+8. GW007: fixed territory provider nel medesimo Multi/Gold family contract; generalizzare pattern, non Four Kingdoms content/design.
+9. Confine: family possiede prevedibilità behavior/navigation/context; Creative Freedom possiede presentation/composition/rendering.
+10. Navigation model Core, family behavior contract, GW renderer/composition; signature components non alterano route semantics.
+11. Versioned contracts + golden-master tests GW001/GW007 + family contract tests.
+12. Contract, route, context, Top-4, accessibility, responsive, visual regression e creative manual review.
+13. Aggiungere platform/families/ alla struttura IMC-ENG-009-01.
+14. Congelare Core Behavior Contract, GW Creative Freedom Contract, Component Semantic Contracts prima del coding.
+15. Migrazione a fasi con GW001 e GW007 come pilot/golden master, senza big-bang.
+
+20. FINAL RECOMMENDATION
+
+APPROVARE IL MODELLO:
+
+ONE IMC MINISITE CORE
+TWO UX FAMILY CONTRACTS
+SINGLE = GW001-FOUNDED
+MULTI/GOLD = GW007-FOUNDED
+DYNAMIC TOP-4 COUNTRY FOR STANDARD MULTI/GOLD
+GW-SCOPED CREATIVE SYSTEMS
+
+Il punto decisivo è evitare due errori opposti:
+
+1. una piattaforma tecnicamente pulita ma visivamente omologata;
+2. nove esperienze creative magnifiche ma comportamentalmente incompatibili per gli utenti.
+
+Il family layer è il confine che permette di evitare entrambi.
+
+GW001 e GW007 devono diventare non soltanto riferimenti estetici/UX, ma GOLDEN MASTERS di regressione della piattaforma.
+
+La Top-4 MULTI/GOLD deve essere una capability dati deterministica del family layer, non una scelta editoriale locale.
+
+Prima di qualunque implementazione raccomando quindi un vero CONTRACT FREEZE dei quattro documenti:
+- CORE BEHAVIOR CONTRACT;
+- SINGLE UX FAMILY CONTRACT + MULTI/GOLD UX FAMILY CONTRACT;
+- GW CREATIVE FREEDOM CONTRACT;
+- COMPONENT SEMANTIC CONTRACTS.
+
+Solo dopo questo freeze conviene iniziare il nuovo platform skeleton.
+
+STATO
+AUDIT ONLY COMPLETATO.
+Nessuna modifica a imc-website, minisiti, Core, CSS, JavaScript, HTML, asset, Gateway, database, workflow, deploy o produzione.
