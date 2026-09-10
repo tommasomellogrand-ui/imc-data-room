@@ -1,0 +1,90 @@
+CASE_ID: IMC-ENG-002
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: IMC_DATA_ROOM_TICKETING_SYSTEM
+
+IMC DATA ROOM · V1 IMPLEMENTATION RESPONSE
+
+ARCHITETTURA SCELTA
+V1 file-based e deterministica. GitHub tommasomellogrand-ui/imc-data-room è la fonte autoritativa. I documenti vivono sotto tickets/<AREA>/<YYYY>/<CASE_ID>/. Un builder Python valida i metadata, ricostruisce il registry e genera un sito statico deployabile. Aruba è esclusivamente il layer pubblicato.
+
+STRUTTURA FINALE REPOSITORY
+- tickets/AREA/YYYY/CASE_ID/: fascicoli autoritativi TXT.
+- tools/build_data_room.py: validazione, risoluzione revisione REQUEST, STATUS derivato, registry e build.
+- site/: interfaccia V1 Data Room.
+- .github/workflows/validate-build.yml: validazione/build/artifact.
+- dist/: output generato in CI, non fonte autoritativa.
+
+PROTOCOLLO CASE_ID
+Il CASE_ID resta definito dalla Direzione Centrale. La directory del fascicolo deve coincidere con CASE_ID/AREA/anno dichiarati nei metadata. REQUEST, RESPONSE e DECISION vengono validati per coerenza AREA/TOPIC con il REQUEST attivo.
+
+RISOLUZIONE CASE_ID → REQUEST
+Il builder riconosce REQUEST.txt come revisione 1 e REQUEST_V<N>.txt come revisioni successive immutabili. Se esistono più revisioni, la revisione numericamente più alta è il REQUEST attivo. In pubblicazione viene creato l'alias stabile:
+/data-room/cases/<CASE_ID>/request.txt
+Per IMC-ENG-002 il REQUEST storico originale è stato preservato e la nuova richiesta operativa è stata registrata come REQUEST_V2.txt, senza alterare REQUEST.txt.
+
+GESTIONE RESPONSE
+La RESPONSE viene salvata nello stesso fascicolo del CASE_ID e non modifica il REQUEST. Il file corrente è tickets/ENG/2026/IMC-ENG-002/RESPONSE.txt. Il validator richiede gli stessi CASE_ID, AREA e TOPIC del REQUEST attivo.
+
+GESTIONE STATUS
+Lo STATUS non è mantenuto manualmente in un registro condiviso. È derivato dai documenti: solo REQUEST = OPEN; presenza RESPONSE senza DECISION = WAITING_REVIEW; DECISION può dichiarare STATUS con un valore ammesso, altrimenti chiude il fascicolo come CLOSED. Il registry può quindi essere rigenerato integralmente.
+
+REGISTRY E RICERCA
+Il build genera data/registry.json e data/registry.csv. Il JSON contiene almeno CASE_ID, AREA, DATE, TOPIC, STATUS, REQUEST attivo e documenti del fascicolo. La UI V1 permette ricerca per CASE_ID/testo e filtri AREA, DATE, TOPIC, STATUS, con apertura del REQUEST attivo, CASE JSON e documenti RESPONSE/DECISION quando presenti.
+
+GITHUB ACTIONS IMPLEMENTATE
+1. imc-data-room/.github/workflows/validate-build.yml: path-filtered su tickets/, site/, tools/ e workflow; valida tutti i TXT, costruisce registry/site, verifica il resolver IMC-ENG-002 e pubblica artifact di build.
+2. imc-aruba-ops/.github/workflows/deploy-data-room.yml, OPS-004: checkout del repository autoritativo, rebuild deterministico, release.json con source SHA, deploy FTPS, verifica byte-per-byte e smoke test HTTP live.
+3. imc-aruba-ops-trigger.yml: allowlist estesa con comando esatto RUN ARUBA DATA ROOM DEPLOY per dispatch controllato.
+4. OPS-004 dispone inoltre di sincronizzazione schedulata ogni 15 minuti e verifica se la revisione è già pubblicata.
+
+STRATEGIA DEPLOY ARUBA
+È stato riutilizzato il control plane imc-aruba-ops invece di duplicare secrets nel nuovo repository. Le credenziali FTPS rimangono esclusivamente nei secrets già esistenti. Il deploy risolve il document root Aruba Linux usando prima il path fisico previsto e poi le directory host-relative compatibili con il servizio FTP Aruba; scrive esclusivamente nella sottodirectory data-room. Il trasferimento usa FTPS protetto e verifica ogni file ricaricandolo e confrontandolo byte-per-byte.
+
+COMMIT IMC-DATA-ROOM
+- 7cbfdf7a414e7014c2e47ea057fb6c0f868c1879 · registrazione REQUEST_V2.
+- d5629f02699901a45883f3483adf33c43898096d · validator e registry builder.
+- d7a482865a8c6411ca9c4411463af0da68c8d991 · web shell Data Room V1.
+- 607bb536417c27edee924bd29bbb67f49a9cf5b1 · CSS funzionale V1.
+- 8bf79af6df5fecfb4f77a83db436fa9089295bfa · ricerca, filtri e document navigation.
+- aca9e8bf4145811474e2746f2250b2381fdf9d69 · workflow validate/build.
+
+COMMIT IMC-ARUBA-OPS
+- 7189849fef1cb299facd2e4cffd25fd4d8b34976 · workflow OPS-004 iniziale.
+- f0f6106351d56425067077be886610b5680b7e3d · allowlist trigger Data Room.
+- 47dc108565ab06b16d0ca8362016822f5e12778c · normalizzazione validazione config.
+- 1ba0e2f2db345d98b031acd95df80c1989a3d913 · target Aruba autorizzato.
+- f28e0bf30187fa2f9001923aa18badc1e1afc862 · policy FTPS allineata al deploy Aruba già funzionante.
+- 5a36881f9739487330537fb6ccb7e061a866ec96 · diagnosi/resolver document root.
+- 89e513aeb7f333f5e6f5f6d26746bed46ba1c18d · supporto Host Directory relativa Aruba Linux.
+
+GITHUB ACTIONS E TEST
+- validate-build imc-data-room: run 34447391702, SUCCESS.
+- OPS-004 tentativi iniziali: failure controllate e diagnosticate prima di una pubblicazione valida; cause isolate progressivamente in configurazione, hostname FTPS e document root.
+- OPS-004 V1: run 34447922611, SUCCESS.
+Nel run SUCCESS sono passati checkout, build/validazione, configurazione, deploy FTPS, verifica byte-per-byte e verifica live HTTP.
+
+TEST END-TO-END
+Il CASE IMC-ENG-002 dimostra il percorso richiesto: CASE_ID presente nel repository; REQUEST attivo risolvibile deterministicamente; RESPONSE registrata nello stesso fascicolo; registry rigenerabile; STATUS derivato a WAITING_REVIEW dopo RESPONSE; UI e documenti pubblicabili dallo stesso build. La pubblicazione di questa RESPONSE utilizza lo stesso OPS-004 e viene verificata live tramite release SHA, registry e URL del fascicolo.
+
+URL LIVE
+https://www.italianmastersclub.it/data-room/
+Resolver pubblico REQUEST:
+https://www.italianmastersclub.it/data-room/cases/IMC-ENG-002/request.txt
+Registry:
+https://www.italianmastersclub.it/data-room/data/registry.json
+
+BLOCKER
+Nessun blocker applicativo residuo per la V1. Non è stato necessario creare o duplicare alcun secret nel repository imc-data-room.
+
+RISCHI RESIDUI
+- Repository e Data Room sono pubblici: il processo deve continuare a vietare secrets, token, password e contenuti sensibili nei ticket.
+- L'hostname FTPS Aruba presenta un certificato non corrispondente al nome ftp.italianmastersclub.it; OPS-004 usa la stessa policy già adottata dal workflow Aruba condiviso, con verifica CA mantenuta e hostname check disabilitato. È un rischio infrastrutturale noto da mantenere documentato.
+- La sincronizzazione schedulata è eventuale fino a 15 minuti; il comando allowlisted consente deploy immediato quando necessario.
+- Il sistema V1 presume disciplina sui naming REQUEST_V<N>; la validazione impedisce incoerenze note ma non sostituisce la governance della Direzione sull'apertura dei CASE_ID.
+
+STATO FINALE
+ONLINE
+
+Prova concreta richiesta: OPS-004 run 34447922611 ha concluso con SUCCESS sia il deploy FTPS con verifica byte-per-byte sia gli smoke test HTTP su Data Room, release SHA, registry e resolver del REQUEST. La RESPONSE corrente completa il test documentale e viene sottoposta allo stesso ciclo di pubblicazione/verifica.
