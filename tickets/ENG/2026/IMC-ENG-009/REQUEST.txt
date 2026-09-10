@@ -1,0 +1,83 @@
+CASE_ID: IMC-ENG-009
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: IMC_MINISITE_CORE_TECHNICAL_ARCHITECTURE
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+IMC MINISITE CORE · TECHNICAL ARCHITECTURE REVIEW
+
+CONTESTO AUTORITATIVO
+La Direzione Centrale ha approvato la RESPONSE di IMC-CREATIVE-001. Quel CASE costituisce l'input creativo/UX autoritativo di questo incarico.
+
+PRINCIPIO APPROVATO
+La direzione creativa raccomanda un unico IMC MINISITE CORE configurabile, con:
+- mode = MULTI | SINGLE;
+- context model configurabile;
+- moduli opzionali per singolo Game World;
+- identità visuale autonoma per ogni GW.
+
+OBIETTIVO
+Tradurre questa direzione in una proposta tecnica concreta e realistica, senza implementare ancora nulla.
+
+ANALISI RICHIESTA
+Analizza minisiti e codice esistenti e restituisci una proposta su:
+- componenti/core già condivisi;
+- differenze tecniche reali tra GW;
+- cosa può essere centralizzato senza degradare le Visual Design Exploration esistenti;
+- architettura di un unico Core con configuration/theme layer per GW;
+- gestione tecnica di MULTI vs SINGLE;
+- navigation, routing, context persistence e responsive behavior;
+- component contracts condivisi;
+- feature modules opzionali;
+- strategia di migrazione degli attuali GW al nuovo Core;
+- rischi di regressione;
+- ordine consigliato di implementazione.
+
+VINCOLI CREATIVI NON NEGOZIABILI
+
+GW001 · ROAD TO HISTORY
+GW001 è il riferimento preferito dalla Direzione per la famiglia SINGLE e la sua esperienza attuale è considerata particolarmente riuscita.
+
+Il futuro Core deve preservarne qualità, struttura editoriale, gerarchia, competition-first thinking, Match Center, ritmo, drilldown e profondità narrativa.
+
+GW001 non deve essere normalizzato verso una shell generica perdendo ciò che oggi lo rende specifico e riuscito.
+
+GW007 · THE FOUR KINGDOMS
+GW007 è considerato dalla Direzione un caso speciale particolarmente riuscito e la sua impostazione concettuale non deve essere modificata.
+
+Il principio Four Kingdoms / Territory / Kingdom context, la sua logica territoriale e la relativa esperienza devono essere preservati.
+
+Il Core deve adattarsi a GW007, non costringere GW007 ad adattarsi a una normale struttura Country.
+
+Il context model territory/kingdom deve essere una capability nativa del sistema, non una semplice sostituzione grafica di Country.
+
+PRINCIPIO GENERALE
+Shared Core != standardizzazione creativa.
+
+Se una scelta tecnica del Core entra in conflitto con gli elementi caratterizzanti approvati di GW001 o GW007, l'architettura del Core deve diventare più flessibile. Non devono essere sacrificati i due Game World per semplificare il codice.
+
+OUTPUT ATTESO
+Una proposta tecnica completa che traduca IMC-CREATIVE-001 in architettura frontend reale, includendo:
+- AS-IS tecnico;
+- TO-BE del Minisite Core;
+- configuration model;
+- theme layer;
+- context model;
+- feature module model;
+- navigation/routing model;
+- preservation strategy per GW001 e GW007;
+- migration strategy per i GW esistenti;
+- phased implementation plan;
+- rischi e verifiche necessarie.
+
+VINCOLO ASSOLUTO
+SOLO ANALISI E PROPOSTA.
+Non modificare minisiti, codice, routing, componenti, CSS, build, deploy o configurazioni operative.
+
+La Direzione approverà la proposta prima di qualsiasi implementazione.
+
+OUTPUT AUTORITATIVO
+tickets/ENG/2026/IMC-ENG-009/RESPONSE.txt
+
+Dopo aver registrato la RESPONSE completa nella Data Room, torna nella chat con Tom e fornisci una sintesi esecutiva in massimo 10 bullet point.
