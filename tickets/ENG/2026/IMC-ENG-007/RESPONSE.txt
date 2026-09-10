@@ -1,0 +1,73 @@
+CASE_ID: IMC-ENG-007
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-10
+TOPIC: DATA_ROOM_SPECIALIST_RESPONSE_PROTOCOL
+
+IMC DATA ROOM · SPECIALIST RESPONSE + EXECUTIVE SUMMARY PROTOCOL
+
+IMPLEMENTAZIONE
+È stata formalizzata la nuova regola operativa per tutte le chat specialistiche aggiornando il Knowledge Layer esistente, senza creare un documento parallelo concorrente.
+
+È stata aggiunta la revisione immutabile:
+knowledge/PLAYBOOK/GLOBAL/IMC-DATA-ROOM-PROTOCOL/V002.txt
+
+La V001 storica è stata preservata integralmente.
+
+CONTENUTO DELLA V002
+La nuova revisione stabilisce che:
+1. la specialistica legge il REQUEST autoritativo associato al CASE_ID;
+2. esegue esclusivamente l'incarico autorizzato;
+3. registra sempre la RESPONSE completa nello stesso fascicolo;
+4. la RESPONSE Data Room è l'unica fonte autoritativa e completa della consegna;
+5. dopo la registrazione della RESPONSE, la specialistica torna nella chat con Tom;
+6. in chat non ripete il documento completo;
+7. restituisce una executive summary di massimo 10 bullet point;
+8. la sintesi include, quando rilevante, lavoro svolto, esito, problemi/limiti, decisioni/raccomandazioni, commit, Action/run, deploy/verifica e stato finale;
+9. dubbi, limiti e verifiche non concluse devono essere esplicitati;
+10. la sintesi chat non sostituisce mai la RESPONSE autoritativa.
+
+RECUPERO DELLA REGOLA
+Le chat specialistiche possono recuperare la regola dal Knowledge Layer tramite:
+- DOC_ID: IMC-DATA-ROOM-PROTOCOL
+- ACTIVITY: data-room, case-id, response, specialist, executive-summary
+- resolver stabile pubblico: /data-room/knowledge/PLAYBOOK/IMC-DATA-ROOM-PROTOCOL/current.txt
+
+Il builder Data Room pubblica automaticamente come current la versione ACTIVE numericamente più alta dello stesso DOC_ID; quindi V002 diventa la regola corrente senza alterare V001.
+
+COMMIT IMPLEMENTAZIONE
+81e9fcac3c8172f740ebfa8717c2471c1595f6d3
+IMC-ENG-007: formalize specialist response executive summary protocol
+
+VALIDAZIONE
+IMC Data Room · Validate and Build
+Run: 34463384947
+Esito: SUCCESS
+
+La pipeline ha completato:
+- metadata validation;
+- build registry/site;
+- ticket resolver verification;
+- knowledge resolver verification;
+- deployable artifact generation.
+
+DEPLOY
+OPS-004 · Deploy IMC Data Room
+Run: 34463426820
+Esito: SUCCESS
+
+Il workflow ha completato:
+- checkout Data Room source of truth;
+- validate/build;
+- Aruba configuration validation;
+- published revision check;
+- deploy FTPS con verifica byte-per-byte;
+- Verify live Data Room SUCCESS.
+
+REGRESSIONI
+Il ticketing esistente resta invariato. Nessun ticket storico, REQUEST, RESPONSE, DECISION, POLICY, REFERENCE o altro PLAYBOOK è stato rimosso o sovrascritto. Nessuna modifica a MySQL, Supabase, Universal Gateway, importer, minisiti o Master Site.
+
+STATO FINALE
+IMPLEMENTATO · PUBBLICATO · VERIFICATO LIVE
+
+Il protocollo RESPONSE completa + executive summary massimo 10 bullet è ora parte del playbook autoritativo corrente della IMC Data Room.
