@@ -1,0 +1,131 @@
+CASE_ID: IMC-DB-001-05
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-11
+TOPIC: POST_LEGACY_REMOVAL_APPLICATION_REMEDIATION
+
+IMC | DATABASE MANAGER
+CORE POST-CLEANUP · APPLICATION REMEDIATION & LEGACY RECREATION BLOCK
+
+CONTESTO AUTORITATIVO
+IMC-DB-001-04 ha raggiunto definitivamente l'obiettivo database:
+- Sql1956795_1: 11 tabelle totali;
+- 11 tabelle IMC;
+- 0 tabelle non-IMC;
+- 38/38 legacy eliminate;
+- tutte le 11 IMC preesistenti presenti e con dati;
+- restano esclusivamente FK IMC->IMC previste.
+
+QUESTO STATO DB È DEFINITIVO, AUTORITATIVO E INTOCCABILE.
+
+NON ricreare alcuna tabella non-IMC.
+NON ripristinare strutture legacy per risolvere incompatibilità applicative.
+NON riportare dati legacy nel CORE.
+
+PROBLEMI RESIDUI DA RISOLVERE
+1. Gateway 1.9.1: verifica live fallita con HTTP 500 sulla route logica `imc_managers`, nonostante GitHub Action riuscita.
+2. Restano consumer/applicazioni che fanno riferimento a concetti/tabelle legacy eliminate, tra cui almeno:
+   - clubs_game_world_id;
+   - world-local club mapping;
+   - nation mapping;
+   - Game World seasons/context;
+   - competition master/rules;
+   - vecchia ingestion/source pipeline.
+3. La vecchia ingestion contiene ancora `CREATE TABLE IF NOT EXISTS` o logiche equivalenti capaci di ricreare tabelle non-IMC eliminate.
+
+OBIETTIVO
+Bonificare il codice/applicazione dopo la rimozione definitiva delle legacy, mantenendo il CORE composto esclusivamente dalle 11 tabelle IMC.
+
+A · DIAGNOSI E FIX HTTP 500
+- riproduci e diagnostica il failure live della route `imc_managers`;
+- identifica causa reale tramite codice/log/error response disponibili;
+- correggi con modifica minima;
+- la route legacy/logica deve, se semanticamente corretta, risolversi verso `IMC Manager Codex Global`;
+- verifica anche il routing relativo alle assignments verso `IMC Manager Assignment Global`;
+- commit;
+- GitHub Actions;
+- verifica live reale;
+- non dichiarare online/verificato finché HTTP live non è positivo.
+
+B · AUDIT COMPLETO DEI RIFERIMENTI LEGACY
+Cerca nell'intero repository autoritativo `tommasomellogrand-ui/imc-website` ogni riferimento alle 38 tabelle non-IMC eliminate e a eventuali alias/logiche che le ricreano.
+
+Per ogni riferimento classifica:
+1. REPLACE WITH EXISTING IMC TABLE
+2. REMOVE OBSOLETE CONSUMER
+3. BLOCK LEGACY WRITER/CREATOR
+4. CANNOT REPLACE · REBUILD REQUIRED
+
+C · SOSTITUZIONI CERTE
+Quando esiste una corrispondenza semanticamente certa verso una delle 11 tabelle IMC già esistenti:
+- sostituisci il riferimento con la struttura IMC canonica;
+- modifica minima;
+- non cambiare la semantica delle IMC;
+- non creare colonne/tabelle nuove per accomodare il legacy.
+
+D · CONCETTI NON PRESENTI NELLE 11 IMC
+Se un consumer richiede un concetto che NON esiste nelle 11 IMC attuali, per esempio un mapping world-local o una vecchia competition rule non più modellata:
+- NON ricreare la tabella legacy;
+- NON inventare una nuova struttura IMC in questo CASE;
+- blocca/rimuovi in sicurezza il percorso legacy se necessario per impedire errori o ricreazioni;
+- documenta precisamente la funzionalità che dovrà essere ricostruita in un futuro CASE secondo il modello IMC attuale.
+
+E · BLOCCO ASSOLUTO DELLA RICREAZIONE LEGACY
+Individua e neutralizza TUTTI i percorsi che possono ricreare tabelle non-IMC nel CORE, inclusi:
+- CREATE TABLE IF NOT EXISTS legacy;
+- migration/seed legacy ancora invocabili;
+- bootstrap/schema installer;
+- ingestion setup;
+- canonical rebuild;
+- handler che assumono o ricreano vecchie strutture.
+
+Dopo questo CASE, nessun normale flusso applicativo/import/ingestion deve poter ricreare automaticamente una delle 38 tabelle eliminate.
+
+Se un vecchio flusso non può funzionare senza quelle tabelle, deve fallire in modo esplicito/sicuro o essere disabilitato, NON ricrearle.
+
+F · VERIFICA DATABASE FINALE
+Dopo tutte le modifiche:
+- SHOW TABLES su Sql1956795_1;
+- totale = 11;
+- IMC = 11;
+- non-IMC = 0;
+- verificare che nessuna legacy sia stata ricreata durante i test;
+- verificare presenza e integrità delle 11 IMC.
+
+G · VERIFICA CODICE / DEPLOY
+Per ogni modifica GitHub:
+- leggere prima il file corrente;
+- modifica minima;
+- commit;
+- verificare GitHub Actions pertinenti;
+- verificare live le route/funzioni toccate quando possibile.
+
+OUTPUT RICHIESTO
+Registra `tickets/DB/2026/IMC-DB-001-05/RESPONSE.txt` con:
+1. root cause HTTP 500;
+2. fix applicato;
+3. verifica live della route;
+4. inventario completo riferimenti legacy trovati;
+5. riferimenti sostituiti con IMC e destinazione;
+6. consumer rimossi/bloccati;
+7. writer/creator legacy neutralizzati;
+8. funzioni non sostituibili e da ricostruire;
+9. elenco esatto dei futuri CASE raccomandati;
+10. commit SHA;
+11. stato GitHub Actions;
+12. verifiche live;
+13. SHOW TABLES finale;
+14. certificazione `11 IMC / 0 NON-IMC`.
+
+CHIUSURA IMC-DB-001-04
+IMC-DB-001-04 deve rimanere documentato fedelmente come:
+- DATABASE OBJECTIVE: COMPLETED;
+- APPLICATION REMEDIATION: demandata a IMC-DB-001-05.
+
+Non riscrivere retroattivamente il failure HTTP o i consumer rotti. La Data Room deve conservare la cronologia reale.
+
+AUTORIZZAZIONE
+WRITE sul codice necessaria alla bonifica: AUTORIZZATA.
+READ/verification DB: AUTORIZZATA.
+Non è autorizzata la creazione di nuove tabelle/colonne IMC in questo CASE.
+Non è autorizzata la ricreazione di alcuna tabella non-IMC.
