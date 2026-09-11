@@ -1,0 +1,207 @@
+CASE_ID: IMC-CREATIVE-001-02
+DOC_TYPE: RESPONSE
+AREA: CREATIVE
+DATE: 2026-09-11
+TOPIC: UX_FAMILY_ARCHITECTURE_FINAL_CREATIVE_VALIDATION
+
+IMC | CREATIVE DIRECTOR
+MINISITE UX FAMILY ARCHITECTURE · FINAL CREATIVE VALIDATION
+
+1. EXECUTIVE VERDICT
+
+APPROVED
+
+La proposta IMC-ENG-009-02 è approvabile come architettura definitiva dal punto di vista della Creative Direction.
+
+La formula:
+
+CORE OWNS UNIVERSAL BEHAVIOR
+UX FAMILY OWNS CROSS-GW PREDICTABILITY
+GW PACKAGE OWNS CREATIVE IDENTITY
+FEATURES OWN OPTIONAL CAPABILITIES
+
+stabilisce correttamente il confine tra coerenza d'uso e libertà creativa.
+
+La soluzione rispetta le due decisioni non negoziabili della Direzione: GW001 come GOLDEN MASTER SINGLE e GW007 come GOLDEN MASTER MULTI/GOLD. Il punto essenziale è che i Golden Master siano criteri di validazione del sistema, non sorgenti da normalizzare per adattarli al Core.
+
+2. VALIDATION GW001
+
+APPROVED.
+
+La proposta preserva correttamente GW001 perché distingue le semantiche UX family-level dalla sua composizione creativa.
+
+Devono diventare family contract SINGLE soltanto gli elementi che rendono l'esperienza prevedibile e comprensibile tra i Game World della famiglia: route semantics, primary destinations, navigation behavior, context/detail semantics, deep-link/back rules e required capabilities.
+
+Devono restare proprietà esclusiva del package GW001:
+- homepage composition;
+- editorial rhythm;
+- Archive come esperienza narrativa;
+- Competition composition;
+- Match storytelling;
+- score skin;
+- imagery treatment;
+- typography;
+- materials;
+- motion grammar;
+- signature components;
+- responsive density e composizione.
+
+GW001 non deve essere ricostruito dentro un template SINGLE. Il Core deve dimostrare di poter ospitare l'esperienza GW001 approvata senza perdita percettibile di gerarchia, ritmo, carattere o capacità narrativa.
+
+Il visual regression / golden master test di GW001 è quindi un requisito creativo oltre che tecnico.
+
+3. VALIDATION GW007
+
+APPROVED.
+
+La proposta preserva correttamente GW007 come fondazione MULTI/GOLD perché generalizza il principio UX dei quattro ingressi prioritari senza generalizzare la sua metafora creativa dei Kingdom.
+
+È corretta la distinzione:
+
+GW007
+FIXED_CONTEXT_SET / TERRITORY / KINGDOM
+
+ALTRI MULTI/GOLD
+RANKED_ACTIVE_MANAGER_COUNTRIES / COUNTRY
+
+Il family contract può condividere:
+- context-first navigation;
+- persistent context;
+- quattro ingressi prioritari;
+- accesso completo agli altri context;
+- comportamento mobile;
+- deep linking;
+- cambio di context.
+
+Non deve condividere obbligatoriamente:
+- Territory Map;
+- Kingdom visual language;
+- border system;
+- Four Kingdoms composition;
+- territorial storytelling;
+- palette o signature motion;
+- rappresentazione grafica dei quattro ingressi.
+
+Per gli altri MULTI/GOLD la Top-4 Country dinamica deve essere un meccanismo di priorità informativa, non una copia grafica dei quattro Kingdom.
+
+GW007 deve rimanere riconoscibile come Four Kingdoms anche se il comportamento sottostante è family-level.
+
+4. VALIDATION UX FAMILY vs CREATIVE FREEDOM
+
+APPROVED.
+
+Il confine proposto è corretto.
+
+UX FAMILY deve definire il DOVE e il COME SI RAGGIUNGE una capability, non il COME DEVE APPARIRE.
+
+Il family layer può congelare:
+- destinazioni primarie;
+- significato delle route;
+- gerarchia del context;
+- presenza e comportamento della navigazione;
+- pattern mobile essenziali;
+- back/deep-link semantics;
+- entry-point semantics;
+- capabilities minime;
+- minimum information hierarchy.
+
+Il family layer NON deve congelare:
+- markup visuale unico;
+- card geometry;
+- ordine editoriale completo della pagina;
+- hero structure;
+- dimensione relativa delle sezioni oltre ai requisiti minimi informativi;
+- surface language;
+- typography;
+- palette;
+- visual density;
+- imagery;
+- animation style;
+- chart skin;
+- score appearance;
+- page rhythm.
+
+La prevedibilità deve essere semantica e comportamentale, non estetica.
+
+Un manager che passa da un SINGLE a un altro SINGLE deve sapere dove cercare Results, Schedule, Competition, Match, Manager, Player e Club. Non deve avere la sensazione di visitare lo stesso sito con colori diversi.
+
+Lo stesso principio vale per MULTI/GOLD.
+
+5. MANDATORY CREATIVE GUARDRAILS
+
+Prima dell'implementazione devono essere congelati nei contratti i seguenti guardrail.
+
+GUARDRAIL 01 · GOLDEN MASTER NON-DEGRADATION
+GW001 e GW007 sono test di accettazione. Nessuna decisione del Core o della UX Family può essere considerata valida se richiede di impoverire una delle due esperienze approvate per adattarla all'architettura.
+
+GUARDRAIL 02 · SEMANTIC CONTRACT, NOT VISUAL TEMPLATE
+I Component Semantic Contracts devono definire dati, stati, azioni, accessibilità e significato. Non devono imporre DOM, geometry, skin o composizione unica quando non necessaria al comportamento.
+
+GUARDRAIL 03 · COMPOSITION SOVEREIGNTY
+Il GW Creative Package deve poter sostituire integralmente la composition di Home e detail page utilizzando gli stessi contratti semantici. Deve poter cambiare ordine, scala, grouping, ritmo, full-bleed behavior, rails, split layout e progressive disclosure.
+
+GUARDRAIL 04 · SIGNATURE COMPONENT FIRST-CLASS
+Un signature component non deve essere trattato come hack o eccezione CSS. Deve poter essere registrato come rendering/composition specifica del GW o come feature opzionale senza introdurre branching if(GW...) nel Core.
+
+GUARDRAIL 05 · THEME IS MORE THAN CSS COLORS
+Il Theme Layer deve poter governare almeno typography, spacing character, radius/shape, borders, materials, depth, surfaces, icon treatment, chart styling, imagery treatment, density, status treatment e creative tokens. Non deve ridursi a palette + font.
+
+GUARDRAIL 06 · MOTION OWNERSHIP
+Il Core può governare lifecycle, reduced-motion support, accessibility e timing safety. La motion grammar percepita deve restare proprietà del GW: easing character, reveal language, transition metaphor, emphasis e signature motion.
+
+GUARDRAIL 07 · RESPONSIVE COMPOSITION FREEDOM
+La family UX può definire ciò che deve rimanere raggiungibile e comprensibile su mobile. Non deve imporre che desktop sia semplicemente una versione larga del mobile o viceversa. Il GW deve poter cambiare composition tra breakpoint mantenendo le stesse capability.
+
+GUARDRAIL 08 · EDITORIAL STORYTELLING PROTECTION
+Hero, feature story, archive narrative, match storytelling, editorial interruptions, photography scale e pacing non devono essere assorbiti in componenti universali obbligatori. Sono strumenti di Creative Direction.
+
+GUARDRAIL 09 · ASSET SOVEREIGNTY
+Ogni GW deve poter possedere asset, photographic direction, generative imagery, textures, iconography, crest treatment e campaign imagery senza dipendere da un asset vocabulary visuale globale obbligatorio. Il Core può standardizzare caricamento, performance, fallback e accessibility.
+
+GUARDRAIL 10 · TOP-4 IS INFORMATION LOGIC, NOT A VISUAL COMPONENT
+Nel MULTI/GOLD il concetto Top-4 deve essere definito come ranking/priority contract. Ogni GW può rappresentarlo diversamente. GW007 mantiene i Kingdom; altri GW possono usare board, exchange, grid, editorial rail o future grammatiche.
+
+GUARDRAIL 11 · MINIMUM INFORMATION HIERARCHY IS A FLOOR
+La minimum information hierarchy stabilisce ciò che non può mancare, non una sequenza obbligatoria completa. Il Creative Package può elevare, ripetere contestualmente o distribuire l'informazione secondo la propria narrativa purché chiarezza e accessibilità siano preservate.
+
+GUARDRAIL 12 · NEW-WORLD STRESS TEST
+L'architettura deve essere verificabile anche con un ipotetico nuovo GW la cui identità non assomigli a nessuna delle attuali. Se per introdurlo servono modifiche visual-specifiche nel Core, il confine architetturale è stato violato.
+
+6. CRITICITÀ RESIDUE
+
+Non emergono criticità architetturali che impediscano l'implementazione.
+
+Restano tre rischi da sorvegliare durante la costruzione:
+
+A. TEMPLATE CREEP
+La comodità tecnica potrebbe spingere progressivamente a riutilizzare una composition standard anche dove il contratto non la richiede. Va evitato.
+
+B. CONTRACT OVER-SPECIFICATION
+Contratti semantici troppo dettagliati sul rendering potrebbero trasformarsi indirettamente in template. Ogni proprietà va valutata chiedendo se appartiene davvero al comportamento o alla Creative Direction.
+
+C. GOLDEN MASTER DRIFT
+Future refactor potrebbero mantenere la funzionalità ma degradare ritmo, gerarchia o identità di GW001/GW007. I test devono quindi includere visual regression e review percettiva, non soltanto unit/integration tests.
+
+7. FINAL CREATIVE SIGN-OFF
+
+FINAL CREATIVE SIGN-OFF: APPROVED.
+
+La Direzione Creativa approva IMC-ENG-009-02 come architettura definitiva per la futura implementazione dell'IMC Minisite Core, subordinatamente al congelamento dei Mandatory Creative Guardrails sopra indicati nei contratti del sistema.
+
+La struttura approvata è:
+
+ONE IMC MINISITE CORE
+→ TWO UX FAMILY CONTRACTS
+   → SINGLE FAMILY · GOLDEN MASTER GW001
+   → MULTI/GOLD FAMILY · GOLDEN MASTER GW007
+→ GW CREATIVE PACKAGE
+→ OPTIONAL FEATURES / SIGNATURE COMPONENTS
+
+Principio creativo definitivo:
+
+PREDICTABILITY LIVES IN BEHAVIOR.
+IDENTITY LIVES IN COMPOSITION.
+
+Un manager deve riconoscere come usare un minisito IMC senza che due Game World debbano assomigliarsi.
+
+Questo è il confine da proteggere durante l'implementazione.
