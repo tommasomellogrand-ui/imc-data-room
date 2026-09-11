@@ -1,0 +1,8 @@
+CASE_ID: IMC-CREATIVE-001-02
+AREA: CREATIVE
+DOMAIN: MINISITE
+GW: GLOBAL
+TOPIC: UX_FAMILY_ARCHITECTURE_FINAL_CREATIVE_VALIDATION
+TAGS: minisite, ux-family, gw001, gw007, single, multi, gold, creative-freedom, golden-master, architecture, final-validation
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-CREATIVE-001
