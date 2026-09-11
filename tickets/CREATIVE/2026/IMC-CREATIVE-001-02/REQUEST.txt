@@ -1,0 +1,141 @@
+CASE_ID: IMC-CREATIVE-001-02
+DOC_TYPE: REQUEST
+AREA: CREATIVE
+DATE: 2026-09-11
+TOPIC: UX_FAMILY_ARCHITECTURE_FINAL_CREATIVE_VALIDATION
+
+IMC | CREATIVE DIRECTOR
+MINISITE UX FAMILY ARCHITECTURE · FINAL CREATIVE VALIDATION
+
+CONTESTO
+Questo CASE chiude il ciclo di convergenza tra Direzione, Engineer e Creative Director sul futuro sistema minisite IMC.
+
+La Direzione ha già fissato due decisioni non negoziabili:
+
+1. GW001 è il riferimento fondativo della famiglia SINGLE.
+L'esperienza attuale approvata di GW001 deve essere preservata integralmente nella sua qualità, forza editoriale, logica UX e identità. Gli altri SINGLE devono partire dal suo principio UX senza copiarne necessariamente il linguaggio visivo.
+
+2. GW007 è il riferimento fondativo della famiglia MULTI/GOLD.
+Il principio dei quattro ingressi prioritari viene generalizzato agli altri MULTI/GOLD come Top-4 Country dinamica per numero di manager IMC attivi. Gli altri Country restano disponibili nella navigazione completa. GW007 mantiene invece i suoi quattro Kingdom come struttura fondativa propria.
+
+La Direzione ha inoltre stabilito che all'interno della stessa famiglia i manager devono ritrovare una UX prevedibile e coerente, mentre ogni GW mantiene libertà creativa reale su identità, composizione, materiali, typography, motion, storytelling e signature components.
+
+INPUT ENGINEER
+L'Engineer ha concluso IMC-ENG-009-02 con questa architettura raccomandata:
+
+ONE IMC MINISITE CORE
+→ TWO UX FAMILY CONTRACTS
+   → SINGLE FAMILY
+   → MULTI/GOLD FAMILY
+→ GW CREATIVE PACKAGE
+→ OPTIONAL FEATURES / SIGNATURE COMPONENTS
+
+Formula:
+CORE OWNS UNIVERSAL BEHAVIOR
+UX FAMILY OWNS CROSS-GW PREDICTABILITY
+GW PACKAGE OWNS CREATIVE IDENTITY
+FEATURES OWN OPTIONAL CAPABILITIES
+
+Per SINGLE:
+- GW001 diventa GOLDEN MASTER SINGLE;
+- il Core viene validato contro GW001, non il contrario;
+- route/nav/context/detail semantics diventano family contract;
+- home, archive, editorial composition, score skin, signature components e visual storytelling restano proprietà del package GW001.
+
+Per MULTI/GOLD:
+- GW007 diventa GOLDEN MASTER MULTI/GOLD;
+- generalizza quattro ingressi prioritari, context-first navigation e persistent context;
+- per gli altri MULTI/GOLD i quattro ingressi sono i Country con più manager IMC attivi;
+- GW007 mantiene FIXED_CONTEXT_SET / TERRITORY / KINGDOM;
+- gli altri MULTI/GOLD usano RANKED_ACTIVE_MANAGER_COUNTRIES / COUNTRY;
+- nessun branching specifico per GW nel Core.
+
+Il family layer standardizza:
+- primary destinations;
+- navigation placement/behavior contract;
+- context hierarchy;
+- mobile navigation pattern;
+- deep-link/back rules;
+- entry-point semantics;
+- required shared capabilities;
+- minimum information hierarchy.
+
+Il GW Creative Package mantiene controllo su:
+- palette;
+- typography;
+- materials;
+- visual hierarchy interna;
+- hero;
+- score skin;
+- motion grammar;
+- editorial pacing;
+- imagery/assets;
+- creative tokens;
+- signature components;
+- homepage composition;
+- layout interno delle detail page;
+- responsive density;
+- storytelling.
+
+Il modello prevede inoltre:
+- Core Behavior Contract;
+- UX Family Contracts;
+- GW Creative Freedom Contract;
+- Component Semantic Contracts;
+- visual regression / golden master tests per GW001 e GW007.
+
+OBIETTIVO DEL CASE
+Valuta ESCLUSIVAMENTE se la proposta IMC-ENG-009-02:
+
+A. rispetta integralmente la decisione della Direzione;
+B. preserva davvero GW001 come fondazione SINGLE senza normalizzarlo o impoverirlo;
+C. preserva davvero GW007 come fondazione MULTI/GOLD senza banalizzarlo a normale Country UX;
+D. garantisce una libertà creativa sufficiente per produrre Game World realmente diversi pur mantenendo usabilità family-level;
+E. protegge signature components, storytelling, responsive composition e visual identity;
+F. evita che il Core diventi un template grafico mascherato;
+G. definisce correttamente il confine tra UX predictability e creative freedom.
+
+DOMANDA PRINCIPALE
+La soluzione tecnica dell'Engineer è, dal punto di vista della Creative Direction, APPROVABILE come architettura definitiva?
+
+Se SÌ:
+- indica APPROVED;
+- evidenzia soltanto eventuali guardrail creativi obbligatori da congelare nei contratti prima dell'implementazione.
+
+Se NO / APPROVED WITH CHANGES:
+- indica esclusivamente ciò che manca o deve essere corretto;
+- non riaprire decisioni già prese dalla Direzione;
+- non proporre una nuova architettura parallela se non strettamente necessario.
+
+OUTPUT RICHIESTO
+La RESPONSE deve contenere:
+1. EXECUTIVE VERDICT: APPROVED / APPROVED WITH CHANGES / NOT APPROVED;
+2. VALIDATION GW001;
+3. VALIDATION GW007;
+4. VALIDATION UX FAMILY vs CREATIVE FREEDOM;
+5. MANDATORY CREATIVE GUARDRAILS;
+6. eventuali criticità residue;
+7. FINAL CREATIVE SIGN-OFF.
+
+VINCOLO
+AUDIT / REVIEW ONLY.
+
+NON modificare:
+- repository;
+- minisiti;
+- Core;
+- CSS;
+- JS;
+- HTML;
+- asset;
+- database;
+- deploy;
+- workflow;
+- produzione.
+
+Non implementare nulla.
+
+OUTPUT AUTORITATIVO
+tickets/CREATIVE/2026/IMC-CREATIVE-001-02/RESPONSE.txt
+
+Dopo la RESPONSE fermati e torna in chat con la sintesi esecutiva prevista dal protocollo Data Room.
