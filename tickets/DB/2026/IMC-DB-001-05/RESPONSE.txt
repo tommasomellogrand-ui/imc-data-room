@@ -1,0 +1,508 @@
+CASE_ID: IMC-DB-001-05
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: POST_LEGACY_REMOVAL_APPLICATION_REMEDIATION
+STATUS: COMPLETED
+
+IMC | DATABASE MANAGER
+CORE POST-CLEANUP · APPLICATION REMEDIATION & LEGACY RECREATION BLOCK
+
+======================================================================
+0. EXECUTIVE RESULT
+======================================================================
+
+Il CASE è completato.
+Il CORE Sql1956795_1 è rimasto intatto durante tutta la remediation applicativa ed è stato ricertificato alla fine con:
+- 11 tabelle totali;
+- 11 tabelle IMC;
+- 0 tabelle non-IMC;
+- 2 foreign key residue, entrambe IMC->IMC;
+- 0 trigger;
+- 0 view.
+
+Nessuna delle 38 tabelle legacy eliminate da IMC-DB-001-04 è stata ricreata durante i test, deploy o verifiche live.
+
+======================================================================
+1. ROOT CAUSE HTTP 500
+======================================================================
+
+Il failure HTTP 500 del Gateway non era causato dal DROP delle tabelle CORE né dalla route imc_managers in sé.
+
+Root cause reale:
+- api/imc-gateway/index.php esegue require_once __DIR__.'/database.php';
+- il workflow pubblico deploy-website-aruba.yml pubblicava index.php/config.php ma NON includeva api/imc-gateway/database.php;
+- il runtime Aruba andava quindi in fatal error PHP al bootstrap, prima del normale out() JSON del Gateway;
+- per questo il 500 aveva body vuoto e colpiva anche route non-CORE.
+
+Conclusione: deployment incompleto di una dipendenza obbligatoria del Gateway.
+
+======================================================================
+2. FIX APPLICATO
+======================================================================
+
+A. Gateway deployment
+- deploy-website-aruba.yml è stato corretto per:
+  - verificare esistenza di api/imc-gateway/database.php;
+  - eseguire php -l su index.php e database.php;
+  - pubblicare database.php insieme al Gateway.
+- Commit principale workflow: 532cc29bf62fc773d32f989790b23b09e0b62754
+  "IMC-DB-001-05: deploy gateway database dependency"
+
+B. Gateway version/redeploy
+- Gateway bump a 1.9.2 per forzare redeploy verificabile.
+- Commit: 4abc30aae5a7f3e53c00c2b45fb4d84b8c879104
+  "IMC-DB-001-05: redeploy Gateway with database dependency"
+
+C. Mapping logico CORE già predisposto e confermato
+- repository logico imc_managers -> IMC Manager Codex Global
+- repository logico gw_manager_assignments -> IMC Manager Assignment Global
+- Commit preesistente del percorso: cf2e7f687f15d14c3bad143b77ed45e3776f7f10
+  "IMC-DB-001-04: route exact CORE readers to IMC tables"
+
+D. Bonifica applicativa legacy
+Commit: 934a6fb593792e4a3757dbe2c6e7b6505def43af
+"IMC-DB-001-05: block legacy CORE recreation paths"
+
+Modifiche principali:
+- blocco legacy canonical rebuild;
+- blocco schema installer legacy;
+- blocco source snapshot/import pipeline legacy;
+- blocco legacy CORE ingestion dispatcher/table creator;
+- guard 503 sul current ingestion router prima dei vecchi handler;
+- Team Hub: asset identity spostata su IMC Club Codex Global / IMC National Team Codex Global;
+- Team Hub world-local datasets: fail esplicito core_mapping_rebuild_required;
+- site-ready club_index: no-op esplicito, perché il mapping world-local non esiste nelle 11 IMC.
+
+E. Blocco HTTP del vecchio SM Master admin
+- ops/sm-master/admin/.htaccess ora nega direttamente:
+  api.php, ingestion.php, core.php, import-sm.php, import-sw.php, canonical.php
+- Commit: 546664f7e7bc03be4a81e3cf4b46872a72445547
+
+F. Deploy runtime sicuro
+- workflow dedicato: IMC DB 001-05 Safe Runtime Remediation Deploy
+- Commit workflow: 5c75ff9ba605688ab21a57ac5bf5212b69c5765e
+- pubblicati e verificati byte-per-byte:
+  - /__imc-sm-master/admin/.htaccess
+  - /__imc-sm-master/admin/ingestion/router.php
+  - /api/imc-gateway/team-hub.php
+  - /api/imc-data/v1/site-ready.php
+
+======================================================================
+3. VERIFICA LIVE ROUTE
+======================================================================
+
+GitHub Actions live Gateway verification: SUCCESS.
+Run: 34569186390
+Job: verify
+Step PASS:
+1. world discovery route
+2. manager CORE route
+3. assignment CORE route
+
+Verifiche live certificate:
+- Gateway version = 1.9.2
+- imc_managers restituisce ok=true e table="IMC Manager Codex Global"
+- gw_manager_assignments restituisce ok=true e table="IMC Manager Assignment Global"
+
+Live remediation check: SUCCESS.
+Run: 34569348834
+Step PASS:
+1. Team Hub rebuild-required guard
+2. legacy SM Master endpoints denied
+3. canonical manager route remains live
+
+Safe Runtime Remediation Deploy: SUCCESS.
+Run: 34569311972
+- validation files: SUCCESS
+- Aruba upload: SUCCESS
+- post-upload verification: SUCCESS
+
+======================================================================
+4. INVENTARIO COMPLETO 38 TABELLE LEGACY E DESTINO APPLICATIVO
+======================================================================
+
+Legenda:
+1 = REPLACE WITH EXISTING IMC TABLE
+2 = REMOVE OBSOLETE CONSUMER
+3 = BLOCK LEGACY WRITER/CREATOR
+4 = CANNOT REPLACE · REBUILD REQUIRED
+
+01 awards
+- classificazione: 2 + 3
+- vecchia proiezione canonical SoccerWiki; nessuna IMC equivalente necessaria al runtime attuale.
+- creator canonical bloccato.
+
+02 clubs
+- classificazione: 1 parziale + 3
+- asset identity sostituita con IMC Club Codex Global.
+- vecchio canonical/source-merge registry non viene ricreato.
+
+03 clubs_game_world_id
+- classificazione: 4
+- world-local club ID non presente nelle 11 IMC.
+- Team Hub bloccato con core_mapping_rebuild_required.
+- site-ready club_index neutralizzato.
+
+04 cups
+- classificazione: 2 + 3
+- vecchia proiezione canonical; rebuild bloccato.
+
+05 football_managers
+- classificazione: 2 + 3
+- vecchia proiezione SoccerWiki; pipeline legacy bloccata.
+
+06 gw_manager_assignments
+- classificazione: 1
+- sostituita semanticamente con IMC Manager Assignment Global nei reader compatibili.
+- alias logico pubblico mantenuto solo per compatibilità client.
+
+07 imc_competition_master
+- classificazione: 4
+- non esiste equivalente completo nelle 11 IMC.
+- future competition meta-layer rebuild required.
+
+08 imc_competition_rules
+- classificazione: 4
+- non esiste equivalente completo nelle 11 IMC.
+- future competition rule rebuild required.
+
+09 imc_game_world_seasons
+- classificazione: 4
+- one-to-many season context non presente nelle 11 IMC.
+- future Game World season/context rebuild required.
+
+10 imc_game_worlds
+- classificazione: 4 con sostituzione parziale possibile
+- alcuni campi comuni sono coperti da IMC Game World Codex Global, ma non tutti i metadata legacy.
+- nessuna tabella ricreata.
+
+11 imc_managers
+- classificazione: 1
+- sostituita con IMC Manager Codex Global.
+
+12 import_errors
+- classificazione: 3
+- writer/source import legacy bloccato.
+
+13 ingestion_errors
+- classificazione: 3
+- vecchia ingestion CORE bloccata.
+
+14 ingestion_runs
+- classificazione: 3
+- vecchia ingestion CORE bloccata.
+
+15 international_cups
+- classificazione: 2 + 3
+- vecchia proiezione canonical; rebuild bloccato.
+
+16 leagues
+- classificazione: 2 + 3
+- vecchia proiezione canonical; rebuild bloccato.
+
+17 national_teams
+- classificazione: 1 parziale + 4
+- asset identity sostituita con IMC National Team Codex Global.
+- external/world-local mapping non presente: rebuild required.
+
+18 nations_game_world_id
+- classificazione: 4
+- world-local national team ID non presente nelle 11 IMC.
+
+19 player_codex_global
+- classificazione: 4
+- le IMC Player Codex coprono parte della semantica ma non l'intero vecchio contratto dati/applicativo.
+- vecchio writer non viene riattivato.
+
+20 player_codex_observations
+- classificazione: 4
+- observation/event history non presente come struttura equivalente nelle 11 IMC.
+
+21 player_codex_player_snapshots
+- classificazione: 4
+- historical snapshot layer non presente nelle 11 IMC.
+
+22 player_codex_rating_history
+- classificazione: 1 semantico + 2
+- concetto rating history presente in IMC Player Codex Global Rating History.
+- nessun merge automatico dei vecchi record legacy.
+
+23 player_images
+- classificazione: 4 / 2
+- vecchie image variants non sono modellate integralmente nelle 11 IMC; projection legacy non viene ricreata.
+
+24 players
+- classificazione: 1 parziale + 3
+- identity base coperta da IMC Player Codex Global; source-merge/provenance legacy non ricreata.
+
+25 sm_clubs_source
+- classificazione: 3 + 4
+- old source/provenance pipeline disabilitata; eventuale nuova ingestion dovrà essere progettata su modello IMC.
+
+26 sm_players_source
+- classificazione: 3 + 4
+
+27 source_snapshots
+- classificazione: 3 + 4
+- smm_create_snapshot bloccata esplicitamente.
+
+28 stadiums
+- classificazione: 2 + 3
+- vecchia proiezione SoccerWiki; pipeline legacy bloccata.
+
+29 sw_awards_source
+- classificazione: 3 + 4
+
+30 sw_clubs_source
+- classificazione: 3 + 4
+
+31 sw_cups_source
+- classificazione: 3 + 4
+
+32 sw_football_managers_source
+- classificazione: 3 + 4
+
+33 sw_international_cups_source
+- classificazione: 3 + 4
+
+34 sw_leagues_source
+- classificazione: 3 + 4
+
+35 sw_national_teams_source
+- classificazione: 3 + 4
+
+36 sw_player_images_source
+- classificazione: 3 + 4
+
+37 sw_players_source
+- classificazione: 3 + 4
+
+38 sw_stadiums_source
+- classificazione: 3 + 4
+
+Nota importante sul repository:
+- rimangono riferimenti testuali/storici alle vecchie strutture in migration SQL, backup, schema snapshot e copie ops;
+- tali riferimenti NON sono considerati runtime attivo;
+- i normali ingressi applicativi capaci di creare/scrivere le legacy sono stati bloccati o resi non invocabili;
+- il CASE non autorizzava la cancellazione della storia Git/schema/backup.
+
+======================================================================
+5. RIFERIMENTI SOSTITUITI CON IMC
+======================================================================
+
+A. imc_managers
+-> IMC Manager Codex Global
+Usi verificati:
+- Public Gateway logical CORE repository
+- manager identity reader compatibili
+
+B. gw_manager_assignments
+-> IMC Manager Assignment Global
+Compatibilità output:
+- club_id esposto come team_id dove richiesto dai client legacy
+- national_team_id esposto come nation_id dove richiesto
+
+C. clubs, limitatamente all'identità/asset
+-> IMC Club Codex Global
+Usato dal Team Hub image lookup.
+
+D. national_teams, limitatamente all'identità/asset
+-> IMC National Team Codex Global
+Usato dal Team Hub image lookup.
+
+E. player_codex_rating_history, a livello di concetto canonico
+-> IMC Player Codex Global Rating History
+Nessun backfill legacy automatico autorizzato/eseguito.
+
+======================================================================
+6. CONSUMER RIMOSSI / BLOCCATI
+======================================================================
+
+- Team Hub datasets clubs/nations world-local:
+  HTTP 503 core_mapping_rebuild_required.
+
+- api/imc-data/v1/site-ready.php club_index:
+  ritorna [] e non interroga più clubs_game_world_id.
+
+- __imc-sm-master/admin/ingestion/router.php:
+  fail immediato 503 legacy_core_removed prima del dispatch handlers.
+
+- ops/sm-master/admin/.htaccess:
+  accesso HTTP negato per api.php, ingestion.php, core.php, import-sm.php, import-sw.php, canonical.php.
+
+======================================================================
+7. WRITER / CREATOR LEGACY NEUTRALIZZATI
+======================================================================
+
+Nei tre rami ops storicamente deployabili:
+- ops/sm-master/admin/core.php
+- ops/__imc-sm-master/admin/core.php
+- ops/__imc-sm-master copy 1/admin/core.php
+
+sono stati bloccati:
+- smm_install_schema()
+- smm_create_snapshot()
+
+Nei canonical.php corrispondenti:
+- smm_rebuild_canonical() bloccato.
+
+In ops/sm-master/admin/ingestion.php:
+- smm_ingestion_tables() bloccato prima dei CREATE TABLE IF NOT EXISTS;
+- smm_handle_ingestion() bloccato prima di qualsiasi dispatch/write.
+
+Nel current runtime ingestion router:
+- fail esplicito prima degli handler.
+
+Risultato operativo:
+nessun normale flusso applicativo/import/ingestion verificato può ricreare automaticamente le 38 tabelle legacy nel CORE.
+
+======================================================================
+8. FUNZIONI NON SOSTITUIBILI · REBUILD REQUIRED
+======================================================================
+
+1. World-local Club Mapping
+- vecchio concetto: clubs_game_world_id
+- mancante nelle 11 IMC come local-world identifier completo.
+
+2. World-local National Team Mapping
+- vecchio concetto: nations_game_world_id
+- mancante nelle 11 IMC.
+
+3. Game World Season / Context
+- vecchio concetto: imc_game_world_seasons + metadata extra imc_game_worlds
+- non completamente modellato nelle 11 IMC.
+
+4. Competition Definition / Rule Engine
+- vecchi: imc_competition_master, imc_competition_rules
+- non ricostruibili senza nuova struttura IMC dedicata.
+
+5. Source / Provenance ingestion
+- source_snapshots, sm_*_source, sw_*_source, import_errors
+- pipeline intenzionalmente disabilitata; va ridisegnata, non ripristinata.
+
+6. Player Codex observation/snapshot legacy
+- player_codex_global, observations, player snapshots, image variants
+- richiede futuro contratto applicativo IMC, senza riesumare le vecchie tabelle.
+
+======================================================================
+9. FUTURI CASE RACCOMANDATI
+======================================================================
+
+I seguenti sono CASE RACCOMANDATI, non creati né eseguiti da IMC-DB-001-05:
+
+A. CORE WORLD-LOCAL CLUB MAPPING REBUILD
+Obiettivo: definire nel modello IMC corrente la relazione club globale <-> identificativo club locale per Game World e riattivare Team Hub/site-ready senza legacy.
+
+B. CORE NATIONAL TEAM MAPPING REBUILD
+Obiettivo: external/world-local national IDs e consumer Team Hub/API.
+
+C. CORE GAME WORLD SEASON & CONTEXT REBUILD
+Obiettivo: modellare stagioni e metadata operativi mancanti senza reintrodurre imc_game_worlds/imc_game_world_seasons.
+
+D. CORE COMPETITION META-LAYER REBUILD
+Obiettivo: sostituire competition master/rules con struttura IMC autorizzata.
+
+E. CORE INGESTION & PROVENANCE V2
+Obiettivo: nuova pipeline import/source/provenance che scriva solo strutture IMC autorizzate e non possa creare legacy.
+
+F. PLAYER CODEX APPLICATION REBUILD
+Obiettivo: migrare reader/writer Player Codex alle IMC Player Global/Data/History e definire eventuali observation/snapshot/image-variant requirements.
+
+======================================================================
+10. COMMIT SHA PRINCIPALI
+======================================================================
+
+- 532cc29bf62fc773d32f989790b23b09e0b62754
+  deploy gateway database dependency
+- 4abc30aae5a7f3e53c00c2b45fb4d84b8c879104
+  Gateway 1.9.2 redeploy with database dependency
+- 934a6fb593792e4a3757dbe2c6e7b6505def43af
+  block legacy CORE recreation paths
+- 546664f7e7bc03be4a81e3cf4b46872a72445547
+  HTTP block legacy SM Master surface
+- 5c75ff9ba605688ab21a57ac5bf5212b69c5765e
+  safe runtime remediation deploy workflow
+- 19409e5ffd423663d83ff3fc879fb1a78a95f1ad
+  live remediation verification workflow
+- e7b617955136325bed8d56502dba21965ac21b1a
+  live Gateway verification rerun
+- cf2e7f687f15d14c3bad143b77ed45e3776f7f10
+  exact CORE readers routed to IMC tables
+
+Repository HEAD al controllo finale: 6295bec41fceec7dc9a410016c2ea0dd9d1d909d.
+Le modifiche successive non correlate al CASE non alterano la remediation sopra certificata.
+
+======================================================================
+11. GITHUB ACTIONS
+======================================================================
+
+- IMC DB 001-05 Live Gateway Verification: SUCCESS
+  run 34569186390
+- IMC DB 001-05 Safe Runtime Remediation Deploy: SUCCESS
+  run 34569311972
+- IMC DB 001-05 Live Remediation Check: SUCCESS
+  run 34569348834
+
+Tutti gli step rilevanti risultano completed/success.
+
+======================================================================
+12. VERIFICHE LIVE
+======================================================================
+
+PASS:
+- world discovery Gateway route
+- manager CORE logical route -> IMC Manager Codex Global
+- assignment CORE logical route -> IMC Manager Assignment Global
+- Team Hub rebuild-required guard
+- legacy SM Master endpoints denied
+- canonical manager route ancora live
+- Aruba upload remediation verificato byte-per-byte
+
+Gateway live certificato: 1.9.2.
+
+======================================================================
+13. SHOW TABLES / INTEGRITÀ CORE FINALE
+======================================================================
+
+Verifica finale read-only eseguita dopo tutti i test e deploy.
+
+TOTAL TABLES: 11
+IMC TABLES: 11
+NON-IMC TABLES: 0
+FK: 2
+TRIGGER: 0
+VIEW: 0
+
+Tabelle presenti e row count:
+- IMC Club Codex Global: 7.072
+- IMC Competition Codex Global: 326
+- IMC Country Codex Global: 37
+- IMC Game World Club Mapping: 1.434
+- IMC Game World Codex Global: 10
+- IMC Manager Assignment Global: 272
+- IMC Manager Codex Global: 60
+- IMC National Team Codex Global: 80
+- IMC Player Codex Global: 176.687
+- IMC Player Codex Global Data: 2.297
+- IMC Player Codex Global Rating History: 11.848
+
+Le 11 tabelle sono presenti e leggibili; nessuna legacy è ricomparsa.
+
+======================================================================
+14. CERTIFICAZIONE FINALE
+======================================================================
+
+IMC-DB-001-05: COMPLETED
+DATABASE WRITES IN THIS CASE: NONE
+CORE STATE: PRESERVED
+APPLICATION REMEDIATION: COMPLETED FOR CURRENT SAFE/EXACT PATHS
+LEGACY AUTO-RECREATION: BLOCKED
+GATEWAY 1.9.2: LIVE VERIFIED
+FINAL CORE CERTIFICATION: 11 IMC / 0 NON-IMC
+
+IMC-DB-001-04 remains historically documented as:
+- DATABASE OBJECTIVE: COMPLETED
+- APPLICATION REMEDIATION: delegated to IMC-DB-001-05
+
+No retroactive rewriting of IMC-DB-001-04 was performed.
