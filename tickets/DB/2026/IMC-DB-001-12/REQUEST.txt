@@ -1,0 +1,117 @@
+CASE_ID: IMC-DB-001-12
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_ROOT_CAUSE_AUDIT_GW001_GW007
+
+IMC | DATABASE MANAGER
+RESULTS IMPORTER · ROOT CAUSE AUDIT · GW001 + GW007
+
+MODE
+READ ONLY / CODE REVIEW ONLY.
+NON modificare database, importer, Gateway, GitHub code o dati.
+
+CONTESTO
+IMC-DB-001-11 ha individuato anomalie certe nei dati di GW001 e un gap identitario ricorrente in GW007.
+La Direzione NON autorizza correzioni a valle finché non viene verificata la causa nell'importer.
+
+IMPORTER DA ANALIZZARE
+Il codice esatto dell'importer Results fornito dalla Direzione è allegato nello stesso CASE come:
+`INPUT_RESULTS_IMPORT.js`
+
+Devi considerare quel file come input autoritativo del CASE e leggerlo integralmente.
+
+PERIMETRO
+Analizzare esclusivamente la logica del Results importer rispetto alle anomalie emerse in:
+- GW001 · Sql1956795_3 · `GW001_IMC Results`
+- GW007 · Sql1956795_2 · `GW007_IMC Results`
+
+Puoi usare in READ i dati già auditati in IMC-DB-001-11 e, solo dove serve a validare la semantica, `IMC Competition Codex Global` e i mapping canonici CORE.
+
+OBIETTIVO PRINCIPALE
+Stabilire con precisione quali anomalie di IMC-DB-001-11 sono prodotte o possono essere prodotte dall'importer Results allegato, quali derivano dal DOM/source state, e quali non possono essere spiegate da questo importer.
+
+ANOMALIE DA SPIEGARE PRIORITARIAMENTE
+
+GW001
+1. 20 League del 2026-09-10 con `sm_country='CUS'`.
+2. 20 competition_key errate:
+   `GW001|CUS|DOMESTIC|league|<division>`
+   invece di:
+   `GW001|DOMESTIC|league|<division>`.
+3. HERTHA BSC senza home/away SM club ID su 20 Results non-NATIONS.
+4. eventuale contributo dell'importer al typo/stage `Quarti di Finalee`.
+5. eventuale contributo dell'importer al conflitto manager fixture 367418923, distinguendo parser DOM da dato realmente presente nel DOM.
+
+GW007
+6. REAL BETIS senza SM club ID in 8 Results.
+7. confermare perché country/division/competition_key risultano invece corretti sulle 34 combinazioni League.
+
+PUNTI DI CODICE DA AUDITARE OBBLIGATORIAMENTE
+1. `countrySelect()`
+2. `divisionSelect()`
+3. `pagerContext()`
+4. `context()`
+5. `macro()`
+6. `competitionKey()`
+7. `team()`
+8. `managerId()`
+9. `dateInfo()`
+10. `resultRows()`
+11. `plan()` / `switchTo()` / looping country+division
+12. `splitExisting()` / preload skip behavior, per verificare se dati errati già presenti possono restare permanentemente non corretti per effetto dello skip su sm_fixture_id/fingerprint.
+
+DOMANDE TECNICHE OBBLIGATORIE
+A. Perché GW001 può acquisire `CUS` come country pur essendo SINGLE?
+B. Da quale elemento DOM/attributo può arrivare `CUS` secondo il codice allegato?
+C. Il problema nasce da `pagerContext()`, `countrySelect()`, fallback in `context()`, oppure combinazione di questi?
+D. Quale regola deve distinguere SINGLE da MULTI/GOLD nell'importer, senza hardcoding fragile?
+E. Come deve essere costruita `competition_key` per:
+   - SINGLE League;
+   - SINGLE non-League DOMESTIC;
+   - INTERNATIONAL;
+   - NATIONS;
+   - MULTI/GOLD League country+division?
+F. L'attuale `.filter(x=>clean(x))` in `competitionKey()` può nascondere o rendere persistenti errori semantici?
+G. Perché HERTHA BSC / REAL BETIS possono risultare con ID null? Il regex di `team()` è sufficiente per tutti i link DOM osservati?
+H. Esistono varianti di onclick/markup Soccer Manager non coperte da `MENU_clubOverviewDraw(...)`?
+I. L'importer dovrebbe avere un fallback autorizzato verso `IMC Game World Club Mapping` quando il DOM non espone l'ID, oppure deve rifiutare/segregare la riga? Proporre, NON implementare.
+J. `managerId()` può spiegare il conflitto manager della fixture 367418923? Quali varianti DOM possono far leggere un manager diverso?
+K. `dateInfo()` copia testualmente stage/round dal DOM: quindi `Quarti di Finalee` è source typo, parser typo o altra causa?
+L. L'attuale idempotenza su `sm_fixture_id OR fingerprint` impedisce la correzione automatica di fixture già importate con dati strutturali sbagliati? Quantificare il rischio.
+M. Se correggiamo l'importer, come si devono gestire le righe storiche già presenti: update_one controllato, clear+reimport selettivo, o altra strategia? Solo proposta.
+
+OUTPUT RICHIESTO
+Produrre una matrice:
+
+Anomalia | Root cause | Riga/funzione importer coinvolta | Certainty | Fix importer proposto | Historical remediation necessaria sì/no
+
+Classificare root cause come:
+- IMPORTER BUG
+- SOURCE/DOM ISSUE
+- MAPPING GAP
+- EXISTING DATA / IDEMPOTENCY EFFECT
+- NOT EXPLAINED BY RESULTS IMPORTER
+
+FIX PROPOSAL
+Proporre una modifica minima dell'importer Results, ma NON applicarla.
+La proposta deve:
+- preservare GW001–GW009 attualmente supportati;
+- non rompere MULTI/GOLD;
+- distinguere correttamente SINGLE vs MULTI/GOLD;
+- non introdurre country spurie nei SINGLE;
+- costruire competition_key canoniche;
+- gestire club ID mancanti in modo esplicito e verificabile;
+- mantenere skip/idempotenza ma permettere una futura remediation sicura dei record già errati;
+- non cambiare il Gateway salvo necessità dimostrata.
+
+ACCEPTANCE
+Il CASE è completo solo se:
+1. ogni anomalia GW001/GW007 sopra è classificata;
+2. viene indicata la root cause con riferimento preciso al codice;
+3. viene proposta una patch minima concettuale;
+4. viene separato chiaramente ciò che va corretto nell'importer da ciò che va bonificato una tantum nel DB;
+5. nessuna modifica viene eseguita.
+
+OUTPUT AUTORITATIVO
+`tickets/DB/2026/IMC-DB-001-12/RESPONSE.txt`
