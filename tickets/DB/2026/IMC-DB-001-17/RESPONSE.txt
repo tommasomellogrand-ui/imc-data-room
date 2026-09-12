@@ -1,0 +1,207 @@
+CASE_ID: IMC-DB-001-17
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_GW007_LIVE_TIMEOUT_FIX
+STATUS: BLOCKED
+VERDICT: BLOCKED
+
+1. ESITO
+
+La root cause del timeout LIVE non è identificabile univocamente dagli
+input disponibili. Il log registra il messaggio finale comune a più
+condizioni, senza stato atteso/osservato, fixture IDs, motivi di rifiuto
+della snapshot o call site.
+
+Sono stati riprodotti difetti/limiti distinti del readiness 001-15 con
+test sintetici. Non costituiscono prova di quale sia avvenuto nel test
+live. Non viene presentata una di queste ipotesi come causa reale certa.
+
+Il REQUEST autorizza l'implementazione DOPO aver identificato la root
+cause e vieta allentamenti generici del fail-closed. Non è stata quindi
+prodotta una patch speculativa né un OUTPUT identico o segnaposto.
+
+2. INPUT
+
+Letti integralmente nel contesto di questa Work e recuperati dal
+repository autoritativo per il presente CASE:
+- IMC-DB-001-17/REQUEST.txt
+  blob 5ba8178e8b6a4506fcd416dd231bf003eaa6926e
+- IMC-DB-001-15/OUTPUT_RESULTS_IMPORT.js
+  blob 32c832de108a7a88bf516b1bb72b53039df07230
+- IMC-DB-001-15/RESPONSE.txt
+  blob aba52f2364e038f7f1ac4fa1494cb06971068786
+- IMC-DB-001-16/RESPONSE.txt
+  blob 2a8d58c3054f181c10635765b2c7c3569c4ff330
+- IMC-DB-001-13/RESPONSE.txt
+  blob ac75a39d50b8419bebf7caa121e5e86b6471be03
+
+Percorsi sotto tickets/DB/2026/ in
+tommasomellogrand-ui/imc-data-room.
+
+Il codice locale usato nei test è stato confrontato integralmente con
+l'OUTPUT 001-15 recuperato: identico. Non si è ripartiti da 001-12.
+La directory del CASE 001-17 conteneva soltanto REQUEST.txt.
+Non è presente un DOM League Shield del momento dell'errore tra gli
+input indicati. Le analisi 001-13/16 non forniscono quella snapshot.
+
+Riutilizzato come base del SOLO harness offline il DOM GW007 League
+SM_DOM_20260912_130458.json, già recuperato e identificato in 001-14/15.
+Le varianti League Shield sotto sono SINTETICHE, non nuove prove live.
+
+3. COSA DIMOSTRA IL LOG LIVE
+
+Secondo l'evidenza del REQUEST:
+ENG: 8+16+32+52=108 righe salvate;
+ITA: 8+16+32=56 righe salvate;
+totale 164. Questo conferma che il percorso non-League e il cambio
+ENG->ITA hanno già funzionato prima dell'arresto.
+
+L'ultimo log di salvataggio è ITA / 2026-08-24 / 32 righe.
+Nell'esecuzione sequenziale del codice, dopo quel salvataggio viene
+normalmente invocato goPrevious(). Il timeout può provenire dalla sua
+attesa oppure, se essa termina, dalla successiva processPage(), che
+stabilizza nuovamente. Lo stato FASE=ERRORE sostituisce la fase precedente
+e non discrimina i due call site. Non prova un nuovo cambio country.
+
+DATA/TURNO nella UI è letto nuovamente da dateInfo() al momento della
+gestione errore. Non contiene il target del click o una prova che la
+pagina fosse rimasta immutata durante tutti i poll.
+
+4. RISPOSTE ALLE SETTE DOMANDE
+
+1) Quale condizione fallisce?
+Il solo fatto certo è che waitForStableResultState non ha osservato due
+snapshot consecutive con:
+- stateSnapshot() non nulla;
+- tutti gli expected raw uguali;
+- IDs diversi da beforeIds, se richiesti;
+- signature uguale a quella del poll precedente.
+Il messaggio finale non indica quale requisito sia mancato.
+Inoltre try{state=stateSnapshot()}catch(_){} sopprime l'errore interno:
+action non valida e altre eccezioni diventano lo stesso timeout.
+Non è possibile isolare una condizione reale precisa dal solo log.
+
+2) È division NULL canonica contro token residuo?
+NON di per sé. canonicalContext forza division NULL per leagueshield.
+stateSnapshot confronta pager/select division SOLO se action=league.
+Un token divisionale residuo stabile è quindi accettato nelle coppe.
+Esiste però un difetto diverso e riprodotto: goPrevious memorizza
+expected.division_raw anche per non-League. Se il token cambia o sparisce
+tra due pagine valide, il confronto raw fallisce pur restando identico
+il contesto canonico. Nel log non sono registrati quei token: causalità
+live NON dimostrata.
+
+3) È beforeIds / stesso fixture set?
+È una causa tecnicamente possibile: switchTo e goPrevious impongono
+sempre il cambiamento degli IDs. La condizione impedisce l'accettazione
+anche di un diverso contesto canonico con IDs uguali, riprodotto offline.
+Nel caso live mancano IDs prima/dopo. La data rimasta 24/08 potrebbe
+anche indicare mancata navigazione, da NON accettare come progresso.
+Non è autorizzato eliminare semplicemente il controllo degli IDs.
+
+4) È discordanza country?
+Possibile: MULTI DOMESTIC + selected_country presente e diverso da
+country_raw => stateSnapshot null. Riprodotto offline.
+La UI mostra sm_country canonica, normalmente dal pager; non mostra
+separatamente il select. Il valore ITA in UI non prova concordanza.
+
+5) È riuso expected action/country/division?
+goPrevious richiede tutti e tre i raw pre-click, anche division fuori
+League. switchTo country richiede action pre-click e country target;
+switchTo division richiede action/country pre-click e division target.
+Un cambiamento raw può impedire readiness. Lo scenario division
+non-League è riprodotto; non è provato che sia quello del live.
+Non si può accettare un cambio action arbitrario come workaround.
+
+6) È specifico non-League?
+Il vincolo division_raw superfluo in goPrevious riguarda specialmente
+non-League (e macro prive di division). Le altre cause sono generali:
+IDs invariati, root nascosta, pagina vuota, heading non parseabile,
+action pager assente, country discordante, signature mai stabile.
+La signature include innerHTML dei parent delle righe: anche attributi
+non business mutevoli possono impedirne la stabilizzazione.
+Questo ulteriore limite è riprodotto offline, non attribuito al live.
+
+7) Come correggere senza sleep ciechi / stale DOM?
+Prima discriminare la condizione reale. Direzione dovrebbe rendere
+disponibile nel CASE un trace diagnostico già raccolto, oppure autorizzare
+una versione diagnostica mirata per il prossimo tentativo.
+Il trace minimo deve contenere:
+call site, expected raw/canonical, beforeIds, raw pager/select osservati,
+fixture IDs osservati, heading/data, visibilità Results/prev button,
+motivo snapshot null/exception e componenti della signature variati.
+Non servono credenziali, cookie, token o un nuovo invio dell'importer.
+
+Interventi candidati, NON applicati:
+- confronto expected per sole dimensioni semantiche della competizione;
+- signature dei campi business invece di innerHTML decorativo;
+- progresso certificato del target per distinguere pagina valida da
+  no-op/stale/empty, senza eliminare genericamente beforeIds.
+La scelta deve seguire il failure effettivo; scoping e fail-closed restano.
+
+5. TEST DIAGNOSTICI ESEGUITI
+
+Node.js/jsdom, DOM League GW007 originale come base, mutazioni sintetiche,
+script Soccer Manager non eseguiti e nessuna fetch reale.
+Visibilità/layout emulati come nel test harness 001-15.
+Nessun test della rete o navigazione Soccer Manager live.
+
+Sei controlli PASS sul codice 001-15 non modificato:
+1. League Shield / ITA / raw division 1 => snapshot valida,
+   sm_division NULL, key GW007|ITA|DOMESTIC|leagueshield.
+2. Raw division 1->null lascia snapshot e key canonica valide.
+3. Con expected.division_raw=1, il caso precedente va in timeout.
+4. Country canonica ITA->ENG con fixture set invariato va in timeout
+   quando è passato beforeIds.
+5. Pager ENG/select ITA => stateSnapshot null.
+6. Mutazione data-animation-frame su una riga, a parità di IDs e
+   contesto canonico, cambia signature.
+
+I timeout dei test sono abbreviati a 600 ms mediante il parametro
+esistente della funzione; il codice importer non è alterato.
+
+Questi risultati provano la non-univocità della diagnosi ricavabile dal
+messaggio comune. Non dimostrano che il live abbia avuto quelle mutazioni.
+Non si dichiara superata l'acceptance di una patch inesistente.
+GW007 League, GW001, workingCopy e idempotenza non sono stati modificati;
+la validazione 001-15 resta quella documentata, non una nuova prova live.
+
+6. PERCHÉ I TEST 001-15 NON BASTAVANO
+
+I DOM reali erano League. Le coppe erano coperte dalla matrice grammar,
+non da snapshot reali successive di League Shield.
+Le simulazioni di navigazione cambiavano gli IDs e mantenevano i raw
+token attesi. Non simulavano token divisionale non-League che scompare,
+country discordante persistente, first-round empty/no-op né attributi
+decorativi delle righe che cambiano a ogni poll.
+L'harness non riproduce l'intero comportamento AJAX Soccer Manager.
+Il numero di controlli offline non equivale a copertura di questi stati.
+
+7. RECORD ESISTENTI E RILANCIO
+
+CONSERVARE i 164 record già importati. Nessun clear, DELETE o bonifica.
+Non rilanciare da DB vuoto per questo errore: non risolverebbe readiness.
+Una futura versione corretta dovrà ripartire con il preload sugli stessi
+record: IDENTICAL -> skip; CHANGED_EXISTING -> segnalazione senza update;
+DUPLICATE_CONTENT -> nessuna scrittura; NEW -> insert.
+Rilanciare 001-15 senza diagnosi/fix potrebbe ripetere lo stesso arresto.
+Non si promette completamento del mondo con la versione attuale.
+
+8. CONSEGNA E BLOCCO
+
+Creato: tickets/DB/2026/IMC-DB-001-17/RESPONSE.txt.
+OUTPUT_RESULTS_IMPORT.js non prodotto, perché manca l'identificazione
+della root cause richiesta prima dell'implementazione.
+Nessuna modifica a 001-15 o ai suoi deliverable.
+
+Il blocco è la mancanza di osservabilità dello stato live fallito,
+non RC-09, non l'accesso al codice e non una richiesta di reinviare gli
+input già raccolti. È sufficiente un riferimento nel CASE al trace/DOM
+del fallimento se già disponibile, oppure un incarico diagnostico mirato.
+
+DB READ/WRITE: NONE
+GATEWAY CHANGE: NONE
+SCHEMA/MINISITI/ALTRI IMPORTER: NONE
+PRODUCTION DEPLOY: NONE
+VERDICT: BLOCKED
