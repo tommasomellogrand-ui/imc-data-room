@@ -1,0 +1,347 @@
+CASE_ID: IMC-DB-001-09
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: CREATE_GAME_WORLD_NATIONAL_TEAM_MAPPING
+STATUS: COMPLETED
+TARGET: CORE Sql1956795_1
+
+IMC | DATABASE MANAGER
+CREATE + POPULATE `IMC Game World National Team Mapping`
+
+======================================================================
+0. EXECUTIVE RESULT
+======================================================================
+
+CASE COMPLETATO.
+
+È stata creata nel CORE MySQL Aruba una sola nuova tabella canonica:
+`IMC Game World National Team Mapping`
+
+e popolata esclusivamente con i mapping già certificati in IMC Nexus/Supabase per GW001–GW009.
+
+Risultato finale:
+- 720 righe totali;
+- GW001–GW009: 80 righe ciascuno;
+- GW010: 0 righe;
+- 0 null sui 4 campi principali;
+- 0 duplicati sulla PK (`Game World`,`SM National Team ID`);
+- 0 duplicati sulla UNIQUE (`Game World`,`National Team ID`);
+- 0 orphan verso National Team Codex;
+- 0 orphan verso Game World Codex;
+- 0 mismatch del nome denormalizzato rispetto al Global Codex;
+- parity source primaria: 720/720 EXACT;
+- parity nove sorgenti per-GW: 720/720 EXACT;
+- CORE finale: 12 tabelle, tutte 12 IMC, 0 non-IMC.
+
+Nessun dato GW010 è stato inventato.
+Nessuna tabella legacy è stata ricreata.
+Nessuna delle 11 tabelle IMC preesistenti è stata modificata distruttivamente.
+
+======================================================================
+1. PRE-CHECK LIVE
+======================================================================
+
+Stato CORE prima del CASE:
+- total tables: 11
+- IMC tables: 11
+- non-IMC tables: 0
+- total columns: 68
+
+La tabella target non esisteva.
+
+Parent verificati live:
+
+`IMC Game World Codex Global`.`IMC GW`
+- VARCHAR(255)
+- NOT NULL
+- PRIMARY KEY
+- charset utf8mb4
+- collation utf8mb4_0900_ai_ci
+
+`IMC National Team Codex Global`.`id`
+- BIGINT
+- NOT NULL
+- PRIMARY KEY
+
+Parent tables:
+- ENGINE InnoDB
+- COLLATION utf8mb4_0900_ai_ci
+
+======================================================================
+2. DDL MIGRATION
+======================================================================
+
+MIGRATION ID:
+`imc_db_001_09_create_gw_national_team_mapping_20260912`
+
+MODE:
+- allow_destructive = false
+- data_migration = false
+
+PLAN SHA256:
+`b120d307610913526bc48b5bf9678e30f8744b66946f3b02154795369a5bf7f2`
+
+PLAN:
+- 1 statement
+- solo CREATE TABLE target
+- nessuna modifica ad altre tabelle
+
+EXECUTION:
+- status: success
+- statement_count: 1
+- duration_ms: 73
+- before: 11 tables / 68 columns
+- after: 12 tables / 72 columns
+
+======================================================================
+3. SQL SCHEMA FINALE
+======================================================================
+
+CREATE TABLE `IMC Game World National Team Mapping` (
+  `National Team ID` bigint NOT NULL,
+  `National Team Name` text NOT NULL,
+  `Game World` varchar(255) NOT NULL,
+  `SM National Team ID` bigint NOT NULL,
+  PRIMARY KEY (`Game World`,`SM National Team ID`),
+  UNIQUE KEY `uq_imc_gw_nt_global` (`Game World`,`National Team ID`),
+  KEY `idx_imc_gw_nt_global_id` (`National Team ID`),
+  CONSTRAINT `fk_imc_gw_nt_global`
+    FOREIGN KEY (`National Team ID`)
+    REFERENCES `IMC National Team Codex Global` (`id`),
+  CONSTRAINT `fk_imc_gw_nt_world`
+    FOREIGN KEY (`Game World`)
+    REFERENCES `IMC Game World Codex Global` (`IMC GW`)
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_0900_ai_ci;
+
+======================================================================
+4. CONSTRAINT / INDEX VERIFICATION
+======================================================================
+
+Constraint presenti:
+- PRIMARY KEY (`Game World`,`SM National Team ID`)
+- UNIQUE `uq_imc_gw_nt_global` (`Game World`,`National Team ID`)
+- FK `fk_imc_gw_nt_global`
+- FK `fk_imc_gw_nt_world`
+
+Index presenti:
+- PRIMARY (`Game World`,`SM National Team ID`)
+- UNIQUE `uq_imc_gw_nt_global` (`Game World`,`National Team ID`)
+- INDEX `idx_imc_gw_nt_global_id` (`National Team ID`)
+
+Esito: PASS.
+
+======================================================================
+5. DATA MIGRATION / POPULATION
+======================================================================
+
+SOURCE primaria:
+Supabase / IMC Nexus
+project ref: toanuzojdkfjgucztpze
+`public.national_team_codex_global`
+
+Mapping usato:
+- id -> `National Team ID`
+- n -> `National Team Name`
+- worlds.GW001 ... worlds.GW009 -> `Game World`
+- worlds[GW].sm_nation_id -> `SM National Team ID`
+
+Nessun matching per nome è stato usato nel popolamento.
+Nessun valore GW010 è stato inserito.
+
+MIGRATION ID:
+`imc_db_001_09_populate_gw_national_team_mapping_20260912`
+
+MODE:
+- allow_destructive = false
+- data_migration = true
+
+PLAN SHA256:
+`4c8efce7eb833775bea0884852532a4c19106b0e7526f39ec520a641fdd95d3a`
+
+PIANO:
+- 9 INSERT multi-row
+- uno per GW001–GW009
+- 80 valori per statement
+
+EXECUTION:
+- status: success
+- statement_count: 9
+- duration_ms: 88
+- affected_rows statement 1..9: 80 ciascuno
+- affected_rows totali: 720
+- schema invariato durante il backfill: 12 tables / 72 columns
+
+======================================================================
+6. CONTEGGI PER GAME WORLD
+======================================================================
+
+GW001 | 80 | global IDs 80 | SM IDs 80 | null rows 0
+GW002 | 80 | global IDs 80 | SM IDs 80 | null rows 0
+GW003 | 80 | global IDs 80 | SM IDs 80 | null rows 0
+GW004 | 80 | global IDs 80 | SM IDs 80 | null rows 0
+GW005 | 80 | global IDs 80 | SM IDs 80 | null rows 0
+GW006 | 80 | global IDs 80 | SM IDs 80 | null rows 0
+GW007 | 80 | global IDs 80 | SM IDs 80 | null rows 0
+GW008 | 80 | global IDs 80 | SM IDs 80 | null rows 0
+GW009 | 80 | global IDs 80 | SM IDs 80 | null rows 0
+
+TOTAL: 720
+
+GW010: 0
+
+======================================================================
+7. PK / UNIQUE / NULL / FK INTEGRITY
+======================================================================
+
+TOTAL ROWS: 720
+
+NULL:
+- null su uno dei quattro campi principali: 0
+
+DUPLICATI:
+- (`Game World`,`SM National Team ID`): 0
+- (`Game World`,`National Team ID`): 0
+
+PARENT INTEGRITY:
+- National Team parent missing: 0
+- Game World parent missing: 0
+
+DENORMALIZED NAME CHECK:
+- `National Team Name` diverso da `IMC National Team Codex Global`.`name`: 0
+
+Esito: PASS.
+
+======================================================================
+8. PARITY SOURCE PRIMARIA
+======================================================================
+
+Target MySQL è stato letto per Game World con nove query indipendenti da 80 righe, evitando il limite di 500 righe del Database Manager.
+
+TARGET MYSQL rows: 720
+PRIMARY SOURCE rows: 720
+
+Confronto set completo sui quattro campi:
+- target EXCEPT primary source: 0
+- primary source EXCEPT target: 0
+
+PARITY SOURCE PRIMARIA:
+720/720 EXACT.
+
+======================================================================
+9. PARITY FONTI INDIPENDENTI PER-GW
+======================================================================
+
+Fonti di verifica:
+- public.gw001_gw_national_teams
+- public.gw002_gw_national_teams
+- public.gw003_gw_national_teams
+- public.gw004_gw_national_teams
+- public.gw005_gw_national_teams
+- public.gw006_gw_national_teams
+- public.gw007_gw_national_teams
+- public.gw008_gw_national_teams
+- public.gw009_gw_national_teams
+
+PER-GW SOURCE rows: 720
+TARGET MYSQL rows: 720
+
+Confronto indipendente su:
+- National Team Name
+- Game World
+- SM National Team ID
+
+Risultato:
+- target EXCEPT per-GW sources: 0
+- per-GW sources EXCEPT target: 0
+
+PARITY FONTI PER-GW:
+720/720 EXACT.
+
+======================================================================
+10. GW010 PROOF
+======================================================================
+
+`IMC Game World Codex Global` contiene GW010, quindi lo schema è già compatibile con il nuovo Game World.
+
+La source tecnica non contiene ancora mapping National Team reali per GW010.
+
+Verifica target:
+- rows WHERE Game World='GW010': 0
+
+Esito:
+PASS. Nessun ID GW010 inventato.
+
+======================================================================
+11. SHOW TABLES FINALE
+======================================================================
+
+TOTAL TABLES: 12
+IMC TABLES: 12
+NON-IMC TABLES: 0
+
+Tabelle:
+1. IMC Club Codex Global
+2. IMC Competition Codex Global
+3. IMC Country Codex Global
+4. IMC Game World Club Mapping
+5. IMC Game World Codex Global
+6. IMC Game World National Team Mapping
+7. IMC Manager Assignment Global
+8. IMC Manager Codex Global
+9. IMC National Team Codex Global
+10. IMC Player Codex Global
+11. IMC Player Codex Global Data
+12. IMC Player Codex Global Rating History
+
+Nessuna tabella non-IMC è stata creata o ricreata.
+
+======================================================================
+12. ACCEPTANCE MATRIX
+======================================================================
+
+- Table exists: PASS
+- row count = 720: PASS
+- GW001–GW009 = 80 each: PASS
+- GW010 = 0: PASS
+- nulls = 0: PASS
+- duplicate PK pair = 0: PASS
+- duplicate global pair = 0: PASS
+- National Team parent = 720/720: PASS
+- Game World parent = 720/720: PASS
+- primary source parity = 720/720: PASS
+- per-GW source parity = 720/720: PASS
+- CORE only IMC tables: PASS
+
+======================================================================
+13. FINAL CERTIFICATION
+======================================================================
+
+IMC-DB-001-09: COMPLETED
+
+DDL MIGRATION:
+imc_db_001_09_create_gw_national_team_mapping_20260912 · SUCCESS
+
+DATA MIGRATION:
+imc_db_001_09_populate_gw_national_team_mapping_20260912 · SUCCESS
+
+TARGET TABLE:
+IMC Game World National Team Mapping
+
+ROWS:
+720
+
+GW COVERAGE:
+GW001–GW009 COMPLETE
+GW010 EMPTY BY DESIGN
+
+PARITY:
+PRIMARY SOURCE 720/720 EXACT
+PER-GW SOURCES 720/720 EXACT
+
+FINAL CORE:
+12 IMC / 0 NON-IMC
+
+CERTIFICATION: COMPLETED
