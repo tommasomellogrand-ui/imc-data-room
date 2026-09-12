@@ -1,0 +1,129 @@
+CASE_ID: IMC-DB-001-13
+AREA: DB
+TOPIC: RESULTS IMPORTER — DOM FORENSIC ANALYSIS GW001 + GW007
+MODE: ANALYSIS ONLY
+PARENT: IMC-DB-001-12
+
+OBIETTIVO
+Analizzare i due DOM reali Soccer Manager acquisiti direttamente nella pagina RESULTS dei campionati di GW001 e GW007, confrontarli punto per punto con la root-cause analysis già prodotta in IMC-DB-001-12 e arrivare a una soluzione tecnica concreta e verificabile per il Results Importer.
+
+NON MODIFICARE ancora importer, database, gateway o dati storici. Questo ticket serve a chiudere la diagnosi e definire il fix corretto prima di qualsiasi WRITE.
+
+INPUT OBBLIGATORI
+1. Leggere integralmente:
+   tickets/DB/2026/IMC-DB-001-12/RESPONSE.txt
+2. Leggere il codice analizzato nel case precedente:
+   tickets/DB/2026/IMC-DB-001-12/INPUT_RESULTS_IMPORT.js
+3. Recuperare e analizzare integralmente dalla File Library i due DOM reali caricati il 12/09/2026:
+   - SM_DOM_20260912_130340(1).json
+   - SM_DOM_20260912_130458(1).json
+
+IDENTIFICAZIONE DEI DOM
+Non assumere l'associazione dal nome file: identificarli dal contenuto.
+- Il DOM GW001 è quello con HERTHA BSC, struttura single-league, divisioni 1–4, country selector nascosto/vuoto e riferimenti DOM con data-country="CUS".
+- Il DOM GW007 è quello con REAL BETIS, struttura multi-country, country selector visibile (es. Spagna/ESP) e divisioni per paese.
+
+ANALISI RICHIESTA
+A. STRUTTURA SINGLE vs MULTI
+Confrontare esattamente come il DOM espone country e division in GW001 e GW007:
+- #country-selector
+- #div-selector / select[name=division]
+- pager Results/Fixtures
+- attributi action, data-country, data-division
+- onchange dei selector
+- eventuali copie in #workingCopy
+
+Determinare una regola robusta per distinguere SINGLE da MULTI usando il DOM reale, senza affidarsi ciecamente a data-country="CUS".
+
+B. CUS / COMPETITION KEY
+Verificare sul DOM GW001 perché l'importer legge CUS nonostante il country selector non rappresenti una vera country.
+Confermare quale campo DOM genera CUS e definire la regola canonica per cui:
+- GW SINGLE: sm_country deve essere NULL;
+- GW MULTI: sm_country deve essere il country reale;
+- competition_key deve seguire la grammatica canonica e non includere CUS come country.
+
+C. CLUB ID — HERTHA BSC / REAL BETIS
+Analizzare nei due DOM il caso del club corrente/selezionato:
+- HERTHA BSC in GW001;
+- REAL BETIS in GW007.
+
+Verificare perché, nelle righe Results e nelle altre sezioni DOM, questi club possono comparire senza onclick="MENU_clubOverviewDraw(...)" mentre gli altri club espongono l'ID.
+Cercare nel DOM completo tutte le possibili fonti alternative dell'ID del club corrente, incluse ma non limitate a:
+- top nav / header club;
+- logo URL / SoccerWiki asset;
+- elementi di classifica;
+- player tables;
+- fixture/results siblings;
+- script/global JS state;
+- hidden fields;
+- altre occorrenze dello stesso club.
+
+Stabilire se l'ID SM world-local del club corrente è direttamente recuperabile dal DOM oppure se serve fallback su mapping IMC canonico. Non inventare equivalenze tra SoccerWiki logo ID e SM club ID se non dimostrate.
+
+D. MANAGER ID
+Confrontare come homeManagerImage / awayManagerImage e gli eventuali elementi sibling espongono PROFILE_viewFriendsProfileNew(...).
+Verificare se il parser attuale può leggere stato incompleto/stale o se il DOM reale mostra una fonte più affidabile.
+Collegare l'analisi al conflitto fixture 367418923 segnalato in IMC-DB-001-12, senza modificare nulla.
+
+E. DATA / STAGE / ROUND
+Verificare la struttura reale di .scheduleScreen-Heading nei due DOM e se dateInfo() può confondere:
+- giornate di League;
+- Playoff;
+- fasi/round.
+Usare anche l'evidenza GW001 nel DOM dove nella sezione fixtures compare "Playoff Semifinale" per capire se il parser attuale può contaminare il contesto quando Results e Fixtures coesistono nella stessa pagina.
+
+F. VISIBILITY / WORKING COPY
+Il DOM contiene anche #workingCopy e copie nascoste di varie sezioni. Verificare se visible() e i selector attuali escludono sempre correttamente i duplicati nascosti oppure se esiste rischio di leggere contesto da una copia stale.
+
+G. NAVIGATION
+Verificare sul DOM reale se plan("country"), plan("division"), switchTo(), pagerContext(), prevButton() e goPrevious() sono coerenti per entrambi i mondi:
+- GW001 deve ciclare solo divisioni;
+- GW007 deve ciclare country + division;
+- nessuna struttura deve generare country fittizie o saltare sezioni.
+
+H. IDEMPOTENZA
+Riprendere la conclusione di IMC-DB-001-12 sullo skip per sm_fixture_id/fingerprint e definire come il nuovo importer dovrà distinguere almeno:
+- NEW
+- SAME
+- CHANGED_EXISTING
+senza ancora implementare né modificare record storici.
+
+OUTPUT OBBLIGATORIO IN RESPONSE.txt
+1. Tabella comparativa GW001 vs GW007 dei segnali DOM realmente osservati.
+2. Conferma/smentita, punto per punto, delle ipotesi di IMC-DB-001-12.
+3. Root cause definitiva per ciascuna anomalia:
+   - CUS / sm_country;
+   - competition_key;
+   - HERTHA BSC ID;
+   - REAL BETIS ID;
+   - manager ID / fixture 367418923;
+   - stage/round;
+   - rischio workingCopy/stale DOM;
+   - skip/idempotenza.
+4. Specifica tecnica del fix minimo consigliato per INPUT_RESULTS_IMPORT.js, funzione per funzione.
+5. Per ogni funzione da toccare indicare:
+   - comportamento attuale;
+   - comportamento corretto;
+   - pseudo-code o patch proposta;
+   - impatto su GW001 SINGLE;
+   - impatto su GW007 MULTI;
+   - regressioni da evitare sugli altri GW.
+6. Piano di test prima del WRITE con casi concreti estratti dai due DOM.
+7. Verdetto finale esplicito:
+   - READY_FOR_IMPLEMENTATION oppure
+   - NEED_MORE_EVIDENCE
+   con motivazione.
+
+VINCOLI
+- READ/ANALYSIS ONLY.
+- Nessuna modifica al DB.
+- Nessuna modifica al codice importer.
+- Nessuna bonifica dei dati storici.
+- Nessuna modifica al Gateway.
+- Non dedurre struttura SINGLE/MULTI da memoria se il DOM e/o il registry canonico possono dimostrarla.
+- Non trattare CUS come country reale.
+- Non assumere che l'ID del logo SoccerWiki coincida con sm_club_id.
+- Qualsiasi soluzione deve funzionare sia su GW001 sia su GW007 e deve essere generalizzabile agli altri GW.
+
+NOTA OPERATIVA
+L'obiettivo non è solo confermare che l'importer è sbagliato. Devi usare questi due DOM reali per capire esattamente COME Soccer Manager rappresenta i due tipi di mondo e proporre il parser corretto, con la minima modifica necessaria e senza introdurre paletti che rompano gli import già funzionanti.
