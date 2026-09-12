@@ -1,0 +1,215 @@
+CASE_ID: IMC-DB-001-19
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_NATIONAL_TEAM_ID_RESOLUTION
+STATUS: COMPLETED
+VERDICT: READY_FOR_MANUAL_RETEST
+
+1. BASE E INPUT LETTI
+
+Base esclusiva:
+tickets/DB/2026/IMC-DB-001-18/OUTPUT_RESULTS_IMPORT.js
+blob f2803fa4db297c40f8d37a9dc4d892d7047af41e
+Letta integralmente nella Work e recuperata dal repository per questo
+CASE; confronto integrale con la copia di lavoro: identica.
+Letta anche IMC-DB-001-18/RESPONSE.txt:
+blob 82783ee37d943984ed2f872f7e94b56fc6f59bc8.
+Letto integralmente IMC-DB-001-19/REQUEST.txt:
+blob 894d6f2c33227d8afd2a682bd0c0665076c40aaa.
+Repository: tommasomellogrand-ui/imc-data-room.
+I file 001-15 già letti in questa Work non sono stati usati come base.
+
+DOM recuperato dalla File Library:
+SM_DOM_20260912_152317.json
+library_file_id: libfile_76c77ed6872881918c4bfa7e3c8d06e1
+byte: 2756357
+SHA256: df67220a63258277a9574748836b2f51a65491c4306dee274cfac8c19ba321bc
+
+Analizzato come JSON completo, includendo fullHTML e struttura completa
+del documento; parsing HTML offline: 11429 elementi.
+Analizzate tutte le 32 righe Results e le 64 side squadra/manager.
+Identità del contesto confermata:
+currentScreenA / leagueResultsContainer;
+pager action=interqualifier, data-country=ENG, division assente;
+heading visibile ven 11 settembre 2026.
+Il raw ENG non viene persistito come country NATIONS.
+
+2. ROOT CAUSE ESATTA
+
+team() in 001-18 cercava soltanto MENU_clubOverviewDraw sul nodo squadra.
+Nel DOM NATIONS tutte le 64 side delle 32 fixture espongono invece
+MENU_association_draw sul proprio homeTeam/awayTeam.
+
+La regex club non corrisponde: id=null, controlled=false, status
+UNRESOLVED_TEAM_ID. resultRows() emette poi il warning.
+L'identificativo esiste nel DOM: non è un dato mancante né una failure
+di mapping successiva.
+
+Non è presente nell'importer una lookup/mappatura successiva che rifiuti
+gli ID 646xxx. resultRows trasferisce team.id nei campi già esistenti
+home_sm_club_id/away_sm_club_id e calcola il fingerprint.
+Non è necessaria alcuna nuova tabella o modifica Gateway per correggere
+questo punto del parser. Non è stata verificata con WRITE una eventuale
+validazione server-side: il CASE non la autorizza.
+
+3. MARKUP E NAMESPACE
+
+CLUB:
+homeTeam/awayTeam onclick MENU_clubOverviewDraw('<id>').
+Il percorso DOMESTIC/INTERNATIONAL esistente resta invariato.
+
+NAZIONALI:
+homeTeam/awayTeam onclick MENU_association_draw('<id>').
+Sono identificativi dell'entità association/nazionale che Soccer
+Manager apre da quel nodo. Il DOM prova questa semantica; non viene
+affermato che siano ID globali stabili attraverso tutti i Game World.
+
+PARTITA:
+matchResult onclick MATCHREPORT_downloadScoreCentre('<fixture_id>',1).
+Il parser fixture resta separato e invariato.
+
+Esempi verificati nella snapshot:
+Jamaica 646525; France 646512; Russia 646548;
+Czech Republic 646504; Trinidad & Tobago 646556; Canada 646495;
+Sweden 646555; Hungary 646518; Morocco 646537;
+Ecuador 646506; Costa Rica 646501.
+
+Iraq-Russia:
+fixture=380661095; home Iraq=646521; away Russia=646548; score=1-3.
+Nessuno dei team ID viene estratto dal matchResult.
+Nessun numero 646xxx è codificato come mapping nell'importer.
+Nessun logo SoccerWiki, matchReport ID o fallback per nome è usato.
+
+I campi persistiti mantengono il nome storico *_sm_club_id:
+nelle righe NATIONS contengono l'association ID del nodo squadra,
+senza modifica dello schema.
+
+4. PATCH
+
+Nuovo file completo:
+tickets/DB/2026/IMC-DB-001-19/OUTPUT_RESULTS_IMPORT.js
+SHA256: 2880920c60308298e86a479eab06392623e5bb406269e1e3723907a389ea9625
+
+Funzioni modificate: team(), managerId(), resultRows().
+Aggiornata soltanto l'etichetta di versione nell'header.
+
+team(row,side,group):
+- group NATIONS: parsing allowlist esatto di MENU_association_draw dal
+  solo nodo homeTeam/awayTeam della stessa row/side;
+- numero intero positivo sicuro; supporto argomento numerico con apici
+  singoli/doppi o senza apici, senza interpretare altro JavaScript;
+- successo RESOLVED_ASSOCIATION_DOM;
+- handler assente/malformato: null + UNRESOLVED_NATIONAL_TEAM_ID;
+- controlled=false nel ramo nazionale: nessun resolver club/CUSTOMERID.
+- altri gruppi: percorso club originale conservato.
+
+managerId(row,side,group):
+- parsing PROFILE_viewFriendsProfileNew prioritario e invariato,
+  anche su anchor hidden;
+- NATIONS senza ID diretto -> null legittimo;
+- nessun CUSTOMERID generico o inferenza per nome nazionale;
+- comportamento controlled club nei gruppi club conservato.
+
+resultRows():
+passa esplicitamente competition_group a team/managerId; mantiene
+associazione home/away, schema e calcolo fingerprint esistenti.
+
+5. TEST E RISULTATI
+
+Metodo: Node/jsdom sui fullHTML reali, senza eseguire script Soccer
+Manager e senza rete DB/Gateway. Visibilità/layout emulati come negli
+harness dei CASE precedenti. Non è un retest Safari/iOS live.
+
+Suite NATIONS: 52 controlli PASS.
+- Tutte le 32 fixture parseate e tutte le 64 side con ID risolto.
+- Nessun diagnostic unresolved sulla snapshot.
+- Verificati individualmente gli 11 esempi nominati sopra.
+- Confrontate entrambe le side di tutte le 32 fixture con l'handler
+  diretto e il nome del medesimo nodo DOM.
+- Fixture Iraq-Russia invariata a 380661095; away ID 646548.
+- key GW007|NATIONS|interqualifier, country/division NULL.
+- Tutti i 64 manager anchor Results reali sono senza onclick: null.
+- Manager presente: test SINTETICO con PROFILE_viewFriendsProfileNew
+  inserito in un manager anchor della stessa row, ID estratto corretto.
+  Non viene dichiarato presente un manager link nella snapshot che non
+  lo contiene.
+- Manager assente resta null anche con CUSTOMERID disponibile.
+- Handler fixture sul team node non viene accettato come association ID.
+- Handler club sul team node NATIONS non viene accettato.
+- worldcup testato SINTETICAMENTE cambiando action: stesso percorso
+  NATIONS e key GW007|NATIONS|worldcup.
+- workingCopy spostato prima del live screen: nessuna contaminazione.
+
+Suite regressione club/context/idempotenza: 207 controlli PASS.
+GW001 SINGLE, GW007 League/coppe grammar, registry nove GW, parser club,
+controlled club e manager, tutte le classi NEW/IDENTICAL/
+CHANGED_EXISTING/DUPLICATE_CONTENT, conflitti batch e workingCopy.
+
+Suite END_OF_SECTION 001-18: 11 gruppi di controlli PASS.
+Precedenti assente; no-op stesso set; target senza score/futuro; target
+vuoto; nuovo set giocato; data incoerente; sequenza ENG->ITA->FRA con
+chiusure naturali; division League; zero country loop SINGLE;
+idempotenza e workingCopy.
+
+Totale suite: 270 controlli/gruppi offline PASS.
+node --check OUTPUT_RESULTS_IMPORT.js: PASS.
+
+Confronto diretto delle funzioni tra 001-18 e 001-19:
+goPrevious, previousSnapshot, playedResult, processSection, run,
+switchTo, waitForStableResultState, competitionKey, hash, splitExisting,
+classifyExisting, gateway, indexExisting, insertRows: identiche.
+Il fix END_OF_SECTION è preservato integralmente.
+
+6. FINGERPRINT E DATI GIÀ PRESENTI
+
+Algoritmo hash, lista campi e classificazione idempotenza NON modificati.
+Il valore fingerprint può legittimamente cambiare perché un team ID
+prima null è ora valorizzato: cambiano i dati in ingresso, non l'algoritmo.
+
+NON effettuare reset.
+Retest sulle righe già presenti con preload normale:
+- righe già corrette/invariate -> IDENTICAL;
+- stesso fixture ID con vecchi national ID null -> CHANGED_EXISTING;
+- nuovi dati -> NEW;
+- fingerprint duplicato su altro ID -> DUPLICATE_CONTENT.
+
+CHANGED_EXISTING resta senza update automatico. Quindi le righe storiche
+non vengono bonificate da questa patch. Un warning storico non scompare
+dal DB per il solo rilancio; la risoluzione corrente può essere corretta
+mentre lo storico resta da trattare con un CASE distinto.
+
+7. RETEST MANUALE
+
+La Direzione può usare il file completo nella sola copia di test del
+Comando Rapido. Questa Work non ha distribuito/sostituito lo Shortcut.
+
+Aprire GW007 / Results / interqualifier, rilanciare senza svuotare:
+verificare assenza dei precedenti UNRESOLVED_TEAM_ID per le nazionali
+con MENU_association_draw, key NATIONS e country/division vuoti.
+Sulle righe storiche incomplete aspettarsi CHANGED_EXISTING, non una
+correzione silenziosa. La conferma puntuale dei payload può essere
+effettuata con inspector o successiva READ autorizzata.
+
+Verificare un passaggio Precedenti e la sua fine naturale:
+END_OF_SECTION deve mantenere il comportamento 001-18.
+Il test live di worldcup resta necessario quando disponibile, poiché
+la snapshot fornita è interqualifier.
+
+8. LIMITI E PERIMETRO
+
+La patch supporta il markup osservato e il suo handler; non inventa
+mapping per nodi privi di association ID. Il DOM non certifica
+l'identità nazionale tramite logo o nome, quindi non esistono fallback
+di questo tipo. Assenza manager legittima.
+
+Restano i limiti di readiness e del resolver controlled club documentati
+in 001-18; non sono ampliati né riscritti da questo CASE.
+
+DB READ/WRITE: NONE
+DB RESET/BONIFICA: NONE
+GATEWAY/SCHEMA/MINISITI/SCHEDULE/MATCH REPORT: NONE
+PRODUCTION DEPLOY: NONE
+WRITE: esclusivamente i due deliverable nel CASE 001-19.
+
+VERDICT: READY_FOR_MANUAL_RETEST
