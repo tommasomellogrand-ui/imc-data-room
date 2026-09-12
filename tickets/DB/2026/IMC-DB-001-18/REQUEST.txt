@@ -1,0 +1,135 @@
+CASE_ID: IMC-DB-001-18
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_END_OF_SECTION_NAVIGATION_FIX
+
+IMC | RESULTS IMPORTER · END-OF-SECTION NAVIGATION FIX
+
+CONTESTO
+Questo CASE deve essere eseguito dalla stessa Work/chat che ha prodotto IMC-DB-001-15 e analizzato IMC-DB-001-17.
+
+IMC-DB-001-17 è risultato BLOCKED perché il problema è stato interpretato come timeout/readiness generico. La Direzione chiarisce ora il comportamento corretto da implementare.
+
+INPUT AUTORITATIVI
+Leggere integralmente:
+- tickets/DB/2026/IMC-DB-001-15/OUTPUT_RESULTS_IMPORT.js
+- tickets/DB/2026/IMC-DB-001-15/RESPONSE.txt
+- tickets/DB/2026/IMC-DB-001-17/REQUEST.txt
+- tickets/DB/2026/IMC-DB-001-17/RESPONSE.txt
+- tickets/DB/2026/IMC-DB-001-16/RESPONSE.txt
+
+Il codice da correggere resta OUTPUT_RESULTS_IMPORT.js di 001-15.
+
+PROBLEMA REALE
+Durante la scansione all'indietro di Results, una sezione/competizione può essere semplicemente FINITA.
+
+Questo NON deve essere trattato come errore.
+
+Una sezione è da considerare conclusa quando, tentando di andare indietro:
+1. il bottone `Precedenti` non esiste;
+2. oppure esiste ma non porta a un nuovo set di Results validi;
+3. oppure dopo il click si rimane sullo stesso turno / stesso fixture set;
+4. oppure il target raggiunto non contiene Results giocati validi ma mostra un turno ancora da giocare / fixture non completed.
+
+In tutti questi casi l'importer deve interpretare il risultato come:
+`END_OF_SECTION`
+
+NON deve lanciare:
+`Results non stabile/target non raggiunto`
+
+COMPORTAMENTO RICHIESTO
+
+A. goPrevious()
+Deve distinguere chiaramente:
+- `MOVED_TO_PREVIOUS_RESULTS` -> esiste un turno precedente con nuovi Results validi: continua la scansione;
+- `END_OF_SECTION` -> nessun precedente utile / stesso turno / fixture future/non giocate: termina normalmente la sezione;
+- `REAL_ERROR` -> stato incoerente reale, DOM corrotto/non verificabile o navigazione che dovrebbe cambiare ma produce uno stato impossibile.
+
+B. processSection()
+Quando riceve `END_OF_SECTION`:
+- NON errore;
+- chiude il loop della sezione corrente;
+- incrementa/completa la sezione;
+- restituisce il controllo a `run()`.
+
+C. run()
+Dopo la chiusura naturale della sezione deve procedere col prossimo target naturale:
+- se la competizione è League con più divisioni -> prossima divisione;
+- se le divisioni sono finite -> prossima nazione;
+- se la competizione è non-League e non usa divisione -> prossima nazione;
+- se le nazioni sono finite -> completamento naturale del contesto/competizione.
+
+In nessun caso la fine naturale di una sezione deve produrre ERRORE.
+
+CASO LIVE DA RISOLVERE
+GW007 MULTI / leagueshield.
+Il test live aveva già importato correttamente:
+- ENG: 8 + 16 + 32 + 52 Results
+- ITA: 8 + 16 + 32 Results
+Totale salvato prima del blocco: 164.
+
+Al tentativo successivo il codice ha terminato con:
+`Results non stabile/target non raggiunto: nessuna scrittura della pagina`
+
+Questo CASE deve trasformare quel caso in una normale fine sezione e fare proseguire il loop verso il prossimo target previsto.
+
+DEFINIZIONE DI "RESULT VALIDAMENTE GIOCATO"
+Per decidere se una pagina precedente contiene Results utili:
+- deve contenere almeno una fixture Result parseabile con score valido `N-N`;
+- fixture/pagina che mostrano solo orario o turno futuro non sono Results storici da importare;
+- se il click Precedenti porta a una pagina senza Results completati, trattare come END_OF_SECTION, non errore.
+
+ATTENZIONE ALLO STESSO FIXTURE SET
+Se dopo il click `Precedenti` il fixture set resta identico al precedente, e il contesto/data non dimostrano un vero nuovo turno con Results giocati, trattare come END_OF_SECTION.
+Non attendere fino al timeout solo per confermare l'ovvio.
+
+READINESS
+Le protezioni di readiness introdotte in 001-15 restano valide per distinguere DOM transitorio da stato finale.
+Il fix NON deve:
+- tornare a sleep ciechi;
+- leggere workingCopy;
+- allentare il fail-closed globalmente;
+- rompere GW001 SINGLE;
+- rompere GW007 League;
+- cambiare grammar competition_key;
+- cambiare idempotenza.
+
+IMPLEMENTAZIONE AUTORIZZATA
+Correggere il codice e produrre:
+`tickets/DB/2026/IMC-DB-001-18/OUTPUT_RESULTS_IMPORT.js`
+
+Non sovrascrivere 001-15 o 001-17.
+
+TEST OBBLIGATORI
+Testare almeno:
+1. Precedenti assente -> END_OF_SECTION.
+2. Precedenti presente ma stesso fixture set -> END_OF_SECTION.
+3. Precedenti porta a turno futuro / senza score -> END_OF_SECTION.
+4. Precedenti porta a nuovo fixture set con score -> MOVED_TO_PREVIOUS_RESULTS.
+5. GW007 leagueshield ENG -> fine naturale -> switch ITA.
+6. GW007 leagueshield ITA -> fine naturale -> prossima nazione.
+7. GW007 League conserva loop divisioni.
+8. GW001 SINGLE conserva zero country loop.
+9. Nessuna regressione NEW / IDENTICAL / CHANGED_EXISTING / DUPLICATE_CONTENT.
+10. Nessuna lettura workingCopy.
+
+OUTPUT
+Registrare:
+`tickets/DB/2026/IMC-DB-001-18/RESPONSE.txt`
+
+La RESPONSE deve contenere:
+- root cause finale;
+- nuova semantica degli stati di goPrevious/processSection;
+- funzioni modificate;
+- test eseguiti;
+- comportamento atteso sul caso live GW007;
+- indicazione se il retest deve continuare con le 164 righe già presenti o ripartire da zero;
+- verdict finale `READY_FOR_MANUAL_RETEST` oppure `BLOCKED`.
+
+VINCOLI
+DB WRITE: NO.
+PRODUCTION DEPLOY: NO.
+GATEWAY CHANGE: NO.
+SCHEDULE/MATCH REPORT: NO.
+WRITE AUTHORIZED: solo deliverable Data Room del CASE.
