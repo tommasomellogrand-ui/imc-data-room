@@ -1,0 +1,185 @@
+CASE_ID: IMC-DB-001-08
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-12
+TOPIC: IMC_INGESTION_AND_PROVENANCE_V1_ARCHITECTURE
+
+IMC | DATABASE MANAGER
+IMC INGESTION & PROVENANCE V1 · ARCHITECTURE PROPOSAL
+
+DECISIONE DIREZIONE
+La Direzione approva la progettazione da zero di un nuovo sistema canonico denominato:
+
+`IMC Ingestion & Provenance V1`
+
+NOTA DI NAMING
+Questa è la V1 del nuovo sistema IMC.
+NON chiamarla V2.
+NON trattarla come evoluzione nominale della vecchia pipeline legacy.
+La vecchia ingestion/provenance eliminata non è il modello da versionare: questo è un nuovo sistema IMC progettato da zero.
+
+OBIETTIVO
+Progettare un sistema comune, auditabile e sicuro per governare l'ingresso dei dati nelle strutture IMC canoniche, senza poter ricreare tabelle legacy e senza introdurre pipeline indipendenti incoerenti tra repository.
+
+Il sistema dovrà essere pensato per supportare progressivamente repository/dataset quali:
+- Results;
+- Schedule;
+- Match Report;
+- Transfers;
+- Player Codex;
+- SM Player Stats;
+- Club/National Team/Game World mapping;
+- altri repository IMC autorizzati in futuro.
+
+QUESTO CASE È DI ARCHITETTURA/PROPOSTA.
+Non implementare ancora.
+
+PRINCIPIO TARGET
+SOURCE
+→ INGESTION RUN
+→ VALIDATION
+→ NORMALIZATION/RESOLUTION
+→ AUTHORIZED IMC DESTINATION
+→ WRITE RESULT
+→ PROVENANCE / AUDIT
+→ ERROR / WARNING / SKIP STATE
+
+REQUISITI OBBLIGATORI
+
+1. IMC-ONLY WRITE BOUNDARY
+Il sistema deve poter scrivere esclusivamente verso strutture IMC autorizzate.
+Non deve contenere alcun meccanismo capace di creare automaticamente tabelle non-IMC.
+
+2. NO DYNAMIC LEGACY SCHEMA CREATION
+Nessun `CREATE TABLE IF NOT EXISTS` arbitrario basato sul nome del dataset.
+Lo schema deve essere esplicito, autorizzato e versionato.
+
+3. SOURCE IDENTIFICATION
+Ogni run deve poter identificare almeno:
+- source type;
+- source name/version quando disponibile;
+- Game World quando pertinente;
+- repository/dataset target;
+- started_at / completed_at;
+- importer/version;
+- execution status.
+
+4. ROW-LEVEL / BATCH-LEVEL PROVENANCE
+Proporre il livello minimo utile di provenance senza appesantire inutilmente il CORE.
+Valutare se la provenance debba essere:
+- per run;
+- per batch;
+- per record;
+- ibrida.
+Motivare costi/benefici.
+
+5. IDEMPOTENCY & SKIP
+Il modello deve supportare:
+- idempotency key;
+- fingerprint quando pertinente;
+- inserted / updated / skipped / rejected;
+- motivo dello skip/reject;
+- duplicate handling coerente col repository.
+
+6. VALIDATION
+Distinguere:
+- schema validation;
+- semantic validation;
+- foreign/reference resolution;
+- business rules;
+- warning non bloccanti;
+- errori bloccanti.
+
+7. ERROR MODEL
+Proporre una gestione errori moderna che NON replichi necessariamente le vecchie `import_errors` / `ingestion_errors`.
+Definire error scope, severity, code, message, row reference, retryability.
+
+8. REPOSITORY ADAPTERS
+Il core di ingestion deve essere comune, ma le regole specifiche di Results/Schedule/Match Report/etc. devono vivere in adapter/contract separati.
+
+9. GAME WORLD CONTEXT
+Quando il dataset è world-scoped, la run deve conoscere il `game_world_id` canonico IMC e validarlo contro il Game World Codex.
+
+10. IMPORTER VERSIONING
+Ogni run deve essere riconducibile alla versione reale dell'importer/script/gateway che l'ha prodotta.
+
+11. AUDITABILITY
+Dobbiamo poter rispondere in modo semplice a domande come:
+- cosa abbiamo importato?
+- quando?
+- da quale fonte?
+- con quale importer/versione?
+- quante righe inserite/aggiornate/skippate/rifiutate?
+- quali errori?
+- quale Game World?
+- quale repository?
+
+12. DATA RETENTION
+Proporre retention policy per run/log/error/provenance.
+Non accumulare payload raw infiniti senza una ragione precisa.
+
+13. RAW PAYLOAD POLICY
+Valutare se e quando conservare raw payload/source snapshots.
+Default: non duplicare dati massivi se non necessario per audit/replay.
+Se proponi raw snapshots, specificare storage, retention e motivazione.
+
+14. TRANSACTION / PARTIAL FAILURE
+Definire comportamento per:
+- all-or-nothing;
+- partial success;
+- retry;
+- resume;
+- rollback/logical compensation.
+
+15. SECURITY / SAFETY
+Il sistema non deve permettere a input esterni di determinare direttamente nomi tabella/SQL arbitrario.
+Target e action devono passare da allowlist/registry esplicito.
+
+16. OBSERVABILITY
+Proporre metriche/stati minimi utili a UI amministrativa e diagnostica.
+
+17. COMPATIBILITY WITH CURRENT IMC IMPORTERS
+Auditare gli importer correnti principali e spiegare come potrebbero integrarsi progressivamente nella V1 senza mega-riscrittura.
+
+18. NO LEGACY RESURRECTION
+Non riutilizzare come source of truth architetturale:
+- ingestion_runs;
+- ingestion_errors;
+- import_errors;
+- source_snapshots;
+- sm_*_source;
+- sw_*_source;
+né altri oggetti legacy eliminati.
+Possono essere citati solo come anti-pattern/lesson learned.
+
+OUTPUT RICHIESTO
+La RESPONSE deve includere:
+A. EXECUTIVE ARCHITECTURE
+B. RESPONSIBILITY BOUNDARIES
+C. PROPOSED DATA MODEL
+D. TABLES/ENTITIES PROPOSED, se realmente necessarie
+E. COLUMN-BY-COLUMN DESIGN
+F. KEYS / UNIQUE / FK / INDEX
+G. INGESTION RUN STATE MACHINE
+H. PROVENANCE STRATEGY
+I. ERROR/WARNING MODEL
+J. IDEMPOTENCY/SKIP MODEL
+K. REPOSITORY ADAPTER CONTRACT
+L. SECURITY / ALLOWLIST MODEL
+M. RAW PAYLOAD + RETENTION POLICY
+N. OBSERVABILITY
+O. CURRENT IMPORTERS MIGRATION PATH
+P. PHASED IMPLEMENTATION PLAN
+Q. FIRST EXECUTION CASE RECOMMENDED
+R. WHAT NOT TO BUILD
+
+VINCOLI
+READ ONLY / DESIGN ONLY.
+Nessuna tabella nuova.
+Nessuna migration.
+Nessun codice modificato.
+Nessun deploy.
+Nessun write DB.
+
+OUTPUT AUTORITATIVO
+`tickets/DB/2026/IMC-DB-001-08/RESPONSE.txt`
