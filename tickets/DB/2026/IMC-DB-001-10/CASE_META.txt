@@ -1,0 +1,10 @@
+CASE_ID: IMC-DB-001-10
+AREA: DB
+DOMAIN: INGESTION
+GW: GLOBAL
+TOPIC: IMC_INGESTION_PROVENANCE_V1_SINGLE_TABLE_REVISION
+TAGS: ingestion, provenance, single-table, backward-compatibility, importer, idempotency, shadow-logging, migration
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-DB-001
+MODE: READ_ONLY_DESIGN
+WRITE_AUTHORIZED: NO
