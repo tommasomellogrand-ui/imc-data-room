@@ -1,0 +1,165 @@
+CASE_ID: IMC-DB-001-06
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-12
+TOPIC: CORE_MISSING_CAPABILITIES_NECESSITY_AUDIT
+
+IMC | DATABASE MANAGER
+CORE MISSING CAPABILITIES · NECESSITY & COVERAGE AUDIT
+
+CONTESTO
+IMC-DB-001-05 ha chiuso la bonifica post-legacy del CORE Sql1956795_1 e ha identificato sei aree funzionali residue potenzialmente da ricostruire.
+
+Prima di progettare o creare qualunque nuova struttura, la Direzione vuole verificare una cosa fondamentale:
+
+NON È DETTO CHE TUTTE QUESTE FUNZIONALITÀ SIANO DAVVERO NECESSARIE.
+NON È DETTO CHE LE INFORMAZIONI MANCANTI NON SIANO GIÀ CONTENUTE, TOTALMENTE O PARZIALMENTE, NELLE 11 TABELLE IMC ATTUALI.
+
+Questo CASE deve quindi essere ESCLUSIVAMENTE un audit di necessità e copertura.
+
+MODE
+READ ONLY.
+NESSUNA MODIFICA.
+NESSUNA NUOVA TABELLA.
+NESSUNA NUOVA COLONNA.
+NESSUNA MIGRAZIONE.
+NESSUN CODICE.
+NESSUN DEPLOY.
+
+OBIETTIVO
+Per ciascuna delle sei aree emerse da IMC-DB-001-05, verificare:
+1. quali informazioni/funzioni reali richiede oggi;
+2. se tali informazioni sono già presenti nelle 11 tabelle IMC attuali;
+3. se sono presenti integralmente, parzialmente o per nulla;
+4. se il bisogno esiste davvero nel prodotto attuale oppure deriva soltanto da vecchi consumer legacy ormai rimossi/bloccati;
+5. se sia quindi realmente necessario costruire qualcosa di nuovo.
+
+AREE DA ANALIZZARE
+A. WORLD-LOCAL CLUB MAPPING
+B. WORLD-LOCAL NATIONAL TEAM MAPPING
+C. GAME WORLD SEASON / CONTEXT
+D. COMPETITION META-LAYER / RULE ENGINE
+E. INGESTION & PROVENANCE V2
+F. PLAYER CODEX APPLICATION LAYER
+
+FONTE AUTORITATIVA DATI
+Leggere esclusivamente lo stato LIVE di Sql1956795_1 tramite il percorso autorizzato Supabase bridge -> MySQL Aruba.
+
+Le 11 tabelle IMC attuali sono la base canonica da analizzare.
+Non usare le vecchie tabelle eliminate come modello da ricostruire.
+
+PRINCIPIO DI ANALISI
+Non chiederti "come ricreo la vecchia tabella?".
+Chiediti invece:
+
+"Quale bisogno informativo o funzionale esiste davvero oggi, e le strutture IMC attuali lo soddisfano già?"
+
+Il naming non conta.
+Il confronto deve essere SEMANTICO.
+
+Se un'informazione è già rappresentata nel modello IMC con nome/forma diversa, deve essere considerata COVERED.
+
+Se un bisogno esiste solo perché un vecchio endpoint/consumer legacy lo richiedeva, ma la funzione non è più necessaria nel prodotto attuale, classificare NOT NECESSARY.
+
+CLASSIFICAZIONE OBBLIGATORIA
+Per ciascuna delle sei aree assegna UNA delle seguenti classificazioni principali:
+
+1. ALREADY COVERED
+Il bisogno informativo/funzionale è già soddisfatto integralmente dalle 11 IMC attuali.
+→ Nessuna nuova struttura necessaria.
+
+2. PARTIALLY COVERED
+Una parte è già presente nel modello IMC, ma manca una componente realmente necessaria.
+→ Specificare ESATTAMENTE cosa manca e perché serve.
+
+3. NOT COVERED
+Il bisogno è reale ma non esiste nelle 11 IMC.
+→ Specificare ESATTAMENTE quale informazione/capability manca.
+
+4. NOT NECESSARY
+Il bisogno deriva da vecchi consumer/pipeline/architetture che non devono essere ricostruiti.
+→ Nessuna nuova struttura necessaria.
+
+5. NEEDS DIRECTOR DECISION
+La necessità non è determinabile tecnicamente perché dipende da una decisione di prodotto/business della Direzione.
+→ Formulare la decisione in modo chiaro e binario quando possibile.
+
+ANALISI OBBLIGATORIA PER OGNI AREA
+Per ciascuna delle sei aree restituisci:
+
+1. AREA
+2. OLD/RESIDUAL NEED
+   - quale bisogno era stato identificato in IMC-DB-001-05;
+3. CURRENT PRODUCT NEED
+   - chi/che cosa oggi avrebbe realmente bisogno di questa capability;
+   - distinguere runtime attivo da consumer legacy bloccato;
+4. IMC COVERAGE
+   - quali delle 11 tabelle IMC coprono già il concetto;
+   - tabelle/colonne precise;
+   - relazione semantica;
+5. COVERAGE LEVEL
+   - FULL / PARTIAL / NONE;
+6. REAL GAP
+   - solo ciò che manca davvero;
+7. CONSEQUENCE OF DOING NOTHING
+   - cosa resta realmente non funzionante o impossibile;
+8. NECESSITY CLASSIFICATION
+   - ALREADY COVERED / PARTIALLY COVERED / NOT COVERED / NOT NECESSARY / NEEDS DIRECTOR DECISION;
+9. RECOMMENDATION
+   - BUILD NOTHING / REUSE EXISTING / FUTURE MINIMAL ADDITION / DIRECTOR DECISION;
+10. PRIORITY
+   - NONE / LOW / MEDIUM / HIGH / BLOCKING;
+
+AUDIT DELLE 11 IMC
+Prima delle conclusioni, produci una mappa sintetica delle 11 tabelle IMC attuali con:
+- funzione reale;
+- chiavi principali;
+- entità/concept coperti;
+- dimensione global vs world-local vs historical vs technical;
+- eventuali JSON/campi che contengono già informazioni che potrebbero evitare nuove strutture.
+
+Questo passaggio è fondamentale: non limitarti a guardare il nome delle tabelle.
+Leggi struttura e dati rappresentativi sufficienti a capire la semantica reale.
+
+DISTINZIONE OBBLIGATORIA
+Per ogni gap distingui:
+
+A. DATA GAP
+Manca davvero un dato che IMC deve conservare.
+
+B. ACCESS/RESOLUTION GAP
+Il dato esiste già, ma manca un resolver/API/selector per usarlo.
+
+C. PRODUCT GAP
+Manca una funzione utente/prodotto reale.
+
+D. LEGACY-ONLY GAP
+Il problema esiste solo perché vecchio codice si aspettava un concetto che non vogliamo più mantenere.
+
+Non proporre nuova struttura DB per risolvere un semplice ACCESS GAP o LEGACY-ONLY GAP.
+
+OUTPUT RIASSUNTIVO OBBLIGATORIO
+Crea una matrice finale:
+
+AREA | CURRENT NEED | IMC COVERAGE | REAL GAP | CLASSIFICATION | PRIORITY | RECOMMENDATION
+
+E poi rispondi esplicitamente a queste domande:
+
+1. Quante delle 6 aree sono già completamente coperte?
+2. Quante sono parzialmente coperte?
+3. Quante non sono coperte ma sono realmente necessarie?
+4. Quante sono in realtà NON NECESSARY?
+5. Quante richiedono una decisione della Direzione?
+6. Quali nuove strutture, se esistono, sono DAVVERO indispensabili?
+7. Quali problemi possono essere risolti senza toccare lo schema DB?
+8. Quale sarebbe il minimo set di lavoro necessario per avere il CORE funzionalmente completo senza ricostruire debito legacy?
+
+STOP OBBLIGATORIO
+NON progettare ancora schema definitivo delle nuove tabelle.
+NON creare ticket figli.
+NON implementare nulla.
+
+La Direzione userà questa RESPONSE per decidere quali aree meritano davvero un successivo CASE architetturale.
+
+OUTPUT AUTORITATIVO
+tickets/DB/2026/IMC-DB-001-06/RESPONSE.txt
