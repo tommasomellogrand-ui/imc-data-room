@@ -1,0 +1,403 @@
+CASE_ID: IMC-ENG-009-03
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-12
+TOPIC: MINISITE_CORE_IMPLEMENTATION_BLUEPRINT
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+MINISITE CORE · FINAL IMPLEMENTATION BLUEPRINT
+
+1. EXECUTIVE VERDICT
+
+L'architettura approvata in IMC-ENG-009-02 e IMC-CREATIVE-001-02 è pronta per essere trasformata in una sequenza di CASE operativi piccoli e reversibili.
+
+Il repository reale conferma che la migrazione deve essere estrattiva e progressiva, non una riscrittura. Oggi:
+- minisite/GW001..GW009 esistono come package fisici autonomi;
+- GW001 contiene app.js, exploration.js/css/data/assets e pagine route-specifiche;
+- GW007 contiene app.js, data.js, theme/assets e pagine route-specifiche inclusi kingdom.html e map.html;
+- site-assets/gameworld/app-core.js è un vecchio renderer condiviso che contiene direttamente mapping GW001..GW009 e nove shell visuali, quindi NON può diventare il nuovo Universal Core;
+- alcuni minisiti/workflow storicamente hanno referenziato /minisite/shared/app-core.js, creando una source-of-truth da chiarire durante la migrazione;
+- il comportamento di valore è oggi distribuito nei singoli app.js/exploration.js e va estratto dietro l'output esistente.
+
+Blueprint definitivo:
+
+ONE UNIVERSAL CORE
+→ FAMILY CONTRACT LAYER
+   → SINGLE
+   → MULTI_GOLD
+→ SEMANTIC CONTRACT / VIEW-MODEL LAYER
+→ GW CREATIVE PACKAGE
+→ OPTIONAL FEATURES + SIGNATURE RENDERERS
+
+Regola di esecuzione:
+NON MIGRARE PRIMA L'INTERFACCIA.
+MIGRARE PRIMA I CONTRATTI E IL COMPORTAMENTO DIETRO L'INTERFACCIA.
+
+GW001 e GW007 sono acceptance tests del Core, non template da ricostruire.
+
+2. REPOSITORY TARGET ARCHITECTURE
+
+Struttura target raccomandata:
+
+minisite/
+├── platform/
+│   ├── core/
+│   │   ├── bootstrap.js
+│   │   ├── router.js
+│   │   ├── navigation.js
+│   │   ├── context-engine.js
+│   │   ├── state.js
+│   │   ├── lifecycle.js
+│   │   ├── capability-registry.js
+│   │   ├── renderer-registry.js
+│   │   ├── extension-registry.js
+│   │   └── errors.js
+│   ├── contracts/
+│   │   ├── core-behavior.contract.js
+│   │   ├── creative-freedom.contract.js
+│   │   └── components/
+│   │       ├── match.contract.js
+│   │       ├── competition.contract.js
+│   │       ├── standings.contract.js
+│   │       ├── club.contract.js
+│   │       ├── manager.contract.js
+│   │       ├── player.contract.js
+│   │       └── transfer.contract.js
+│   ├── families/
+│   │   ├── single/
+│   │   │   ├── contract.js
+│   │   │   ├── routes.js
+│   │   │   ├── navigation.js
+│   │   │   ├── context.js
+│   │   │   └── mobile.js
+│   │   └── multi-gold/
+│   │       ├── contract.js
+│   │       ├── routes.js
+│   │       ├── navigation.js
+│   │       ├── context.js
+│   │       ├── mobile.js
+│   │       └── providers/
+│   │           ├── ranked-active-manager-countries.js
+│   │           └── fixed-context-set.js
+│   ├── data/
+│   │   ├── client.js
+│   │   ├── resources.js
+│   │   ├── cache.js
+│   │   ├── pagination.js
+│   │   ├── source-state.js
+│   │   ├── selectors/
+│   │   │   ├── active-managers.js
+│   │   │   ├── country-contexts.js
+│   │   │   └── top-contexts.js
+│   │   └── view-models/
+│   │       ├── match.js
+│   │       ├── competition.js
+│   │       ├── standings.js
+│   │       ├── profile.js
+│   │       └── context-entry.js
+│   ├── features/
+│   │   ├── archive/
+│   │   ├── records-honours/
+│   │   ├── playoffs/
+│   │   ├── promotion-relegation/
+│   │   ├── progression/
+│   │   ├── comparison/
+│   │   ├── territory-map/
+│   │   ├── rivalries/
+│   │   ├── cup-bracket/
+│   │   └── reports/
+│   ├── styles/
+│   │   ├── reset.css
+│   │   ├── platform-tokens.css
+│   │   ├── accessibility.css
+│   │   └── safety.css
+│   └── utilities/
+│       ├── dom.js
+│       ├── url.js
+│       ├── format.js
+│       └── accessibility.js
+│
+├── worlds/
+│   ├── GW001/
+│   │   ├── config.js
+│   │   ├── theme.css
+│   │   ├── creative-tokens.css
+│   │   ├── compositions/
+│   │   │   ├── home.js
+│   │   │   ├── competition.js
+│   │   │   ├── match.js
+│   │   │   └── archive.js
+│   │   ├── renderers/
+│   │   ├── signatures/
+│   │   │   ├── titanium-score-plate.js
+│   │   │   ├── historical-annotation.js
+│   │   │   └── archive-chapter.js
+│   │   ├── motion.js
+│   │   └── assets/
+│   ├── GW002/ ...
+│   ├── GW003/ ...
+│   ├── GW004/ ...
+│   ├── GW005/ ...
+│   ├── GW006/ ...
+│   ├── GW007/
+│   │   ├── config.js
+│   │   ├── theme.css
+│   │   ├── creative-tokens.css
+│   │   ├── compositions/
+│   │   │   ├── home.js
+│   │   │   ├── kingdom.js
+│   │   │   ├── territory.js
+│   │   │   └── match.js
+│   │   ├── renderers/
+│   │   ├── signatures/
+│   │   │   ├── kingdom-object.js
+│   │   │   ├── border-score.js
+│   │   │   └── territory-map.js
+│   │   ├── motion.js
+│   │   └── assets/
+│   ├── GW008/ ...
+│   └── GW009/ ...
+│
+└── tests/
+    ├── contracts/
+    ├── unit/
+    ├── integration/
+    ├── routes/
+    ├── accessibility/
+    ├── responsive/
+    ├── data-states/
+    ├── golden-master/
+    │   ├── GW001/
+    │   └── GW007/
+    └── fixtures/
+
+OWNERSHIP
+- platform/core, contracts, families, data: Frontend/Platform Engineering;
+- worlds/GWXXX theme/composition/signatures/assets: Creative Direction + Frontend implementation;
+- semantic contracts: Engineering owner con Creative review per evitare template creep;
+- golden-master visual baselines: Engineering gestisce harness, Creative Direction approva baseline e drift;
+- data selectors: Engineering con validazione del Data/DB owner sulla semantica dei campi.
+
+3. CURRENT → TARGET MAP
+
+A. site-assets/gameworld/app-core.js
+STATUS: RETIRE LATER.
+Motivo: contiene mapping esplicito dei nove GW, player/club demo IDs e nove shell visuali. Viola no-if/no-GW-branching e mescola Core con design.
+Azione: non modificarlo nella fase iniziale. Il nuovo platform nasce in parallelo; il file viene ritirato solo quando nessun entrypoint lo usa.
+
+B. minisite/GW001/
+STATUS: KEEP AS IS inizialmente; poi ADAPT progressivamente.
+- exploration.js/app.js: sorgente per estrazione behavior; rendering da preservare;
+- exploration.css/fonts/assets: KEEP nel package creativo durante il pilot;
+- HTML route pages: KEEP URL e markup shell nella prima migrazione;
+- config.js: ADAPT in seguito al nuovo contract;
+- exploration-data.js: KEEP come fixture/baseline finché il data handoff non è parte del CASE autorizzato.
+
+C. minisite/GW007/
+STATUS: KEEP AS IS inizialmente; poi ADAPT progressivamente.
+- app.js: estrarre context-first behavior senza cambiare renderer;
+- data.js: KEEP come baseline/fixture finché non si migra data boundary;
+- kingdom.html/map.html: KEEP e usare come Golden Master route;
+- theme/assets: KEEP nel package creativo;
+- config: ADAPT successivamente a family/provider declaration.
+
+D. minisite/GW002..GW009
+STATUS: KEEP AS IS fino al completamento dei due Golden Master e del family contract. Nessun rollout anticipato.
+
+E. /minisite/shared/app-core.js references
+STATUS: AUDIT + RETIRE/REPOINT LATER.
+Prima dell'uso del nuovo Core occorre inventariare ogni reference e stabilire la source-of-truth. Non sostituire in massa il path nel primo CASE.
+
+F. Gateway / IMC_MINISITE_DATA
+STATUS: KEEP AS IS.
+Il Blueprint non richiede modifica Gateway. Il Core deve inizialmente adattarsi al data contract disponibile; ogni futura migrazione del data boundary è CASE separato.
+
+G. deploy-minisite-gwXXX workflows
+STATUS: KEEP AS IS inizialmente.
+Saranno adattati soltanto quando un pilot deve includere platform assets; path filter e smoke test verranno estesi in CASE dedicato.
+
+H. NEW
+minisite/platform/* e minisite/tests/* come sopra. Non crearli in questo CASE.
+
+4. GW001 GOLDEN MASTER SINGLE
+
+4.1 BASELINE FREEZE
+Prima di toccare runtime:
+- snapshot SHA dei file GW001;
+- inventory route: home, competitions, results, schedule, match, standings, manager, player, club, archive e altre route realmente attive;
+- deep-link matrix con query params;
+- desktop baseline almeno 1440px;
+- mobile baseline almeno 390px;
+- screenshot per Home, Competition, Match, Archive, Results, Standings;
+- keyboard/focus walkthrough;
+- DOM landmarks/accessibility snapshot;
+- data-state baseline: normal/loading/empty/error dove riproducibile;
+- performance baseline minima.
+
+4.2 BEHAVIOR EXTRACTION
+Estrarre nell'ordine:
+1. route parsing/serialization;
+2. context/division state;
+3. navigation state;
+4. Match view-model;
+5. Competition view-model;
+6. shared loading/error behavior;
+7. feature registration Archive.
+
+Ogni estrazione deve mantenere il renderer GW001 attuale.
+
+4.3 ADAPTER-BEHIND-RENDERING
+GW001 app/exploration renderer riceve progressivamente model dal nuovo Core attraverso adapter. Non si sostituisce la composition.
+
+4.4 PRESERVATION SET
+Non migrare in componenti visuali shared:
+- Home composition;
+- Competition composition;
+- Match storytelling;
+- Archive narrative;
+- titanium/premium score treatment;
+- dark/ivory rhythm;
+- historical annotation;
+- cinematic imagery;
+- typography/material/motion.
+
+4.5 ACCEPTANCE
+- route parity 100%;
+- deep-link/back parity;
+- no destination regression;
+- visual regression entro soglia tecnica concordata + Creative review APPROVED;
+- nessuna perdita di editorial section;
+- mobile navigation equivalente o migliore senza cambiare identity;
+- zero nuove dipendenze da GW branching nel Core.
+
+Rollback: ripristino entrypoint/app reference al runtime GW001 precedente; il nuovo platform rimane non referenziato.
+
+5. GW007 GOLDEN MASTER MULTI/GOLD
+
+5.1 BASELINE
+Congelare:
+- Home;
+- world/four-context surface;
+- Kingdom route;
+- Territory Map;
+- Results/Schedule con k/context;
+- Match;
+- Standings/Power Ranking;
+- Club/Manager/Player;
+- desktop/mobile;
+- context switch;
+- back/deep-link;
+- Four Kingdom visual composition.
+
+5.2 EXTRACTION
+Estrarre:
+1. generic context dimension model;
+2. context serialization/persistence;
+3. PRIMARY_CONTEXT_ENTRY_SET contract;
+4. FIXED_CONTEXT_SET provider;
+5. family navigation behavior;
+6. context-aware Results/Schedule/Standings view-models.
+
+5.3 DECLARATIVE CONFIG
+GW007 deve dichiarare, senza Core branching:
+family = MULTI_GOLD
+context.type = TERRITORY
+context.model = KINGDOM
+primaryContext.provider = FIXED_CONTEXT_SET
+primaryContext.entries = package-owned four Kingdom definitions
+
+5.4 PRESERVE
+Restano esclusivi GW007:
+- Kingdom labels/meaning;
+- Territory Map renderer;
+- territorial colors;
+- confrontation/border language;
+- abstract geography;
+- rivalry narrative;
+- regional composition;
+- motion/theme/assets.
+
+5.5 ACCEPTANCE
+Il Core deve produrre gli stessi context state e navigation outcomes senza imporre Country semantics o un renderer Top-4 standard.
+
+Rollback identico al pilot GW001: precedente runtime reference ripristinabile in un commit.
+
+6. SINGLE FAMILY CONTRACT · IMPLEMENTABLE
+
+Canonical route IDs minimi:
+home
+competitions
+competition
+results
+schedule
+standings
+match
+clubs
+club
+managers
+manager
+players
+player
+transfers
+archive (optional capability)
+
+Primary destination semantics:
+- Home;
+- Competitions;
+- Results;
+- Schedule;
+- Standings;
+- More/secondary access a entities/features.
+
+Competition-first context:
+WORLD → COMPETITION → optional DIVISION/STAGE → DETAIL.
+
+Contract requirements:
+- Results/Schedule items devono poter produrre match deep link;
+- Match è first-class semantic object;
+- Competition hub espone capability disponibili;
+- Hub→Detail conserva origin/context quando valido;
+- browser back rispetta history nativa, non ricostruzioni arbitrarie;
+- URL contiene state necessario al deep link;
+- division/competition context persiste soltanto su route compatibili;
+- context incompatibile viene validato/reset deterministicamente;
+- mobile espone sempre Home/Results/Schedule/Standings + full menu access;
+- rendering navigation è GW-owned entro placement/behavior family.
+
+7. MULTI/GOLD FAMILY CONTRACT · IMPLEMENTABLE
+
+Canonical route IDs condividono quelli SINGLE e aggiungono semantic context routes:
+world/context-index
+context-detail
+optional division-detail
+
+Context hierarchy standard:
+WORLD → COUNTRY → DIVISION/COMPETITION → DETAIL.
+
+GW007 hierarchy:
+WORLD → TERRITORY/KINGDOM → DIVISION/COMPETITION → DETAIL.
+
+Primary context entry contract:
+- maxPrimary = 4;
+- provider required;
+- primary e secondary entries fanno parte dello stesso complete context set;
+- context selector completo sempre disponibile;
+- active context serializzato in URL;
+- context switch mantiene route corrente quando semanticamente compatibile, altrimenti usa family fallback route dichiarata;
+- Results/Schedule/Standings/Clubs/Managers/Players/Transfers possono ricevere context filter;
+- mobile context selector sempre raggiungibile dalla family navigation area.
+
+8. DYNAMIC TOP-4 COUNTRY · CONCRETE DESIGN
+
+8.1 AUTHORITATIVE INPUTS
+Il frontend non deve definire da solo "active manager". Prima dell'implementazione va congelato con Data/DB owner il contract derivato da:
+- IMC Manager Assignment Global per game_world_id, manager_id, club_id, assignment_type, start_date, end_date;
+- IMC Manager Codex Global per identità IMC valida;
+- IMC Game World Club Mapping per club del GW;
+- Country mapping/codex autorevole necessario a risolvere Country del club nel GW.
+
+Se l'attuale minisite API non espone un Country per assignment/club sufficiente a risolvere il ranking, NON si introduce una query client-side improvvisata: si apre un CASE dati/API separato per esporre il contract minimo.
+
+8.2 ACTIVE DEFINITION
+Proposta da congelare:
+- assignment.game_world_id == current GW
