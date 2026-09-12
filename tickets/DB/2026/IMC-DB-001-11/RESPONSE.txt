@@ -1,0 +1,1037 @@
+CASE_ID: IMC-DB-001-11
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: GW001_GW007_RESULTS_SCHEDULE_MATCH_REPORT_DATA_COHERENCE_AUDIT
+STATUS: COMPLETED
+MODE: READ_ONLY_AUDIT
+
+IMC | DATABASE MANAGER
+GW001 + GW007 · RESULTS / SCHEDULE / MATCH REPORT · DATA COHERENCE AUDIT
+
+======================================================================
+0. EXECUTIVE RESULT
+======================================================================
+
+Il CASE è stato eseguito esclusivamente in READ ONLY.
+Nessuna modifica DB, schema, trigger, codice, Gateway, importer o sito è stata eseguita.
+
+PERIMETRO EFFETTIVAMENTE AUDITATO:
+GW001 / Sql1956795_3
+- GW001_IMC Results
+- GW001_IMC Schedule
+- GW001_IMC Match Report
+
+GW007 / Sql1956795_2
+- GW007_IMC Results
+- GW007_IMC Schedule
+- GW007_IMC Match Report
+
+CORE / Sql1956795_1, esclusivamente come riferimento semantico:
+- IMC Competition Codex Global
+
+RISULTATO SINTETICO:
+
+GW001
+- Results: FAIL
+- Schedule: FAIL
+- Match Report: FAIL
+- duplicati: 0 in tutti e tre i repository
+- game_world_id: corretto e uniforme
+- competition_group: semanticamente corretto
+- principali anomalie:
+  1. 20 Results League del 2026-09-10 con sm_country='CUS' e competition_key SINGLE errata con segmento CUS;
+  2. 20 Schedule del 2026-09-10 con sm_country NULL ma competition_key errata con segmento CUS;
+  3. 39 Match Report League Cup con sm_division=4 e key `GW001|DOMESTIC|leaguecup|4`, mentre la League Cup SINGLE non è division-scoped;
+  4. HERTHA BSC priva di club ID nei Results su 20 fixture non-NATIONS e nella Schedule su una fixture; Match Report risolve il club come 94079171;
+  5. un solo conflitto manager non-null reale Results vs Match Report: fixture 367418923, Club América vs River Plate, home manager 20605515 vs 5053060;
+  6. Match Report non completo rispetto ai Results: 433 report su 791 Results; nessun report per 320 interqualifier e 36 smfashield, più 2 smfacup mancanti;
+  7. stage label non normalizzata `Quarti di Finalee`: 20 Results e 12 Match Report.
+
+GW007
+- Results: WARNING
+- Schedule: WARNING
+- Match Report: FAIL
+- Results/Schedule competition semantics: PASS 34/34 country+division rispetto al Competition Codex
+- Results/Schedule fixture condivise: 308/308 con zero mismatch su tutti i campi confrontati
+- duplicati: 0
+- principale anomalia Results/Schedule: REAL BETIS senza SM team/club ID
+  - Results: 8 fixture
+  - Schedule: 31 fixture
+- Match Report: 0 righe, quindi repository non disponibile per la certificazione a tre repository
+- le 308 Schedule del 2026-09-12 ore 20:00 senza Result NON sono anomalie: al momento dell'audit (2026-09-12 11:55 Europe/Rome) sono fixture future nella giornata
+- ulteriori 8.652 Schedule future dopo il 2026-09-12 sono correttamente prive di Result al momento dell'audit.
+
+OVERALL:
+- GW001 non è certificabile come pienamente affidabile per consumo minisito finché le anomalie semanticamente certe non vengono corrette.
+- GW007 Results + Schedule sono strutturalmente e semanticamente molto solidi, con un singolo gap identitario ricorrente su REAL BETIS; la certificazione complessiva a tre repository fallisce perché Match Report è vuoto.
+
+======================================================================
+1. SCHEMI EFFETTIVI
+======================================================================
+
+1.1 RESULTS · stesso schema per GW001 e GW007
+26 colonne:
+- game_world_id
+- sm_fixture_id
+- competition_key
+- sm_action
+- sm_country
+- sm_division
+- competition_group
+- competition_group_name
+- competition_stage
+- competition_round
+- match_date
+- home_sm_club_id
+- home_name
+- away_sm_club_id
+- away_name
+- home_sm_manager_id
+- away_sm_manager_id
+- home_score
+- away_score
+- penalty_home_score
+- penalty_away_score
+- aggregate_home_score
+- aggregate_away_score
+- result_status
+- fingerprint
+- imported_at
+
+1.2 SCHEDULE · stesso schema per GW001 e GW007
+19 colonne:
+- game_world_id
+- sm_fixture_id
+- competition_key
+- sm_action
+- sm_country
+- sm_division
+- competition_group
+- competition_stage
+- competition_round
+- match_date
+- match_time
+- home_sm_team_id
+- home_name
+- away_sm_team_id
+- away_name
+- home_sm_manager_id
+- away_sm_manager_id
+- logged_manager_id
+- fingerprint
+
+Nota strutturale:
+Schedule usa home_sm_team_id / away_sm_team_id.
+Results e Match Report usano home_sm_club_id / away_sm_club_id.
+Il confronto è stato adattato semanticamente a questa differenza.
+
+1.3 MATCH REPORT · stesso schema per GW001 e GW007
+33 colonne:
+- game_world_id
+- sm_fixture_id
+- competition_key
+- sm_action
+- sm_country
+- sm_division
+- competition_group
+- competition_stage
+- competition_round
+- match_date
+- home_sm_club_id
+- home_name
+- away_sm_club_id
+- away_name
+- home_sm_manager_id
+- home_manager_name
+- away_sm_manager_id
+- away_manager_name
+- home_score
+- away_score
+- penalty_home_score
+- penalty_away_score
+- aggregate_home_score
+- aggregate_away_score
+- stadium_name
+- attendance
+- team_stats_json
+- players_json
+- events_json
+- tactics_json
+- commentary_json
+- fingerprint
+- imported_at
+
+======================================================================
+2. COMPETITION CODEX · RIFERIMENTO CANONICO
+======================================================================
+
+Per GW001 SINGLE il Codex conferma:
+- League: DOMESTIC, country NULL, division 1-4
+- League Cup: DOMESTIC, country NULL, division NULL
+- Charity Shield: DOMESTIC, country NULL, division NULL
+- Friendly: DOMESTIC, country NULL, division NULL
+- SMFA Cup: INTERNATIONAL, country NULL, division NULL
+- SMFA Shield: INTERNATIONAL, country NULL, division NULL
+- Super Cup: INTERNATIONAL, country NULL, division NULL
+- Interqualifier: NATIONS, country NULL, division NULL
+- World Cup: NATIONS, country NULL, division NULL
+
+Formula canonica applicata al SINGLE:
+- League: GW001|DOMESTIC|league|<division>
+- Domestic non-League: GW001|DOMESTIC|<sm_action>
+- International: GW001|INTERNATIONAL|<sm_action>
+- Nations: GW001|NATIONS|<sm_action>
+
+Per GW007 MULTI il Codex contiene 34 combinazioni League country+division.
+Il set ordinato delle 34 combinazioni ha firma:
+cd578b2662b031eb33b49fce9ed5fce4
+
+Results GW007:
+- 34 combinazioni
+- stessa firma esatta
+
+Schedule GW007:
+- 34 combinazioni
+- stessa firma esatta
+
+Conclusione:
+GW007 Results e Schedule coprono esattamente il set country/division previsto dal Competition Codex per le League osservate.
+
+======================================================================
+3. INVENTARIO GW001
+======================================================================
+
+3.1 GW001_IMC Results
+Rows: 791
+Date range: 2026-07-12 → 2026-09-10
+Distinct:
+- competition_key: 12
+- competition_group: 3
+- competition_group_name: 2
+- sm_action: 5
+- sm_country non-null distinct: 1
+- sm_division: 4
+- competition_stage: 3
+- competition_round: 5
+
+Structural nulls:
+- game_world_id: 0
+- wrong game_world_id: 0
+- sm_fixture_id: 0
+- competition_key: 0
+- competition_group: 0
+- sm_action: 0
+- match_date: 0
+- home_name: 0
+- away_name: 0
+- fingerprint: 0
+- home_sm_club_id: 330
+- away_sm_club_id: 330
+
+Interpretazione club ID null:
+- 320 home + 320 away sono Interqualifier/NATIONS: semanticamente leciti perché non sono club fixture.
+- ulteriori 10 home + 10 away null sono fixture club e appartengono tutte a HERTHA BSC: anomalia reale di identity resolution.
+
+3.2 GW001_IMC Schedule
+Rows: 20
+Date range: 2026-09-10 → 2026-09-10
+Distinct:
+- competition_key: 4
+- competition_group: 1
+- sm_action: 1
+- country: 0 non-null
+- division: 4
+- stage: 0
+- round: 0
+
+Structural nulls:
+- game_world_id: 0
+- wrong game_world_id: 0
+- sm_fixture_id: 0
+- competition_key: 0
+- competition_group: 0
+- sm_action: 0
+- match_date: 0
+- home team ID: 0
+- away team ID: 1
+- home/away names: 0
+- fingerprint: 0
+
+Unico away team ID null:
+- sm_fixture_id 367418946
+- AS Roma vs HERTHA BSC
+- HERTHA BSC team ID NULL
+
+3.3 GW001_IMC Match Report
+Rows: 433
+Date range: 2026-07-12 → 2026-09-10
+Distinct:
+- competition_key: 6
+- competition_group: 2
+- sm_action: 3
+- country: 0 non-null
+- division: 4
+- stage: 3
+- round: 5
+
+Structural nulls principali:
+- game_world_id: 0
+- wrong game_world_id: 0
+- sm_fixture_id: 0
+- competition_key: 0
+- competition_group: 0
+- sm_action: 0
+- match_date: 0
+- home/away club IDs: 0
+- home/away names: 0
+- fingerprint: 0
+
+======================================================================
+4. INVENTARIO GW007
+======================================================================
+
+4.1 GW007_IMC Results
+Rows: 2.464
+Date range: 2026-08-15 → 2026-09-09
+Distinct:
+- competition_key: 34
+- competition_group: 1
+- sm_action: 1
+- country: 19
+- division: 5
+- stage: 0
+- round: 0
+
+Structural nulls:
+- game_world_id: 0
+- wrong game_world_id: 0
+- fixture/key/group/action/date: 0
+- home_name/away_name: 0
+- fingerprint: 0
+- home club ID: 4
+- away club ID: 4
+
+Tutti gli 8 null club ID appartengono a REAL BETIS.
+
+4.2 GW007_IMC Schedule
+Rows: 9.268
+Date range: 2026-09-09 → 2026-12-30
+Distinct:
+- competition_key: 34
+- competition_group: 1
+- sm_action: 1
+- country: 19
+- division: 5
+- stage: 0
+- round: 0
+
+Structural nulls:
+- game_world_id: 0
+- wrong game_world_id: 0
+- fixture/key/group/action/date: 0
+- names: 0
+- fingerprint: 0
+- home team ID: 15
+- away team ID: 16
+
+Tutti i 31 null team ID appartengono a REAL BETIS.
+
+Temporal status al momento audit:
+- rows future dopo 2026-09-12: 8.652
+- 2026-09-09 20:00: 308 fixture, tutte con Result
+- 2026-09-12 20:00: 308 fixture, ancora future alle 11:55, quindi legittimamente senza Result
+
+4.3 GW007_IMC Match Report
+Rows: 0
+Date range: n/a
+Nessun dato disponibile.
+
+======================================================================
+5. GAME WORLD ID
+======================================================================
+
+GW001 Results:
+- 791/791 game_world_id = GW001
+- null/blank: 0
+- valori errati: 0
+
+GW001 Schedule:
+- 20/20 = GW001
+- null/blank: 0
+- valori errati: 0
+
+GW001 Match Report:
+- 433/433 = GW001
+- null/blank: 0
+- valori errati: 0
+
+GW007 Results:
+- 2.464/2.464 = GW007
+- null/blank: 0
+- valori errati: 0
+
+GW007 Schedule:
+- 9.268/9.268 = GW007
+- null/blank: 0
+- valori errati: 0
+
+GW007 Match Report:
+- 0 righe, non verificabile su dati.
+
+VERDICT GAME WORLD ID:
+PASS sui cinque repository popolati.
+
+======================================================================
+6. GW001 · COMPETITION SEMANTICS
+======================================================================
+
+6.1 RESULTS
+competition_group:
+- 0 valori semanticamente errati
+- DOMESTIC / INTERNATIONAL / NATIONS coerenti con sm_action
+
+sm_country:
+- 20 righe non-null improprie per un mondo SINGLE
+- tutte hanno sm_country='CUS'
+- tutte sono League del 2026-09-10
+
+competition_key:
+- 20 chiavi non canoniche
+- pattern errato:
+  GW001|CUS|DOMESTIC|league|<division>
+- pattern canonico atteso:
+  GW001|DOMESTIC|league|<division>
+
+Distribuzione:
+- Division 1: 5
+- Division 2: 5
+- Division 3: 5
+- Division 4: 5
+
+Fixture coinvolte:
+D1:
+367418675, 367418676, 367418677, 367418678, 367418679
+D2:
+367418765, 367418766, 367418767, 367418768, 367418769
+D3:
+367418855, 367418856, 367418857, 367418858, 367418859
+D4:
+367418945, 367418946, 367418947, 367418948, 367418949
+
+sm_division:
+- League: sempre 1-4
+- non-League: division NULL
+- anomalie division semanticamente improprie: 0
+
+stage/round:
+Struttura compatibile con League Cup / SMFA knockout e group phases osservate.
+Anomalia di normalizzazione testuale:
+- `Quarti di Finalee`: 20 righe Results
+
+RESULTS COMPETITION SEMANTICS VERDICT:
+FAIL per 20 righe SINGLE con country CUS e key non canonica.
+
+6.2 SCHEDULE
+competition_group:
+- 20/20 DOMESTIC, corretto
+
+sm_country:
+- 20/20 NULL, corretto per SINGLE
+
+sm_division:
+- 1-4, 5 fixture per divisione, corretto
+
+competition_key:
+- 20/20 NON canoniche
+- incorporano CUS benché sm_country sia NULL
+
+Pattern osservato:
+GW001|CUS|DOMESTIC|league|<division>
+
+Pattern atteso:
+GW001|DOMESTIC|league|<division>
+
+SCHEDULE COMPETITION SEMANTICS VERDICT:
+FAIL per 20/20 competition_key non canoniche.
+
+6.3 MATCH REPORT
+competition_group:
+- 0 valori semanticamente errati
+
+sm_country:
+- sempre NULL, corretto per SINGLE
+
+League:
+- 360 righe
+- 90 per divisione 1-4
+- key canoniche
+
+League Cup:
+- 39 righe
+- tutte con sm_division='4'
+- tutte con key `GW001|DOMESTIC|leaguecup|4`
+- Codex: League Cup non è division-scoped
+
+Pattern atteso:
+- sm_division NULL
+- competition_key `GW001|DOMESTIC|leaguecup`
+
+Regola che identifica l'intero set:
+WHERE sm_action='leaguecup'
+  AND (sm_division IS NOT NULL
+       OR competition_key<>'GW001|DOMESTIC|leaguecup')
+
+Campione fixture:
+367418974
+367895972
+368043401
+368169340
+368247961
+368333407
+
+Anomalia di normalizzazione testuale:
+- `Quarti di Finalee`: 12 righe Match Report
+
+MATCH REPORT COMPETITION SEMANTICS VERDICT:
+FAIL per 39 League Cup con division/key non canoniche.
+
+======================================================================
+7. GW007 · COMPETITION SEMANTICS
+======================================================================
+
+RESULTS:
+- competition_group errato: 0
+- action errata: 0
+- country null/blank: 0
+- division fuori range/codex: 0
+- competition_key errata: 0
+- stage non-null improprio: 0
+- round non-null improprio: 0
+
+SCHEDULE:
+- competition_group errato: 0
+- action errata: 0
+- country null/blank: 0
+- division fuori range/codex: 0
+- competition_key errata: 0
+- stage non-null improprio: 0
+- round non-null improprio: 0
+
+Codex parity country+division:
+- Codex: 34 combinations
+- Results: 34
+- Schedule: 34
+- hash Codex: cd578b2662b031eb33b49fce9ed5fce4
+- hash Results: cd578b2662b031eb33b49fce9ed5fce4
+- hash Schedule: cd578b2662b031eb33b49fce9ed5fce4
+
+COMPETITION SEMANTICS VERDICT GW007 RESULTS/SCHEDULE:
+PASS.
+
+MATCH REPORT:
+0 righe, non verificabile.
+
+======================================================================
+8. DUPLICATE AUDIT
+======================================================================
+
+GW001 Results
+- rows: 791
+- distinct sm_fixture_id: 791
+- duplicate fixture groups: 0
+- duplicate fixture excess rows: 0
+- duplicate fingerprint groups: 0
+- duplicate fingerprint excess: 0
+- same fixture with multiple fingerprints: 0
+VERDICT: PASS
+
+GW001 Schedule
+- rows: 20
+- distinct fixture: 20
+- duplicate fixture: 0
+- duplicate fingerprint: 0
+- same fixture multiple fingerprints: 0
+VERDICT: PASS
+
+GW001 Match Report
+- rows: 433
+- distinct fixture: 433
+- duplicate fixture: 0
+- duplicate fingerprint: 0
+VERDICT: PASS
+
+GW007 Results
+- rows: 2.464
+- distinct fixture: 2.464
+- duplicate fixture: 0
+- duplicate fingerprint: 0
+- same fixture multiple fingerprints: 0
+VERDICT: PASS
+
+GW007 Schedule
+- rows: 9.268
+- distinct fixture: 9.268
+- duplicate fixture: 0
+- duplicate fingerprint: 0
+- same fixture multiple fingerprints: 0
+VERDICT: PASS
+
+GW007 Match Report
+- rows: 0
+- duplicati: n/a
+
+======================================================================
+9. FIXTURE COVERAGE · GW001
+======================================================================
+
+Results → Schedule:
+- Results non presenti in Schedule complessivamente: 771
+- ma Results non presenti nella finestra coperta dalla Schedule (>= 2026-09-10): 0
+- shared Results/Schedule: 20
+
+Interpretazione:
+GW001 Schedule contiene soltanto il 2026-09-10.
+La mancanza delle 771 fixture storiche non è una incoerenza fixture-to-fixture nella finestra disponibile: è una differenza di copertura temporale del repository Schedule.
+
+Schedule → Results:
+- Schedule senza Result: 0
+- tutte le 20 Schedule hanno Result.
+
+Match Report → Results:
+- Match Report senza Result: 0
+- shared: 433/433
+
+Match Report → Schedule:
+- Match Report storici non presenti nella Schedule ridotta: 413
+- Match Report dal 2026-09-10 non presenti in Schedule: 0
+- shared Match Report/Schedule: 20
+
+MATCH REPORT COVERAGE rispetto Results:
+- interqualifier: 320 Results / 320 senza Match Report
+- league: 360 Results / 0 senza Match Report
+- leaguecup: 39 Results / 0 senza Match Report
+- smfacup: 36 Results / 2 senza Match Report
+- smfashield: 36 Results / 36 senza Match Report
+
+Totale Results senza Match Report:
+358
+
+Questa è una incompletezza di copertura Match Report, non una duplicazione o una fixture orphan del Match Report.
+
+======================================================================
+10. FIXTURE COVERAGE · GW007
+======================================================================
+
+Results → Schedule:
+- Results mancanti in Schedule complessivamente: 2.156
+- Results con match_date >= 2026-09-09 mancanti in Schedule: 0
+
+Interpretazione:
+La Schedule parte dal 2026-09-09.
+Tutti i Results nella finestra temporale coperta dalla Schedule sono correttamente collegabili.
+
+Shared Results/Schedule:
+308 fixture, tutte del 2026-09-09.
+
+Schedule senza Result:
+Totale: 8.960
+
+Composizione temporale:
+- 2026-09-12 ore 20:00: 308
+- dopo 2026-09-12: 8.652
+
+Al momento dell'audit:
+2026-09-12 11:55 Europe/Rome
+
+Quindi:
+- le 308 fixture del 12 settembre ore 20:00 sono future nella giornata;
+- le ulteriori 8.652 sono future nei giorni/mesi successivi;
+- nessuna Schedule già giocata nella finestra osservata risulta priva di Result.
+
+Match Report:
+0 righe.
+Nessun confronto fixture-to-fixture possibile.
+
+======================================================================
+11. CROSS-FIELD PARITY · GW001
+======================================================================
+
+11.1 RESULTS ↔ SCHEDULE
+Shared fixture: 20
+
+Mismatch:
+- game_world_id: 0
+- competition_key: 0
+- competition_group: 0
+- sm_action: 0
+- sm_country: 20
+- sm_division: 0
+- competition_stage: 0
+- competition_round: 0
+- match_date: 0
+- home ID: 0
+- away ID: 0
+- home_name: 0
+- away_name: 0
+- home manager: 0
+- away manager: 0
+
+Interpretazione:
+Le due tabelle condividono la stessa key CUS errata, ma:
+- Results ha sm_country='CUS'
+- Schedule ha sm_country=NULL
+
+Quindi la key è internamente identica ma semanticamente non canonica e il field country diverge.
+
+11.2 RESULTS ↔ MATCH REPORT
+Shared fixture: 433
+Fixture con almeno una discordanza: 89
+
+Field mismatch count:
+- game_world_id: 0
+- competition_key: 59
+- competition_group: 0
+- sm_action: 0
+- sm_country: 20
+- sm_division: 39
+- competition_stage: 0
+- competition_round: 0
+- match_date: 0
+- home club ID: 10
+- away club ID: 10
+- home_name: 0
+- away_name: 0
+- home manager ID: 16
+- away manager ID: 17
+
+Competition mismatch decomposition:
+- 20 = Results League 2026-09-10 con CUS vs Match Report canonical SINGLE
+- 39 = Match Report League Cup con division 4/key division-scoped vs Results canonical
+
+Club ID mismatch:
+20 side-occurrences, tutte HERTHA BSC.
+- Results: NULL
+- Match Report: 94079171
+
+Manager mismatch decomposition:
+- home: 15 casi Results NULL → Match Report valorizzato
+- away: 17 casi Results NULL → Match Report valorizzato
+- conflitti non-null reali: 1 home, 0 away
+
+Unico conflitto manager non-null reale:
+- GW: GW001
+- sm_fixture_id: 367418923
+- fixture: Club América vs River Plate
+- campo: home_sm_manager_id
+- Results: 20605515
+- Match Report: 5053060
+
+Gli altri mismatch manager sono prevalentemente arricchimento/mancata valorizzazione, non due ID non-null incompatibili.
+
+11.3 MATCH REPORT ↔ SCHEDULE
+Shared fixture: 20
+
+Mismatch:
+- competition_key: 20
+- tutti gli altri campi competition/date/name: 0
+- away ID: 1
+- away manager: 1
+
+Fixture identity mismatch:
+367418946 · AS Roma vs HERTHA BSC
+- Schedule away team ID: NULL
+- Match Report away club ID: 94079171
+- Schedule away manager ID: NULL
+- Match Report away manager ID: 13051324
+
+Key mismatch sulle 20 fixture:
+- Schedule: GW001|CUS|DOMESTIC|league|<division>
+- Match Report: GW001|DOMESTIC|league|<division>
+
+======================================================================
+12. CROSS-FIELD PARITY · GW007
+======================================================================
+
+RESULTS ↔ SCHEDULE
+Shared fixture: 308
+
+Mismatch count su ogni campo confrontato:
+- game_world_id: 0
+- competition_key: 0
+- competition_group: 0
+- sm_action: 0
+- sm_country: 0
+- sm_division: 0
+- competition_stage: 0
+- competition_round: 0
+- match_date: 0
+- home ID: 0
+- away ID: 0
+- home_name: 0
+- away_name: 0
+- home manager: 0
+- away manager: 0
+
+VERDICT:
+PASS 308/308.
+
+MATCH REPORT:
+nessuna fixture disponibile.
+
+======================================================================
+13. IDENTITY GAPS
+======================================================================
+
+13.1 GW001 · HERTHA BSC
+
+Results non-NATIONS con club ID mancante:
+20 fixture.
+
+Pattern:
+- tutti i null non-NATIONS identificano HERTHA BSC
+- Match Report risolve HERTHA BSC come SM club ID 94079171
+
+Include League e due League Cup.
+Esempi:
+- 367418864 HERTHA BSC vs Club América
+- 367895972 River Plate vs HERTHA BSC
+- 368043406 HERTHA BSC vs TSV 1860 München
+- 367418946 AS Roma vs HERTHA BSC
+
+Schedule:
+- 1 fixture interessata: 367418946
+- away team ID HERTHA BSC NULL
+
+Conclusione:
+identity resolution gap specifico HERTHA BSC.
+
+13.2 GW007 · REAL BETIS
+
+Results:
+8 fixture con ID mancante, tutte REAL BETIS.
+
+Schedule:
+31 fixture con ID mancante, tutte REAL BETIS.
+
+Esempi:
+- 380652320 Villarreal CF vs REAL BETIS
+- 380652387 Valencia CF vs REAL BETIS
+- 380652396 REAL BETIS vs Elche CF
+- 380652690 REAL BETIS vs Sevilla FC
+
+La fixture condivisa 380652387 mantiene parity Results/Schedule: entrambi hanno il medesimo NULL sul lato REAL BETIS.
+
+Conclusione:
+identity resolution gap specifico REAL BETIS, non inconsistenza random tra repository.
+
+======================================================================
+14. STRUCTURAL / TEXT NORMALIZATION
+======================================================================
+
+GW001:
+`competition_stage='Quarti di Finalee'`
+- Results: 20
+- Match Report: 12
+
+Il valore è coerente tra i record condivisi ma contiene una label evidentemente non normalizzata.
+Classificazione: WARNING di qualità testuale/semantic normalization.
+
+GW007:
+stage e round sempre NULL nei Results/Schedule League osservati, coerente con il contesto.
+
+======================================================================
+15. MATRIX · GW001
+======================================================================
+
+Repository | Rows | Structural Quality | Competition Semantics | Fixture Integrity | Cross-Repo Parity | Verdict
+Results | 791 | WARNING | FAIL | PASS duplicate/fixture uniqueness; WARNING identity | FAIL | FAIL
+Schedule | 20 | WARNING | FAIL | PASS duplicate/coverage window; WARNING identity | FAIL | FAIL
+Match Report | 433 | PASS schema/required structural fields | FAIL | PASS uniqueness; WARNING coverage incomplete | FAIL | FAIL
+
+DETTAGLIO RESULTS:
+- 20 CUS country/key errati
+- HERTHA BSC club ID null in 20 non-NATIONS fixture
+- nessun duplicato
+- tutti i fixture ID unici
+
+DETTAGLIO SCHEDULE:
+- 20/20 key CUS non canoniche
+- sm_country correttamente NULL
+- 1 HERTHA BSC away team ID null
+- nessun duplicato
+- copertura temporale limitata al 2026-09-10 ma coerente nella finestra
+
+DETTAGLIO MATCH REPORT:
+- 39 League Cup con division 4/key non canonica
+- nessun duplicato
+- ogni Match Report ha un Result
+- copertura Match Report incompleta su 358 Results
+- un solo manager ID non-null realmente conflittuale
+
+======================================================================
+16. MATRIX · GW007
+======================================================================
+
+Repository | Rows | Structural Quality | Competition Semantics | Fixture Integrity | Cross-Repo Parity | Verdict
+Results | 2.464 | WARNING | PASS | PASS uniqueness; WARNING REAL BETIS identity | PASS vs Schedule | WARNING
+Schedule | 9.268 | WARNING | PASS | PASS uniqueness/temporal integrity; WARNING REAL BETIS identity | PASS vs Results | WARNING
+Match Report | 0 | FAIL availability | NOT VERIFIABLE | FAIL coverage | NOT VERIFIABLE | FAIL
+
+DETTAGLIO RESULTS:
+- 34/34 country+division canonical
+- key/group/action perfetti
+- nessun duplicate/fingerprint duplicate
+- 8 fixture con REAL BETIS ID null
+
+DETTAGLIO SCHEDULE:
+- 34/34 country+division canonical
+- 308 fixture 2026-09-09 tutte collegate ai Results
+- 308 fixture 2026-09-12 ore 20:00 ancora future alle 11:55
+- 8.652 fixture successive future
+- nessun duplicate
+- 31 fixture REAL BETIS ID null
+
+DETTAGLIO MATCH REPORT:
+- 0 righe
+- nessuna certificazione possibile
+
+======================================================================
+17. ANOMALIE DA CORREGGERE PRIMA DI AFFIDABILITÀ MINISITO
+======================================================================
+
+GW001 · necessarie prima della piena affidabilità:
+1. canonicalizzare 20 Results League del 2026-09-10:
+   - sm_country CUS -> semantics SINGLE country NULL
+   - competition_key senza CUS
+2. canonicalizzare 20 Schedule del 2026-09-10:
+   - competition_key senza CUS
+3. canonicalizzare 39 Match Report League Cup:
+   - sm_division deve essere NULL
+   - key non deve contenere |4
+4. risolvere identity HERTHA BSC nelle 20 fixture Results e nella Schedule 367418946
+5. verificare/correggere il manager conflict della fixture 367418923
+6. decidere/colmare la copertura Match Report mancante se il minisito richiede report per quei domini:
+   - 320 interqualifier
+   - 36 smfashield
+   - 2 smfacup
+7. normalizzare label `Quarti di Finalee` se la UI usa direttamente il valore.
+
+GW007 · necessarie prima della piena affidabilità del sistema completo:
+1. risolvere SM club/team ID di REAL BETIS nelle fixture coinvolte
+2. popolare/certificare GW007 Match Report: attualmente 0 righe
+
+NON è necessario correggere:
+- Schedule future senza Result
+- Results storici precedenti alla finestra Schedule
+- null club IDs delle fixture NATIONS GW001, perché non rappresentano club.
+
+======================================================================
+18. RISPOSTE ALLE 15 DOMANDE OBBLIGATORIE
+======================================================================
+
+GW001
+
+1. Results è coerente?
+FAIL.
+La struttura base, unicità fixture e competition_group sono solide, ma 20 righe League del 10/09 hanno country/key MULTI-like improprie (`CUS`) in un mondo SINGLE. Inoltre HERTHA BSC manca di club ID in 20 fixture non-NATIONS.
+
+2. Schedule è coerente?
+FAIL.
+20/20 fixture sono strutturalmente valide e tutte hanno Result, ma tutte le competition_key incorporano impropriamente CUS. Una fixture HERTHA BSC manca di away team ID.
+
+3. Match Report è coerente?
+FAIL.
+Unicità e campi strutturali sono buoni, ma 39 League Cup sono modellate impropriamente come division 4/key division-scoped. Il repository copre solo 433 dei 791 Results; inoltre esiste un manager conflict reale.
+
+4. competition_key è semanticamente corretta e coerente tra i tre repository?
+NO.
+- Results: 20 non canoniche
+- Schedule: 20/20 non canoniche
+- Match Report: 39 non canoniche
+- Results vs Match Report: 59 fixture con key divergente
+- Match Report vs Schedule: 20 fixture con key divergente
+
+5. competition_group è semanticamente corretta e coerente?
+SI.
+Nessun mismatch competition_group sulle fixture condivise e nessuna classificazione group errata rilevata.
+
+6. Esistono fixture cross-repository discordanti?
+SI.
+Results↔Match Report: 89 fixture condivise con almeno una discordanza.
+Pattern principali:
+- 20 country/key CUS
+- 39 League Cup key/division
+- HERTHA BSC ID null vs valorizzato
+- manager fields, con un solo conflitto non-null reale.
+Results↔Schedule: 20 country mismatch.
+Match Report↔Schedule: 20 key mismatch + 1 HERTHA identity/manager mismatch.
+
+7. Quali anomalie devono essere corrette prima di considerare i dati GW001 affidabili per il minisito?
+Le 7 categorie elencate nella sezione 17, con priorità a competition semantics e identity HERTHA BSC; Match Report coverage va allineata al requisito effettivo del minisito.
+
+GW007
+
+8. Results è coerente?
+WARNING.
+Competition semantics, fixture uniqueness e parity con Schedule sono eccellenti. Restano 8 fixture con REAL BETIS club ID null.
+
+9. Schedule è coerente?
+WARNING.
+Competition semantics e fixture uniqueness sono corrette; le assenze di Result sono tutte future al momento dell'audit. Restano 31 fixture con REAL BETIS team ID null.
+
+10. Match Report è coerente?
+FAIL.
+Repository presente ma vuoto: 0 righe.
+
+11. competition_key è semanticamente corretta e coerente tra i tre repository?
+Results/Schedule: SI, 34/34 contexts corretti e 308/308 fixture condivise con key identica.
+Match Report: non verificabile perché vuoto.
+
+12. competition_group è semanticamente corretta e coerente?
+Results/Schedule: SI, DOMESTIC coerente con tutte le League osservate.
+Match Report: non verificabile.
+
+13. country/division sono coerenti col modello MULTI/GOLD?
+SI per Results e Schedule.
+Il set country+division coincide esattamente 34/34 col Competition Codex.
+
+14. Esistono fixture cross-repository discordanti?
+Results↔Schedule: NO sui 308 fixture condivisi, zero mismatch su tutti i campi confrontati.
+Match Report: non confrontabile perché 0 righe.
+Il NULL REAL BETIS è coerente tra Results/Schedule quando la fixture è condivisa, ma resta un gap identitario da correggere.
+
+15. Quali anomalie devono essere corrette prima di considerare i dati GW007 affidabili per il minisito?
+- risoluzione dell'ID REAL BETIS
+- disponibilità/certificazione del Match Report se il minisito deve consumarlo
+Results/Schedule, per il resto, sono semanticamente affidabili nel perimetro auditato.
+
+======================================================================
+19. VERDETTO FINALE
+======================================================================
+
+GW001 OVERALL: FAIL
+Motivo:
+competition semantics non completamente canoniche nei tre repository e identity gaps reali; Match Report incompleto.
+
+GW007 OVERALL THREE-REPOSITORY CERTIFICATION: FAIL
+Motivo:
+Match Report = 0 righe.
+
+GW007 RESULTS + SCHEDULE PAIR: WARNING / NEAR-PASS
+Motivo:
+semanticamente corretto, 308/308 parity perfetta, nessun duplicato; unico difetto concreto è il recurring REAL BETIS ID null.
+
+DUPLICATE INTEGRITY:
+PASS su tutti i repository popolati.
+
+GAME WORLD ID INTEGRITY:
+PASS su tutti i repository popolati.
+
+NO REMEDIATION EXECUTED.
+DB WRITES EXECUTED: NONE
+SCHEMA WRITES EXECUTED: NONE
+CODE WRITES EXECUTED: NONE
+DEPLOYS EXECUTED: NONE
+
+IMC-DB-001-11: COMPLETED
