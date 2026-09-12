@@ -1,0 +1,9 @@
+CASE_ID: IMC-DB-001-06
+AREA: DB
+DOMAIN: CORE
+GW: GLOBAL
+TOPIC: CORE_MISSING_CAPABILITIES_NECESSITY_AUDIT
+TAGS: core, mysql1, imc-canonical, necessity-audit, coverage-gap, mapping, season-context, competition-meta, ingestion-v2, player-codex
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-DB-001
+MODE: READ_ONLY_AUDIT
