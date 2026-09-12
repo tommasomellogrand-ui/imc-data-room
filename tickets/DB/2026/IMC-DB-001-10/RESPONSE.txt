@@ -1,0 +1,1413 @@
+CASE_ID: IMC-DB-001-10
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: IMC_INGESTION_PROVENANCE_V1_SINGLE_TABLE_REVISION
+STATUS: COMPLETED
+MODE: READ_ONLY_DESIGN
+
+IMC | DATABASE MANAGER
+IMC INGESTION & PROVENANCE V1 · SINGLE-TABLE REVISION
+
+======================================================================
+0. EXECUTIVE RESULT
+======================================================================
+
+Questo CASE è stato eseguito esclusivamente in READ-ONLY / DESIGN-ONLY.
+Nessuna tabella è stata creata.
+Nessuna migration è stata eseguita.
+Nessun codice è stato modificato.
+Nessun deploy è stato eseguito.
+Nessun importer live è stato toccato.
+
+CORE live verificato durante il CASE:
+- 12 tabelle totali;
+- 12 tabelle IMC;
+- 0 tabelle non-IMC.
+
+La revisione richiesta dalla Direzione è tecnicamente sostenibile.
+
+VERDETTO:
+IMC Ingestion & Provenance V1 può essere realizzata con UNA SOLA TABELLA persistente MySQL CORE:
+
+`IMC Ingestion Provenance`
+
+La tabella unica sostituisce operativamente la proposta a quattro tabelle di IMC-DB-001-08.
+
+Il modello raccomandato è ibrido:
+- RUN = una riga summary aggiornabile per ogni esecuzione;
+- BATCH = una riga summary aggiornabile per ogni batch;
+- ISSUE = riga append-only per warning/error/fatal;
+- RECORD_EVENT = riga append-only SPARSE per skip/reject/conflict o lineage specificamente richiesto.
+
+La V1 NON deve registrare un RECORD_EVENT per ogni inserimento riuscito.
+Gli insert/update normali vengono sintetizzati nei counter RUN/BATCH.
+Questo è il compromesso decisivo che rende sostenibile la tabella unica.
+
+Principio di compatibilità:
+- legacy/live business write path resta invariato finché il singolo importer non viene migrato;
+- provenance shadow è aggiuntiva e non blocking;
+- un failure della provenance NON blocca un importer non ancora V1-native;
+- nessun importer deve conoscere DB/table SQL nel futuro V1-native;
+- durante la transizione, i vecchi path restano disponibili finché esplicitamente certificati e cutoverati.
+
+La prima implementazione raccomandata NON è una migrazione degli importer.
+È:
+PHASE 0 = creare soltanto `IMC Ingestion Provenance` e il registry V1 in codice, senza cambiare il comportamento di alcun importer.
+
+Primo importer pilota successivo raccomandato:
+Results, in modalità SHADOW.
+
+======================================================================
+1. AUDIT DELLO STATO CORRENTE
+======================================================================
+
+1.1 UNIVERSAL GATEWAY
+
+Runtime/code version osservata:
+IMC Universal Gateway 2.2.13.
+
+Esiste già un ramo:
+- channel = IMPORT
+- route_mode = explicit
+- action = read / insert_many
+
+Esiste inoltre `imc-universal-gateway/ingress.php`, che oggi svolge un ruolo tecnico/business-agnostic:
+- valida channel/action/route_mode;
+- valida Game World;
+- valida target database coerente col GW;
+- valida nome tabella con pattern GWxxx_IMC ...;
+- supporta batch massimo 500 righe;
+- supporta transazione atomic true/false;
+- esegue INSERT;
+- restituisce received/inserted/written/skipped/failed;
+- NON possiede run persistence;
+- NON possiede idempotency engine;
+- NON possiede adapter business;
+- NON possiede skip/update policy;
+- NON possiede issue model persistente;
+- NON possiede provenance persistente.
+
+Nel core tradizionale del Gateway esistono:
+- routing GW -> DB;
+- allowlist esplicita dei repository principali;
+- schema/type validation per le import table;
+- strict validators dedicati per Transfers, Match Report e Player Codex;
+- generic insert_many/upsert_many;
+- audit file JSONL tecnico.
+
+Le capacità esistenti sono riutilizzabili come transport e validation primitives.
+NON devono diventare la nuova source of truth architetturale della provenance.
+
+1.2 LEGACY SM MASTER
+
+`__imc-sm-master/admin/ingestion/router.php` è oggi hard-blocked con:
+`legacy_core_removed: ingestion rebuild required after IMC-DB-001-04`.
+
+Conclusione:
+la vecchia ingestion non deve essere riattivata.
+Non è un requisito di backward compatibility.
+La compatibilità da preservare riguarda gli importer operativi correnti che scrivono nei repository IMC attraverso i path live attuali.
+
+1.3 IMPORTER / REPOSITORY PRINCIPALI
+
+Il Gateway corrente riconosce esplicitamente:
+- IMC Results;
+- IMC Schedule;
+- IMC Match Report;
+- IMC Transfer -> physical IMC Transfers;
+- IMC Player Codex;
+- IMC SM Player Stats.
+
+I path correnti usano le tabelle GWxxx_IMC ... in GOLD/CUSTOM.
+La V1 proposta NON richiede di cambiare tali destinazioni per introdurre la provenance.
+
+======================================================================
+2. SINGLE TABLE MODEL
+======================================================================
+
+NOME RACCOMANDATO:
+`IMC Ingestion Provenance`
+
+Non esiste una ragione tecnica sufficiente per cambiare il naming preferito dalla Direzione.
+
+SEMANTICA:
+Una riga rappresenta un'entità/evento tecnico della provenance V1.
+
+TIPI DI RIGA:
+- RUN
+- BATCH
+- ISSUE
+- RECORD_EVENT
+
+MODELLO IBRIDO:
+- RUN/BATCH sono summary rows aggiornabili durante l'esecuzione;
+- ISSUE/RECORD_EVENT sono append-only.
+
+Questo evita di simulare quattro tabelle con quattro JSON giganti, ma evita anche la proliferazione di una riga per ogni record business scritto correttamente.
+
+======================================================================
+3. SCHEMA RACCOMANDATO · COLUMN BY COLUMN
+======================================================================
+
+A. IDENTITÀ EVENTO
+
+1. `event_id`
+BIGINT UNSIGNED NOT NULL AUTO_INCREMENT
+PRIMARY KEY.
+Identità fisica della riga provenance.
+
+2. `event_type`
+VARCHAR(24) NOT NULL
+Valori ammessi iniziali:
+RUN | BATCH | ISSUE | RECORD_EVENT
+
+CHECK raccomandato sui quattro valori.
+
+3. `run_uuid`
+CHAR(36) NOT NULL
+Identificativo della singola esecuzione tecnica.
+Comune a tutte le righe figlie della run.
+
+Non è l'idempotency key.
+Un retry genera un nuovo run_uuid.
+
+4. `parent_event_id`
+BIGINT UNSIGNED NULL
+Relazione logica alla riga parent:
+- BATCH -> RUN
+- ISSUE -> RUN/BATCH/RECORD_EVENT
+- RECORD_EVENT -> BATCH o RUN
+
+RACCOMANDAZIONE V1:
+indice sì; SELF-FK fisica NO nella prima release.
+
+Motivo:
+- rende più semplice retention/purge progressivo;
+- evita che un log tecnico impedisca cancellazioni di vecchi record;
+- run_uuid rimane il legame robusto obbligatorio.
+
+5. `batch_key`
+VARCHAR(128) NULL
+Identità logica del batch all'interno della run.
+Esempi futuri:
+page:12
+chunk:004
+competition:<key>:page:2
+
+È valorizzato su BATCH e, quando utile, ISSUE/RECORD_EVENT.
+
+6. `record_key`
+VARCHAR(255) NULL
+Identità naturale/canonica del record secondo Repository Adapter.
+NON è obbligatoria per importer ancora legacy/shadow.
+
+B. DIMENSIONI IMC / ROUTING
+
+7. `repository_key`
+VARCHAR(64) NOT NULL
+Chiave SEMANTICA da registry, non nome tabella SQL libero.
+
+Esempi:
+results
+schedule
+match_report
+transfers
+player_codex
+sm_player_stats
+game_world_club_mapping
+game_world_national_team_mapping
+
+8. `game_world_id`
+VARCHAR(255) NULL
+GW canonico quando pertinente.
+
+Per eventi world-scoped, una V1-native run deve essere validata contro:
+`IMC Game World Codex Global`.`IMC GW`.
+
+Per una richiesta con GW invalido, il logger può conservare game_world_id=NULL e mettere il valore richiesto in metadata_json.
+Questo permette di loggare l'errore senza violare una futura FK.
+
+FK raccomandata:
+`game_world_id` -> `IMC Game World Codex Global`.`IMC GW`
+NULL consentito.
+
+9. `destination_key`
+VARCHAR(64) NULL
+Chiave logica del target risolto dal registry.
+NON deve provenire direttamente da input libero nella V1-native.
+
+10. `destination_database`
+VARCHAR(64) NULL
+Database effettivamente risolto/eseguito.
+Audit only.
+Nel path V1-native viene valorizzato dal registry/runtime, non dal client.
+
+11. `destination_table`
+VARCHAR(128) NULL
+Tabella fisica effettiva.
+Audit only.
+Nel path V1-native viene risolta dal registry.
+
+Durante shadow logging serve per fotografare il comportamento attuale senza cambiarlo.
+
+C. SOURCE IDENTITY
+
+12. `source_type`
+VARCHAR(64) NULL
+Esempi:
+soccer_manager_dom
+soccer_manager_api
+manual_admin
+supabase_nexus
+migration
+scheduled_job
+
+13. `source_name`
+VARCHAR(255) NULL
+Nome/logical source.
+
+14. `source_version`
+VARCHAR(64) NULL
+Versione della source quando disponibile.
+
+15. `source_locator`
+VARCHAR(512) NULL
+Locator non sensibile, se utile:
+URL logico, page id, file name, source endpoint, object locator.
+NON contenere credenziali/token.
+
+16. `source_hash`
+CHAR(64) NULL
+SHA-256 del source artifact/batch quando disponibile.
+Supporta replay/idempotency senza conservare raw payload.
+
+D. IMPORTER / EXECUTOR IDENTITY
+
+17. `importer_name`
+VARCHAR(128) NULL
+Nome script/userscript/job.
+
+Legacy compatibility:
+se l'importer non invia ancora il nome, shadow logger può usare un valore noto dal route oppure `legacy_unknown`.
+La mancanza NON deve bloccare l'import non-native.
+
+18. `importer_version`
+VARCHAR(64) NULL
+Versione reale quando dichiarata/disponibile.
+
+Legacy compatibility:
+NULL/unknown è accettato in SHADOW.
+V1-native dovrà valorizzarla.
+
+19. `gateway_version`
+VARCHAR(64) NULL
+Versione del write executor/Gateway che ha gestito il traffico.
+È utile per distinguere bug importer da bug transport.
+
+20. `adapter_version`
+VARCHAR(64) NULL
+Versione del Repository Adapter.
+NULL per importer non ancora adapter-native.
+
+21. `execution_mode`
+VARCHAR(24) NOT NULL DEFAULT 'SHADOW'
+Valori iniziali:
+LEGACY | SHADOW | V1_NATIVE
+
+- LEGACY = provenance derivata a posteriori/limitata;
+- SHADOW = write business corrente invariato + provenance best effort;
+- V1_NATIVE = orchestration/idempotency/adapter governati dalla V1.
+
+E. STATO / OUTCOME
+
+22. `status`
+VARCHAR(32) NOT NULL
+
+RUN/BATCH valori raccomandati:
+RECEIVED
+RUNNING
+VALIDATING
+WRITING
+SUCCESS
+PARTIAL
+FAILED
+CANCELLED
+
+ISSUE:
+OPEN | RECORDED | RESOLVED
+
+RECORD_EVENT:
+RECORDED
+
+Non serve registrare ogni transizione come nuova riga.
+La riga RUN/BATCH viene aggiornata.
+
+23. `record_outcome`
+VARCHAR(24) NULL
+Solo RECORD_EVENT, quando pertinente:
+INSERTED | UPDATED | SKIPPED | REJECTED | CONFLICT
+
+Nota:
+INSERTED/UPDATED row event non sono normalmente registrati in V1 iniziale.
+I valori sono disponibili per repository audit-critical o debug temporaneo.
+
+24. `severity`
+VARCHAR(16) NULL
+ISSUE:
+INFO | WARNING | ERROR | FATAL
+
+25. `issue_code`
+VARCHAR(96) NULL
+Codice stabile machine-readable.
+Esempi:
+schema_mismatch
+reference_not_found
+business_rule_violation
+duplicate_same_fingerprint
+duplicate_conflict
+write_constraint_failure
+provenance_write_failure
+
+26. `message`
+TEXT NULL
+Messaggio umano conciso.
+NON payload raw.
+
+F. IDEMPOTENCY / RETRY / RESUME
+
+27. `idempotency_key`
+VARCHAR(255) NULL
+Chiave logica leggibile/diagnostica quando esiste.
+Policy definita dall'adapter.
+
+28. `dedupe_key`
+CHAR(64) NULL
+SHA-256 canonico usato per UNIQUE database.
+
+UNIQUE raccomandato su `dedupe_key`.
+MySQL consente più NULL, quindi ISSUE/RECORD_EVENT che non richiedono deduplica possono lasciarlo NULL.
+
+Esempio RUN:
+sha256('RUN|results|GW001|<source_hash>|<importer_version>|<logical_window>')
+
+Esempio BATCH:
+sha256('BATCH|<run_uuid>|<batch_key>')
+
+Il dettaglio esatto resta adapter-specific.
+
+29. `fingerprint`
+VARCHAR(255) NULL
+Fingerprint business quando il repository lo possiede già.
+Non imporre SHA-256 se il dominio usa già un fingerprint canonico diverso.
+
+30. `retry_of_run_uuid`
+CHAR(36) NULL
+Run precedente di cui questa è retry.
+
+31. `attempt_no`
+INT UNSIGNED NOT NULL DEFAULT 1
+Tentativo logico.
+
+32. `resume_from_batch_key`
+VARCHAR(128) NULL
+Batch dal quale il retry/resume dichiara di ripartire.
+
+G. COUNTERS
+
+I counter sono valorizzati principalmente su RUN/BATCH.
+NULL sugli altri event type.
+
+33. `received_count`
+BIGINT UNSIGNED NULL
+
+34. `inserted_count`
+BIGINT UNSIGNED NULL
+
+35. `updated_count`
+BIGINT UNSIGNED NULL
+
+36. `skipped_count`
+BIGINT UNSIGNED NULL
+
+37. `rejected_count`
+BIGINT UNSIGNED NULL
+
+38. `warning_count`
+BIGINT UNSIGNED NULL
+
+39. `error_count`
+BIGINT UNSIGNED NULL
+
+40. `conflict_count`
+BIGINT UNSIGNED NULL
+
+H. TIME / PERFORMANCE
+
+41. `started_at`
+DATETIME(6) NULL
+RUN/BATCH start.
+
+42. `completed_at`
+DATETIME(6) NULL
+RUN/BATCH finish.
+
+43. `created_at`
+DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
+Creazione evento.
+
+44. `updated_at`
+DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
+Utile per RUN/BATCH summary aggiornabili.
+
+45. `duration_ms`
+BIGINT UNSIGNED NULL
+
+I. EXTENSION FIELD
+
+46. `metadata_json`
+JSON NULL
+
+Uso autorizzato:
+- contesto non core;
+- requested_game_world_id invalido;
+- validator details concisi;
+- HTTP/status metadata;
+- source-specific piccoli attributi;
+- diagnostic fields versionati.
+
+NON usarlo per:
+- salvare interi Results/Match Report/Player Codex raw;
+- duplicare le righe business;
+- nascondere campi che meritano query/index stabili.
+
+======================================================================
+4. KEYS / UNIQUE / INDEX / FK
+======================================================================
+
+PRIMARY KEY:
+`event_id`
+
+UNIQUE:
+`dedupe_key`
+
+INDEX RACCOMANDATI V1:
+1. (`run_uuid`, `event_type`)
+2. (`repository_key`, `game_world_id`, `created_at`)
+3. (`event_type`, `status`, `created_at`)
+4. (`parent_event_id`)
+5. (`repository_key`, `game_world_id`, `record_key`)
+6. (`importer_name`, `importer_version`, `created_at`)
+7. (`retry_of_run_uuid`)
+
+Non aggiungere indici su ogni colonna nullable.
+La V1 deve essere misurata prima di ulteriori tuning.
+
+FK RACCOMANDATA:
+`game_world_id` -> `IMC Game World Codex Global`.`IMC GW`
+
+SELF-FK parent_event_id:
+NON raccomandata nella prima release.
+
+FK verso repository/destination:
+NO.
+Il repository registry è in codice, non in tabella DB.
+
+======================================================================
+5. HIERARCHY / PARENTING
+======================================================================
+
+ESEMPIO LOGICO
+
+RUN event_id=100
+run_uuid=R1
+repository=results
+GW001
+
+BATCH event_id=101
+run_uuid=R1
+parent_event_id=100
+batch_key=page:1
+
+BATCH event_id=102
+run_uuid=R1
+parent_event_id=100
+batch_key=page:2
+
+ISSUE event_id=103
+run_uuid=R1
+parent_event_id=102
+batch_key=page:2
+severity=WARNING
+issue_code=reference_not_found
+
+RECORD_EVENT event_id=104
+run_uuid=R1
+parent_event_id=102
+batch_key=page:2
+record_key=fixture:123
+record_outcome=SKIPPED
+issue_code=already_imported_same_fingerprint
+
+VANTAGGIO:
+- query per run usa run_uuid;
+- gerarchia UI usa parent_event_id;
+- retention non dipende da FK self-referential;
+- repository/GW sono denormalizzati su ogni riga e filtrabili senza self-join.
+
+======================================================================
+6. IDEMPOTENCY MODEL
+======================================================================
+
+6.1 RUN IDEMPOTENCY
+
+Non usare run_uuid come idempotency.
+run_uuid identifica l'esecuzione, non il contenuto.
+
+Ogni Repository Adapter definisce una Run Idempotency Policy.
+
+Ordine di preferenza:
+A. source_hash stabile + repository/GW/source scope;
+B. importer-provided logical source key certificata;
+C. repository-specific time/page/window key;
+D. nessuna run-level dedupe blocking in SHADOW se l'identità non è affidabile.
+
+Durante SHADOW:
+la V1 NON deve impedire la run business solo perché non riesce a costruire un'idempotency key perfetta.
+
+6.2 BATCH IDEMPOTENCY
+
+batch_key stabile nell'ambito della run/source.
+`dedupe_key = SHA256(RUN logical key + batch_key)` o equivalente adapter-defined.
+
+Retry:
+un nuovo run_uuid può riconoscere batch già completati in una run precedente tramite source identity + batch_key, ma soltanto dopo che l'adapter è certificato.
+
+6.3 ROW IDEMPOTENCY
+
+Non imporre una sola regola globale.
+
+Policy:
+- repository con fingerprint/natural key forte: usarli;
+- repository con natural key ma senza fingerprint: natural key + normalized content hash;
+- repository senza identity affidabile: lasciare il write/skip legacy invariato finché l'adapter non viene progettato e certificato.
+
+6.4 DEDUPE KEY
+
+`dedupe_key` è la protezione tecnica UNIQUE.
+È prodotta dal runtime V1/adapter, non dal SQL client arbitrario.
+
+6.5 RETRY
+
+Nuovo run_uuid.
+`retry_of_run_uuid` punta alla run precedente.
+`attempt_no` incrementa.
+
+Il retry può:
+- riprocessare tutto in modalità safe-idempotent;
+- oppure resume da batch specifico.
+
+6.6 RESUME
+
+Solo per adapter certificati.
+La V1 legge i BATCH SUCCESS precedenti della stessa logical run identity e riparte dal primo batch non completato.
+
+Per importer legacy/shadow:
+nessun resume automatico nuovo viene introdotto.
+Continua la logica corrente.
+
+======================================================================
+7. FAILURE POLICY
+======================================================================
+
+7.1 LEGACY / SHADOW IMPORTER
+
+REGOLA OBBLIGATORIA:
+PROVENANCE FAIL-OPEN rispetto al business write.
+
+Sequenza raccomandata PHASE 1:
+1. business write attuale;
+2. risposta business calcolata;
+3. tentativo best-effort di provenance RUN/BATCH;
+4. se provenance fallisce:
+   - NON rollback business data;
+   - NON cambiare success response business;
+   - log tecnico fallback su server/Action log;
+   - metric alert `provenance_write_failure`.
+
+La provenance non deve essere un prerequisito di un import non ancora V1-native.
+
+7.2 V1_NATIVE IMPORTER FUTURO
+
+Policy configurabile per repository:
+
+STANDARD GAME-WORLD DATA:
+preferenza = provenance-required ma con fallback controllato; valutare fail-closed solo dopo stabilità misurata.
+
+CORE / MAPPING / GOVERNANCE-CRITICAL WRITES:
+può essere ragionevole fail-closed se la Direzione richiede lineage obbligatorio.
+
+Questa decisione NON va imposta globalmente nella V1 iniziale.
+
+7.3 PROVENANCE FAILURE NON DEVE GENERARE RECURSION
+
+Se `IMC Ingestion Provenance` non è scrivibile, non si tenta di loggare il failure nella stessa tabella in loop.
+Fallback = application/server log esterno.
+
+======================================================================
+8. BACKWARD COMPATIBILITY · IMPORTER BY IMPORTER
+======================================================================
+
+8.1 RESULTS
+
+COME FUNZIONA OGGI
+- repository supportato esplicitamente dal Universal Gateway;
+- target GWxxx_IMC Results;
+- schema/type validation disponibile;
+- dominio già possiede sm_fixture_id/fingerprint nei dati correnti;
+- importer attuali possono avere propria logica read-before-write/skip.
+
+V1 SENZA MODIFICARE WRITE PATH:
+SI.
+
+INSTRUMENT SUBITO:
+- RUN summary;
+- BATCH summary;
+- received/inserted quando disponibili dalla risposta Gateway;
+- importer/gateway version;
+- source/page metadata se già disponibile;
+- provenance failure fail-open.
+
+NON MIGRARE SUBITO:
+- skip authority;
+- fingerprint conflict policy;
+- idempotency business.
+
+MIGRAZIONE FUTURA:
+ResultsAdapter può assumere progressivamente:
+- stable key;
+- duplicate handling;
+- fingerprint conflict;
+- updated/skipped counters.
+
+RISCHIO SHADOW:
+LOW.
+
+ROLLBACK:
+disabilitare solo shadow logging/registry flag. Business path invariato.
+
+PILOTA RACCOMANDATO:
+YES.
+
+8.2 SCHEDULE
+
+COME FUNZIONA OGGI
+- repository esplicito Gateway;
+- target GWxxx_IMC Schedule;
+- generic schema/type validation;
+- current write path non deve essere modificato per introdurre provenance.
+
+V1 SHADOW:
+SI.
+
+INSTRUMENT SUBITO:
+- RUN/BATCH;
+- counter ricevuti/scritti esposti dal path corrente;
+- GW/repository/importer version.
+
+MIGRAZIONE FUTURA:
+ScheduleAdapter deve definire e certificare stable identity/update semantics prima di assumere idempotency.
+
+RISCHIO SHADOW:
+LOW.
+
+ROLLBACK:
+disabilitare logging.
+
+8.3 MATCH REPORT
+
+COME FUNZIONA OGGI
+- repository esplicito Gateway;
+- strict validator corrente verifica struttura esatta;
+- record contiene game_world_id, sm_fixture_id, competition context, scores, cinque JSON, fingerprint/imported_at;
+- architettura business one-row-per-fixture dove applicabile.
+
+V1 SHADOW:
+SI.
+
+INSTRUMENT SUBITO:
+- RUN/BATCH;
+- success/failure counters;
+- issue on strict-validator failure, se intercettabile senza cambiare response contract.
+
+MIGRAZIONE FUTURA:
+MatchReportAdapter:
+- natural identity game_world_id + sm_fixture_id;
+- content equivalence fingerprint;
+- conflict policy.
+
+RISCHIO SHADOW:
+LOW/MEDIUM per payload pesante, ma provenance NON salva raw payload.
+
+ROLLBACK:
+logging off; validator/write invariati.
+
+8.4 TRANSFERS
+
+COME FUNZIONA OGGI
+- repository esplicito;
+- strict validator corrente su struttura Transfer;
+- target GWxxx_IMC Transfers.
+
+V1 SHADOW:
+SI.
+
+INSTRUMENT SUBITO:
+- RUN/BATCH;
+- counters;
+- validator issue summary.
+
+MIGRAZIONE FUTURA:
+TransferAdapter deve certificare natural identity/duplicate policy prima di spostare idempotency nel V1.
+Non assumere automaticamente che imc_transfer_number sia sufficiente senza audit specifico.
+
+RISCHIO SHADOW:
+LOW.
+
+ROLLBACK:
+logging off.
+
+8.5 PLAYER CODEX
+
+COME FUNZIONA OGGI
+- repository esplicito;
+- strict validator corrente su struttura Player Codex;
+- stable player_id disponibile nel dominio;
+- semanticamente è un dataset con update frequenti, non puro append-only.
+
+V1 SHADOW:
+SI.
+
+INSTRUMENT SUBITO:
+- RUN/BATCH;
+- source/importer version;
+- counts disponibili.
+
+NON MIGRARE SUBITO:
+- upsert/update authority;
+- rating-history semantics;
+- content hash.
+
+MIGRAZIONE FUTURA:
+PlayerCodexAdapter:
+- player_id come entity key;
+- normalized content hash per unchanged skip;
+- update policy per current profile;
+- rating history trattata separatamente dal current-profile write.
+
+RISCHIO SHADOW:
+LOW.
+RISCHIO NATIVE MIGRATION:
+MEDIUM/HIGH, quindi non primo pilota.
+
+ROLLBACK:
+logging off / adapter feature flag off.
+
+8.6 SM PLAYER STATS
+
+COME FUNZIONA OGGI
+- repository riconosciuto dal Gateway;
+- generic import validation;
+- sito legge la risorsa sm_player_stats.
+
+V1 SHADOW:
+SI.
+
+INSTRUMENT SUBITO:
+- RUN/BATCH;
+- counters;
+- GW/repository/importer.
+
+MIGRAZIONE FUTURA:
+SMPlayerStatsAdapter deve certificare l'identità record precisa per scope competizione/player prima di assumere skip/idempotency.
+
+RISCHIO SHADOW:
+LOW.
+
+ROLLBACK:
+logging off.
+
+8.7 MAPPING CLUB / NATIONAL TEAM / GAME WORLD
+
+Non sono il primo pilot high-volume.
+La nuova `IMC Game World National Team Mapping` è ora parte del CORE.
+
+Per future ingestion mapping:
+V1_NATIVE è preferibile fin dall'inizio perché:
+- volume limitato;
+- struttura governance-critical;
+- source identity controllabile;
+- lineage importante.
+
+Ma nessun importer mapping attuale viene modificato da questo CASE.
+
+======================================================================
+9. NON-BLOCKING INTRODUCTION
+======================================================================
+
+PHASE 0 · TABLE ONLY / ZERO BEHAVIOR CHANGE
+
+- creare `IMC Ingestion Provenance` con Database Manager;
+- creare registry/config V1 in GitHub;
+- nessun importer scrive provenance;
+- nessun Gateway business path cambia;
+- verificare schema/index/retention jobs design;
+- feature flags tutti OFF.
+
+Acceptance:
+nessun cambiamento osservabile sugli importer live.
+
+PHASE 1 · RESULTS SHADOW PROVENANCE
+
+- attivare solo Results;
+- NON cambiare payload importer;
+- NON cambiare business destination;
+- NON cambiare skip logic;
+- Gateway/sidecar registra RUN+BATCH best effort;
+- provenance failure fail-open.
+
+Acceptance:
+- stessi business row counts di prima;
+- stesso skip behavior di prima;
+- provenance counters riconciliabili con import report;
+- zero regressioni tempi/errori materialmente significative.
+
+PHASE 2 · COUNTER / SKIP PARITY
+
+- confrontare V1 summary con importer logs e Repository Report;
+- introdurre sparse RECORD_EVENT solo per skip/reject/conflict necessari;
+- verificare dedupe/idempotency candidate senza ancora renderli autoritativi.
+
+PHASE 3 · OPTIONAL RESULTS V1-NATIVE IDEMPOTENCY
+
+Solo dopo certificazione:
+- ResultsAdapter diventa autoritativo per stable key/fingerprint handling;
+- legacy read-before-write skip può essere rimosso gradualmente;
+- write path può rimanere lo stesso physical repository.
+
+Cutover separato e reversibile.
+
+PHASE 4 · PROGRESSIVE ROLLOUT
+
+Ordine suggerito:
+1. Schedule
+2. SM Player Stats
+3. Transfers
+4. Match Report
+5. Player Codex
+6. mapping/admin pipelines
+
+L'ordine reale può cambiare sulla base di rischio/volume, ma ogni repository ha feature flag indipendente.
+
+======================================================================
+10. REGISTRY / GATEWAY MODEL
+======================================================================
+
+REGISTRY V1:
+repository/config in GitHub, versionato.
+Non tabella DB.
+
+Ogni repository entry definisce almeno:
+- repository_key;
+- allowed GW scope;
+- destination resolver;
+- adapter class/version;
+- importer compatibility mode;
+- provenance_enabled;
+- provenance_required;
+- row_event_policy;
+- idempotency policy name;
+- transaction policy;
+- max batch;
+- retention profile.
+
+LEGACY PATH
+
+Rimane invariato.
+Può continuare ad accettare i parametri che usa oggi finché quell'importer non è migrato.
+Non va reso V1-compliant retroattivamente come prerequisito.
+
+V1 SHADOW PATH
+
+Il business write usa legacy/current path.
+Il runtime identifica repository/GW/destination realmente utilizzati e registra provenance in best effort.
+
+L'importer non è obbligato a inviare nuovi campi.
+Se importer_name/version non sono disponibili, shadow usa fallback.
+
+V1 NATIVE PATH
+
+Input contiene SEMANTICA, non SQL routing libero:
+- repository_key
+- game_world_id
+- source identity
+- importer identity/version
+- batch data
+
+Registry risolve:
+- database;
+- table;
+- adapter;
+- validation/idempotency/write policy.
+
+Il client NON può scegliere liberamente:
+- target_database;
+- target_table;
+- SQL;
+- DDL.
+
+CRITERIO DI CUTOVER
+
+Un importer passa a V1_NATIVE solo quando:
+- shadow counters parity = PASS;
+- idempotency candidate audit = PASS;
+- performance regression accettabile;
+- rollback testato;
+- live verification positiva;
+- esplicita certificazione importer-specifica.
+
+======================================================================
+11. RUN / BATCH STATE MACHINE
+======================================================================
+
+RUN:
+RECEIVED
+-> RUNNING
+-> VALIDATING
+-> WRITING
+-> SUCCESS
+   oppure PARTIAL
+   oppure FAILED
+   oppure CANCELLED
+
+Non tutte le fasi devono essere materializzate come status intermedi se l'import dura pochi secondi.
+La UI può mostrare solo lo stato corrente.
+
+BATCH:
+RECEIVED
+-> VALIDATING
+-> WRITING
+-> SUCCESS
+   oppure PARTIAL
+   oppure FAILED
+
+RETRY:
+crea nuova RUN con:
+- new run_uuid
+- retry_of_run_uuid
+- attempt_no + 1
+
+Non resuscitare/modificare una run conclusa per rappresentare il retry.
+
+======================================================================
+12. ISSUE / WARNING MODEL
+======================================================================
+
+ISSUE è una riga event_type=ISSUE.
+
+Campi principali:
+- run_uuid
+- parent_event_id
+- batch_key
+- repository_key
+- game_world_id
+- severity
+- issue_code
+- message
+- record_key opzionale
+- fingerprint opzionale
+- metadata_json opzionale
+
+SEVERITY:
+INFO = diagnostica utile
+WARNING = dato processabile con anomalia
+ERROR = record/batch failure recuperabile
+FATAL = run non può proseguire
+
+RETRYABILITY:
+Non aggiungere una colonna separata obbligatoria nella V1 minima.
+Usare metadata_json.retryable boolean finché non emerge un uso query-heavy.
+Se diventa metrica core, promuovere in colonna in un CASE futuro.
+
+======================================================================
+13. RECORD EVENT POLICY
+======================================================================
+
+DEFAULT:
+NON registrare record event per ogni INSERT/UPDATE riuscito.
+
+REGISTRARE SEMPRE SPARSE RECORD_EVENT per:
+- SKIPPED quando serve spiegabilità;
+- REJECTED;
+- CONFLICT;
+- record error;
+- record lineage esplicitamente richiesto da adapter audit-critical.
+
+REGISTRARE INSERTED/UPDATED per-record solo:
+- debug temporaneo;
+- mapping/governance con volumi bassi;
+- repository per cui la Direzione richiede exact lineage.
+
+Questo riduce la crescita di ordini di grandezza.
+
+======================================================================
+14. TABLE GROWTH / RETENTION
+======================================================================
+
+14.1 EVENTI SEMPRE REGISTRATI
+
+Quando provenance è attiva:
+- 1 RUN per esecuzione;
+- 1 BATCH per batch effettivo;
+- ISSUE solo quando esiste;
+- RECORD_EVENT sparse.
+
+14.2 RETENTION RACCOMANDATA
+
+RUN:
+24 mesi online.
+Success summary leggere possono essere mantenute più a lungo se volume trascurabile.
+
+BATCH:
+12 mesi online.
+
+ISSUE ERROR/FATAL:
+24 mesi.
+
+ISSUE WARNING:
+12 mesi.
+
+ISSUE INFO:
+3-6 mesi.
+
+RECORD_EVENT SKIPPED/REJECTED/CONFLICT:
+12 mesi.
+
+RECORD_EVENT success exact-lineage:
+90 giorni default, salvo profilo repository diverso.
+
+14.3 PURGE
+
+Purge in chunk per created_at/event_type/status.
+Non TRUNCATE globale.
+
+Ordine consigliato:
+1. vecchi RECORD_EVENT success;
+2. INFO;
+3. vecchi BATCH;
+4. vecchie RUN solo dopo retention;
+5. issue secondo policy.
+
+parent_event_id senza FK permette purge indipendente.
+run_uuid mantiene traccia logica anche se parent summary non è più online dopo anni.
+
+14.4 ARCHIVE
+
+Archive opzionale fuori CORE prima del purge:
+JSONL/Parquet/object storage.
+Non è richiesto nella V1 iniziale.
+
+14.5 RAW PAYLOAD
+
+Default:
+NON salvare raw payload nella provenance.
+
+Salvare:
+- source_locator;
+- source_hash;
+- metadata minima.
+
+Raw artifact eventuale:
+fuori MySQL CORE, retention breve e solo per casi autorizzati.
+
+======================================================================
+15. QUERY EXAMPLES / LOGICHE OPERATIVE
+======================================================================
+
+A. ULTIMO IMPORT PER GW/REPOSITORY
+
+SELECT *
+FROM `IMC Ingestion Provenance`
+WHERE event_type='RUN'
+  AND repository_key=?
+  AND game_world_id=?
+ORDER BY started_at DESC, event_id DESC
+LIMIT 1;
+
+B. COUNTERS ULTIMA RUN
+
+SELECT received_count,inserted_count,updated_count,skipped_count,
+       rejected_count,warning_count,error_count,status,duration_ms
+FROM `IMC Ingestion Provenance`
+WHERE event_type='RUN' AND run_uuid=?;
+
+C. PERCHÉ UNA RIGA È STATA SKIPPATA
+
+SELECT record_key,record_outcome,issue_code,message,batch_key,created_at
+FROM `IMC Ingestion Provenance`
+WHERE event_type='RECORD_EVENT'
+  AND repository_key=?
+  AND game_world_id=?
+  AND record_key=?
+  AND record_outcome='SKIPPED'
+ORDER BY created_at DESC;
+
+D. ERRORI DI UNA RUN
+
+SELECT severity,issue_code,message,batch_key,record_key,created_at
+FROM `IMC Ingestion Provenance`
+WHERE event_type='ISSUE'
+  AND run_uuid=?
+  AND severity IN ('ERROR','FATAL')
+ORDER BY event_id;
+
+E. BATCH FALLITI
+
+SELECT event_id,batch_key,status,received_count,inserted_count,
+       updated_count,skipped_count,rejected_count,error_count
+FROM `IMC Ingestion Provenance`
+WHERE event_type='BATCH'
+  AND run_uuid=?
+  AND status IN ('FAILED','PARTIAL')
+ORDER BY event_id;
+
+F. IMPORTER/VERSIONI CHE STANNO SCRIVENDO
+
+SELECT importer_name,importer_version,gateway_version,
+       COUNT(*) runs,MAX(started_at) last_seen
+FROM `IMC Ingestion Provenance`
+WHERE event_type='RUN'
+  AND created_at >= NOW() - INTERVAL 30 DAY
+GROUP BY importer_name,importer_version,gateway_version
+ORDER BY last_seen DESC;
+
+G. RETRY CHAIN
+
+SELECT run_uuid,retry_of_run_uuid,attempt_no,status,started_at,completed_at
+FROM `IMC Ingestion Provenance`
+WHERE event_type='RUN'
+  AND (run_uuid=? OR retry_of_run_uuid=? OR run_uuid IN (
+       SELECT retry_of_run_uuid FROM `IMC Ingestion Provenance`
+       WHERE event_type='RUN' AND run_uuid=?
+  ))
+ORDER BY attempt_no,event_id;
+
+H. SITUAZIONE IMPORT GLOBALE PER GW/REPOSITORY
+
+SELECT game_world_id,repository_key,
+       MAX(started_at) last_run,
+       SUM(inserted_count) inserted,
+       SUM(updated_count) updated,
+       SUM(skipped_count) skipped,
+       SUM(rejected_count) rejected
+FROM `IMC Ingestion Provenance`
+WHERE event_type='RUN'
+  AND started_at >= ?
+GROUP BY game_world_id,repository_key;
+
+Nota:
+`IMC Repository Report` resta la source operativa autorizzata per le domande di inventario globale import correnti definite dalle regole IMC.
+La provenance V1 non deve sostituire quel report finché non esiste un CASE esplicito di integrazione.
+
+======================================================================
+16. OBSERVABILITY
+======================================================================
+
+Derivabile direttamente dalla tabella unica:
+- runs_total per repo/GW/importer/version;
+- success/partial/failure rate;
+- duration_ms;
+- received/inserted/updated/skipped/rejected;
+- warning/error/conflict rate;
+- batch failure rate;
+- retry count;
+- provenance shadow coverage;
+- V1-native adoption rate;
+- importer version drift.
+
+Alert iniziali:
+- provenance logging failure repeated;
+- importer version unknown sopra soglia;
+- run FAILED ripetute;
+- reject/conflict rate spike;
+- run stuck RUNNING/WRITING oltre timeout;
+- shadow counters mismatch rispetto al business write response.
+
+Nessuna seconda tabella metrics nella V1.
+
+======================================================================
+17. TRANSACTION / PARTIAL FAILURE
+======================================================================
+
+SHADOW:
+Business transaction è quella attuale.
+Provenance è fuori dal critical path.
+
+V1_NATIVE futuro:
+Adapter dichiara transaction policy:
+- ATOMIC_RUN
+- ATOMIC_BATCH
+- PARTIAL_ALLOWED
+
+RUN/BATCH counters riflettono sempre ciò che è realmente committed.
+
+Se un batch rollbacka:
+- BATCH status=FAILED;
+- inserted/updated committed = 0;
+- issue registrata;
+- RUN può continuare solo se adapter PARTIAL_ALLOWED.
+
+Logical compensation:
+NON progettare un generic rollback business universale.
+Ogni eventuale compensazione è adapter-specific e va autorizzata separatamente.
+
+======================================================================
+18. SECURITY / SAFETY MODEL
+======================================================================
+
+V1_NATIVE:
+- repository_key deve essere in registry;
+- GW deve essere canonical/allowed;
+- destination DB/table sono risolti server-side;
+- action permessa dal registry;
+- nessun SQL libero;
+- nessun DDL runtime;
+- nessun CREATE TABLE IF NOT EXISTS dinamico;
+- nessun target non-IMC autorizzabile via input.
+
+Database Manager resta l'unico percorso autorizzato per schema/migration.
+
+SHADOW/LEGACY TRANSITION:
+non si rompe il contratto attuale.
+I path esistenti restano temporaneamente come sono.
+La sicurezza V1-native non viene retro-imposta in una sola release causando outage.
+
+Cutover per importer, non globale.
+
+======================================================================
+19. COMPROMESSI DELLA TABELLA UNICA
+======================================================================
+
+SVANTAGGI rispetto al modello a quattro tabelle:
+- più colonne nullable;
+- semantica dipende da event_type;
+- vincoli DB specifici per tipo meno eleganti;
+- RUN/BATCH summary e append-only event convivono;
+- retention richiede predicate accurati.
+
+VANTAGGI:
+- una sola struttura CORE;
+- query operative semplici;
+- un solo schema/versioning path;
+- una sola retention pipeline;
+- nessun join cross-table necessario per dashboard base;
+- minore superficie operativa;
+- coerente con la decisione di CORE minimale;
+- sufficiente se RECORD_EVENT resta sparse.
+
+VALUTAZIONE:
+Il compromesso è ACCETTABILE e raccomandato.
+
+Condizione fondamentale:
+NON trasformare la tabella in full row journal di tutti gli insert/update.
+Se si registrasse una riga provenance per ogni record business riuscito, la soluzione a tabella unica diventerebbe inutilmente pesante.
+
+======================================================================
+20. WHAT NOT TO BUILD
+======================================================================
+
+NON costruire nella V1:
+- quattro tabelle Run/Batch/Issue/Record Event;
+- repository registry DB;
+- metrics table separata;
+- raw payload table;
+- source snapshot table;
+- generic DDL creator;
+- dynamic table creator;
+- SQL-from-client ingestion;
+- full success row journal per default;
+- generic rollback engine;
+- mega-riscrittura contemporanea di tutti gli importer;
+- un cutover globale;
+- dipendenza bloccante dalla provenance per importer legacy/shadow;
+- resurrezione di ingestion_runs/ingestion_errors/import_errors/source_snapshots/sm_*_source/sw_*_source.
+
+======================================================================
+21. FIRST EXECUTION CASE RECOMMENDED
+======================================================================
+
+CASE successivo raccomandato:
+
+`IMC Ingestion Provenance · PHASE 0 FOUNDATION`
+
+Perimetro suggerito:
+1. creare SOLO `IMC Ingestion Provenance` nel CORE;
+2. creare registry V1 in GitHub con feature flags OFF;
+3. aggiungere helper provenance isolato ma NON collegato ai business write path;
+4. test di insert/query/retention su eventi sintetici controllati;
+5. verificare che tutti gli importer live producano esattamente lo stesso comportamento di prima;
+6. nessun importer in shadow ancora, se la Direzione vuole separare foundation e pilot.
+
+CASE seguente:
+`RESULTS SHADOW PILOT`
+
+Obiettivo:
+strumentare Results senza cambiare il business write path e certificare counter/skip parity.
+
+======================================================================
+22. FINAL VERDICT
+======================================================================
+
+SINGLE TABLE TECHNICALLY SUSTAINABLE: YES
+
+TARGET TABLE:
+`IMC Ingestion Provenance`
+
+PERSISTENT TABLE COUNT V1:
+1
+
+MODEL:
+Hybrid event ledger + mutable RUN/BATCH summaries.
+
+EVENT TYPES:
+RUN | BATCH | ISSUE | RECORD_EVENT
+
+ROW EVENT STRATEGY:
+SPARSE.
+
+LEGACY/LIVE COMPATIBILITY:
+PRESERVED BY DESIGN.
+
+PROVENANCE FAILURE POLICY DURING TRANSITION:
+FAIL-OPEN RELATIVE TO BUSINESS WRITE.
+
+V1-NATIVE FUTURE PATH:
+Registry-resolved, adapter-governed, no free DB/table/SQL selection.
+
+FIRST PILOT:
+Results shadow provenance.
+
+FIRST OPERATIONAL CASE:
+PHASE 0 FOUNDATION, create table only + registry OFF + zero behavior change.
+
+CORE STATE OBSERVED DURING DESIGN:
+12 tables total
+12 IMC
+0 non-IMC
+
+DB WRITES EXECUTED: NONE
+CODE WRITES EXECUTED: NONE
+DEPLOYS EXECUTED: NONE
+LIVE IMPORTERS MODIFIED: NONE
+
+IMC-DB-001-10: COMPLETED
