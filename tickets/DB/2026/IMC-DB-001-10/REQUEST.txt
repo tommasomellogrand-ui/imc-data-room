@@ -1,0 +1,204 @@
+CASE_ID: IMC-DB-001-10
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-12
+TOPIC: IMC_INGESTION_PROVENANCE_V1_SINGLE_TABLE_REVISION
+
+IMC | DATABASE MANAGER
+IMC INGESTION & PROVENANCE V1 · SINGLE-TABLE REVISION
+
+CONTESTO
+IMC-DB-001-08 ha prodotto una proposta architetturale per IMC Ingestion & Provenance V1 basata su 4 tabelle persistenti: Run, Batch, Issue e Record Event.
+
+DECISIONE DELLA DIREZIONE
+La Direzione NON approva una soluzione a 4 tabelle.
+
+Se IMC Ingestion & Provenance V1 deve essere realizzata, deve usare UNA SOLA TABELLA persistente per la provenance/audit.
+
+La ragione è architetturale e operativa:
+- il CORE è stato appena ridotto e consolidato;
+- non vogliamo espandere il CORE con quattro strutture tecniche per una sola capability;
+- la provenance è infrastruttura tecnica, non dominio business;
+- il sistema deve restare semplice da interrogare, mantenere e verificare.
+
+VINCOLO PRINCIPALE
+Progetta nuovamente IMC Ingestion & Provenance V1 assumendo:
+
+1 SOLA TABELLA persistente in MySQL CORE.
+
+Puoi mantenere un repository registry/config in codice GitHub se serve, ma NON proporre ulteriori tabelle DB nella V1.
+
+NOME TARGET PREFERITO
+`IMC Ingestion Provenance`
+
+Puoi proporre un naming diverso solo se esiste una ragione tecnica forte e documentata.
+
+REQUISITO FONDAMENTALE DI COMPATIBILITÀ
+Gli importer attualmente operativi DEVONO CONTINUARE A FUNZIONARE.
+
+Questo requisito ha priorità assoluta.
+
+La V1 NON deve introdurre paletti che interrompano, rallentino o rendano inutilizzabili gli import correnti di:
+- Results;
+- Schedule;
+- Match Report;
+- Transfers;
+- Player Codex;
+- SM Player Stats;
+- eventuali altri importer IMC attualmente live.
+
+NON chiediamo una big-bang migration.
+NON vogliamo che un importer smetta di funzionare finché non è stato esplicitamente migrato e verificato.
+NON modificare il contratto live dei vecchi importer in modo breaking.
+
+La nuova V1 deve essere introdotta in modo progressivo e backward-compatible.
+
+PRINCIPIO DI MIGRAZIONE
+Preferenza della Direzione:
+- mantenere l'attuale estrazione/parsing degli importer;
+- mantenere inizialmente il write path attuale dove necessario;
+- aggiungere la provenance V1 senza bloccare il flusso;
+- migrare progressivamente idempotency/skip/write verso il nuovo modello solo importer per importer, dopo verifica reale;
+- ogni importer non ancora migrato deve continuare a lavorare come oggi.
+
+La provenance non deve diventare un prerequisito bloccante per un import live finché quel singolo importer non è stato certificato sulla V1.
+
+OBIETTIVO DEL CASE
+Riformulare IMC-DB-001-08 in una proposta concreta a TABELLA UNICA, verificando che il modello possa preservare:
+- run-level provenance;
+- batch-level provenance;
+- issue/error tracking;
+- row-level skip/reject/write-event tracking quando utile;
+- idempotency;
+- retry/resume;
+- counters;
+- source/importer/version identity;
+- audit;
+- query semplici;
+- retention sostenibile;
+- compatibilità con gli importer attuali.
+
+NON IMPLEMENTARE ANCORA.
+Questo CASE è READ-ONLY / DESIGN-ONLY.
+
+1 · SINGLE TABLE MODEL
+Proponi lo schema completo della singola tabella.
+
+Deve essere possibile distinguere almeno eventi/record di tipo:
+- RUN
+- BATCH
+- ISSUE
+- RECORD_EVENT
+
+oppure un modello equivalente che mantenga la stessa capacità informativa.
+
+Valuta campi comuni + campi opzionali/nullabili invece di normalizzazione su più tabelle.
+
+2 · HIERARCHY / PARENTING
+Definisci come rappresentare nella stessa tabella:
+- una run;
+- i suoi batch;
+- issue legate a run/batch/record;
+- record event legati a run/batch.
+
+Puoi usare parent_id, run_uuid, batch key o altra strategia, ma deve essere interrogabile e robusta.
+
+3 · IDEMPOTENCY
+Spiega come la tabella unica supporta:
+- run idempotency;
+- batch idempotency;
+- row skip/reject rationale;
+- retries;
+- resume;
+- duplicate protection.
+
+Non assumere che tutti gli importer abbiano già fingerprint perfetti: definisci fallback e policy per repository.
+
+4 · BACKWARD COMPATIBILITY
+Questa sezione è OBBLIGATORIA e deve essere molto concreta.
+
+Per ogni importer live/repository principale indica:
+- come funziona oggi;
+- se la V1 può essere aggiunta senza modificare il write path attuale;
+- cosa può essere instrumented subito;
+- cosa richiede migrazione futura;
+- rischio di regressione;
+- rollback.
+
+La proposta deve dimostrare che l'introduzione della tabella provenance NON blocca gli import correnti.
+
+5 · NON-BLOCKING INTRODUCTION
+Proponi una strategia in fasi, preferibilmente:
+
+PHASE 0 · create table only, no importer behavior change
+PHASE 1 · shadow provenance logging su un importer pilota
+PHASE 2 · validate counters/skip parity
+PHASE 3 · optional migration of idempotency/write path per importer
+PHASE 4 · progressive rollout
+
+Puoi proporre una sequenza migliore, ma deve essere esplicitamente backward-compatible.
+
+6 · FAILURE POLICY
+Definisci cosa succede se la provenance fallisce.
+
+REQUISITO DELLA DIREZIONE:
+finché un importer non è dichiarato V1-native, un problema di scrittura provenance NON deve impedire il normale import business, salvo casi di corruzione o safety esplicitamente motivati.
+
+In altre parole, nella fase di transizione la provenance deve essere preferibilmente fail-open rispetto al logging, non fail-closed rispetto al dato business.
+
+Per importer V1-native futuri potrai proporre policy più rigide, ma separale chiaramente.
+
+7 · TABLE GROWTH / RETENTION
+Con una tabella unica, definisci:
+- quali eventi registrare sempre;
+- quali row-event registrare solo sparse;
+- retention;
+- purge/archive strategy;
+- index necessari;
+- come evitare che la provenance diventi più grande dei repository business.
+
+8 · QUERY EXAMPLES
+Fornisci query/logiche per rispondere facilmente a:
+- ultimo import per GW/repository;
+- quante righe ricevute/inserite/aggiornate/skippate/rifiutate;
+- perché una riga è stata skippata;
+- quali errori ha avuto una run;
+- quali batch sono falliti;
+- quali importer/versioni stanno scrivendo;
+- quali run sono retry di altre run.
+
+9 · GATEWAY / REGISTRY
+Mantieni, se utile, il concetto di repository registry in codice/config GitHub.
+
+L'importer V1 non deve scegliere liberamente DB/tabella/SQL.
+Ma durante la transizione non rompere gli importer legacy che usano ancora il loro percorso corrente.
+
+Definisci quindi chiaramente:
+- legacy path;
+- V1 shadow path;
+- V1 native path futuro;
+- criterio di cutover.
+
+10 · FINAL VERDICT
+Concludi esplicitamente:
+- se una tabella unica è tecnicamente sostenibile;
+- eventuali compromessi rispetto al modello a 4 tabelle;
+- perché il compromesso è o non è accettabile;
+- schema raccomandato;
+- primo importer pilota raccomandato;
+- primo CASE operativo successivo.
+
+VINCOLI
+- READ ONLY / DESIGN ONLY.
+- Nessuna tabella da creare in questo CASE.
+- Nessuna migration.
+- Nessun codice modificato.
+- Nessun deploy.
+- Nessun importer live deve essere toccato.
+- Nessuna proposta che richieda quattro tabelle persistenti.
+- Nessuna breaking change agli import attuali come prerequisito per introdurre la provenance.
+
+OUTPUT AUTORITATIVO
+`tickets/DB/2026/IMC-DB-001-10/RESPONSE.txt`
+
+La RESPONSE deve sostituire operativamente la proposta multi-tabella di IMC-DB-001-08 e fornire alla Direzione una versione V1 a tabella unica, progressiva e compatibile con gli import correnti.
