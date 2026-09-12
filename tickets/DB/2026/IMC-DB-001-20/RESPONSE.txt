@@ -1,0 +1,241 @@
+CASE_ID: IMC-DB-001-20
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_FINAL_END_OF_SECTION_AND_NO_COMPETITION_HANDLING
+STATUS: COMPLETED
+MODE: CODE_FIX_DATA_ROOM_ONLY
+VERDICT: READY_FOR_MANUAL_RETEST
+
+1. INPUT E BASE
+
+Letti integralmente nella stessa Work e recuperati dal repository
+tommasomellogrand-ui/imc-data-room:
+- tickets/DB/2026/IMC-DB-001-20/REQUEST.txt
+  blob 26c62375d882ca3749fb231f921710e6acca0788
+- tickets/DB/2026/IMC-DB-001-18/RESPONSE.txt
+  blob 82783ee37d943984ed2f872f7e94b56fc6f59bc8
+- tickets/DB/2026/IMC-DB-001-19/OUTPUT_RESULTS_IMPORT.js
+  blob a92c55f50d751497afc73b4e980c87b3493629bb
+- tickets/DB/2026/IMC-DB-001-19/RESPONSE.txt
+  blob 236892ccb5cb1ad4b77b5aa98191509abb0ea4a7
+
+Base esclusiva: OUTPUT 001-19.
+Nessuna modifica dei CASE precedenti.
+
+2. ROOT CAUSE
+
+Il percorso 001-19 riconosceva la fine di una pagina soltanto dopo aver
+costruito un contesto da action/pager e una snapshot verificabile.
+Quando Soccer Manager disabilitava/rimuoveva il pager dopo un no-op,
+context() poteva fallire prima che goPrevious riconoscesse lo stesso
+turno. L'eccezione diventava il timeout REAL_ERROR.
+
+Il messaggio esplicito di assenza risultati non era gestito: readiness
+richiedeva action/data/fixture anche su una schermata che dichiarava
+semanticamente l'assenza della competizione per quella stagione.
+
+Inoltre plan()/switchTo() richiedevano nuovamente context() dopo la fine
+della sezione: riconoscere solo il messaggio in goPrevious non sarebbe
+bastato a passare alla nazione successiva.
+
+La soluzione introduce le sole eccezioni semantiche autorizzate.
+Non trasforma ogni action mancante in END_OF_SECTION.
+
+3. FUNZIONI E STATI
+
+Nuova previousControl():
+AVAILABLE / DISABLED / ABSENT.
+Controlli scoped al Results root, su ResultsprevWeek_click/noclick.
+Riconosce disabled, aria-disabled=true, class/id disabled/noclick,
+pointer-events:none e assenza dell'handler onclick osservato.
+prevButton() restituisce un elemento soltanto per AVAILABLE.
+
+Nuova noResultsState():
+restituisce END_OF_SECTION / no_results_for_competition esclusivamente
+quando il Results root live e visibile contiene il messaggio:
+"Nessun risultato è attualmente disponibile per questo tipo di
+competizione in questa stagione."
+
+Il testo viene ricomposto dai text node visibili, con clean di spazi e
+minuscole italiane; match della frase completa, non parole chiave
+generiche come "nessun risultato". Il punto finale fa parte del match.
+Esclusi workingCopy, script/style e testo hidden.
+Un controllo preliminare economico su "nessun" evita scansioni inutili;
+non decide lo stato. Se coesistono score giocati visibili, il segnale è
+contraddittorio e NON viene riconosciuto come no-results.
+
+waitForStableResultState():
+prima del requisito action/pager riconosce noResultsState.
+Richiede due osservazioni consecutive uguali e target selector coerenti,
+poi ritorna lo stato END_OF_SECTION. Non attende il timeout completo.
+Il ramo normale continua a validare context/IDs/signature come prima.
+
+Nuova navigationContext() e stato runtime S.navigationContext:
+conservano il contesto verificato e quello del target richiesto soltanto
+per continuare il piano di navigazione quando no-results è esplicito.
+Non vengono usati per costruire o persistere righe senza action.
+Senza segnale no-results, context mancante continua a fallire.
+
+switchTo():
+conserva il contesto del target prima del cambio; supporta la risposta
+END_OF_SECTION dalla readiness e lascia procedere run.
+Quando si parte già da una pagina no-results, richiede anche prova di
+aggiornamento del blocco (root/firstChild/HTML diverso), oltre al selector
+target, prima di accettare un nuovo no-results. Non scambia il vecchio
+messaggio rimasto sullo schermo per la risposta della nuova nazione.
+La riapertura della scheda Results durante AJAX resta presente.
+
+plan():
+usa il contesto di navigazione solo nel caso no-results autorizzato.
+League continua col piano division; coppe col piano country.
+In assenza di un contesto iniziale noto su una schermata no-results,
+non inventa action o division. Può usare il selector country MULTI;
+il successivo target popolato deve comunque fornire un contesto valido.
+
+previousSnapshot(before):
+normalmente richiede il contesto corrente come prima.
+Solo se action è assente e Precedenti non è AVAILABLE, può riutilizzare
+il contesto della snapshot verificata precedente a condizione che:
+- data e set fixture giocato siano identici;
+- HTML dei blocchi delle righe sia identico;
+- country/division semantiche dei controlli non siano in conflitto.
+Il riuso è confinato alla prova di pagina invariata, non a nuovi dati.
+
+waitForStableResultState conserva S.previousVerified dopo una lettura
+valida, per riconoscere anche la fine storico già verificata dal run.
+
+goPrevious():
+- no-results stabile -> END_OF_SECTION;
+- pagina verificata con Previous assente/disabled -> END_OF_SECTION;
+- dopo click, stessa key/data/fixture set stabile e Previous non
+  disponibile -> END_OF_SECTION, reason same_page_previous_disabled;
+- stessa pagina con Previous ancora AVAILABLE -> conserva la regola
+  prudente 001-18 con tre snapshot uguali, senza usare il nuovo shortcut;
+- nuovo set giocato valido -> MOVED_TO_PREVIOUS_RESULTS;
+- target futuro/senza score -> END_OF_SECTION, come 001-18;
+- assenza action senza prove autorizzate -> REAL_ERROR;
+- incoerenze di key/data/fixture o DOM non verificabile -> REAL_ERROR.
+
+processPage():
+se readiness ritorna END_OF_SECTION, logga e restituisce [] prima di
+costruire righe, classificare duplicati o inviare scritture.
+
+resultRows():
+guard no-results -> [] prima di context(). Il parser delle righe
+normali rimane quello 001-19.
+
+processSection()/run():
+orchestrazione esistente conservata. [] conclude normalmente la
+sezione, S.done aumenta, run passa al prossimo target naturale.
+Nessun incremento ERRORI per no-results.
+
+main():
+riconosce come pagina iniziale valida anche il messaggio no-results,
+senza imporre il tab/pager come requisito in quello stato esplicito.
+
+4. REGRESSIONI PRESERVATE
+
+Confronto testuale delle funzioni tra 001-19 e nuovo OUTPUT:
+team, managerId, competitionKey, canonicalContext, hash, classifyExisting,
+splitExisting, indexExisting, insertRows, gateway, playedResult:
+INVARIATE.
+
+Quindi:
+- parser NATIONS MENU_association_draw preservato integralmente;
+- controlled club e manager invariati;
+- grammar, fingerprint e quattro classi idempotenza invariati;
+- gateway payload/schema invariati.
+END_OF_SECTION 001-18 è raffinato nel percorso esistente, non eliminato.
+
+5. TEST
+
+Metodo: Node/jsdom, nessuna rete DB/Gateway; layout/visibilità emulati.
+Le nuove schermate no-results e transizioni sono SINTETICHE, costruite
+sui DOM reali già recuperati nei CASE precedenti. L'evidenza live del
+comportamento è quella descritta nel REQUEST, non una sessione live
+eseguita dalla Work.
+
+Suite mirata: 10 gruppi PASS.
+- no-results -> fine sezione, [] righe, 0 salvati, 0 errori;
+  fetch reale vietata nell'harness.
+- controllo presente disabled rilevato e fine sezione.
+- click -> stessa pagina, action rimossa, Previous disabled ->
+  same_page_previous_disabled.
+- stesso set con Previous cliccabile -> percorso prudente preesistente,
+  non il nuovo reason/shortcut.
+- action assente senza messaggio/prova -> REAL_ERROR.
+- nuovo set con score -> MOVED_TO_PREVIOUS_RESULTS.
+- target con solo orario -> END_OF_SECTION.
+- messaggio dentro workingCopy ignorato.
+- messaggio hidden nel live root ignorato.
+- run ENG -> ITA senza risultati -> FRA, senza errori.
+  Eseguiti run/switchTo/readiness/goPrevious reali; simulati l'handler
+  asincrono del select e processPage per impedire scritture.
+  ITA non produce righe; FRA viene raggiunta correttamente.
+
+Suite edge: 4 gruppi PASS.
+- pagina già verificata, Previous poi assente -> END_OF_SECTION.
+- vecchia schermata no-results non aggiornata -> non soddisfa il nuovo
+  target; il test abbreviato termina fail-closed.
+- blocco no-results effettivamente ricreato -> END_OF_SECTION.
+- schermata sconosciuta senza action con Previous disabled -> REAL_ERROR.
+
+Suite NATIONS 001-19: 52 controlli PASS.
+Include tutte le 32 fixture / 64 side del DOM
+SM_DOM_20260912_152317.json, Iraq-Russia, separazione ID association/
+fixture, manager assente/presente sintetico, worldcup sintetico e
+workingCopy.
+
+Suite GW001/GW007/context/idempotenza: 207 controlli PASS.
+Include parser club, SINGLE senza CUS persistita, MULTI country,
+piani division, registry/action matrix, quattro classi di idempotenza,
+conflitti batch, controlled club e manager.
+
+Totale suite: 273 controlli/gruppi offline PASS.
+node --check: PASS.
+Non equivalgono a test live Safari/Comandi Rapidi.
+
+6. RETEST E LIMITI LIVE
+
+Usare il nuovo file completo nella sola copia di test del Comando Rapido.
+Continuare sui record già presenti: nessun reset/cancellazione.
+Le righe invariate saranno IDENTICAL; CHANGED_EXISTING resta senza update
+automatico; DUPLICATE_CONTENT non scrive; soltanto NEW viene inserito
+quando il retest manuale è autorizzato dalla Direzione.
+
+Verificare in GW007 coppe:
+- ultima pagina che riappare e disabilita Previous;
+- nazione con messaggio no-results;
+- passaggio alla nazione successiva con dati;
+- ultimo target -> COMPLETATO.
+Il messaggio e il reason devono apparire come END_OF_SECTION e non
+incrementare ERRORI.
+
+Limiti espliciti:
+- traduzioni o varianti lessicali del messaggio diverse dalla frase
+  italiana autorizzata non sono accettate genericamente;
+- da una pagina già no-results, se Soccer Manager non modifica né
+  ricrea in alcun modo il blocco dopo il cambio target, manca una prova
+  di aggiornamento: timeout conservativo invece di salto non verificato;
+- tre snapshot (o due per il messaggio) riducono le race ma non provano
+  che AJAX non possa ripartire successivamente; retest live necessario;
+- la prova di same-page richiede righe identiche: modifiche decorative
+  possono mantenere il fail-closed invece di mascherare cambiamenti;
+- handler click diversi dal markup osservato richiedono nuova evidenza.
+Nessuna conclusione su stato live del DB è stata ricavata senza lettura.
+
+7. CONSEGNA
+
+tickets/DB/2026/IMC-DB-001-20/OUTPUT_RESULTS_IMPORT.js
+SHA256:
+8e18f6bfabc23376bc487b1f4c21568c1e6ecd20c98e17f69949ab1fc1dda657
+
+tickets/DB/2026/IMC-DB-001-20/RESPONSE.txt
+
+Nessuna modifica dei file precedenti.
+DB READ/WRITE/DELETE/RESET: NONE
+GATEWAY/SCHEMA/SCHEDULE/MATCH REPORT/MINISITI: NONE
+PRODUCTION DEPLOY: NONE
+
+VERDICT: READY_FOR_MANUAL_RETEST
