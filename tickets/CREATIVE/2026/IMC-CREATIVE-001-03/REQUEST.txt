@@ -1,0 +1,225 @@
+CASE_ID: IMC-CREATIVE-001-03
+DOC_TYPE: REQUEST
+AREA: CREATIVE
+DATE: 2026-09-12
+TOPIC: DATA_ROOM_VISUAL_SYSTEM_DESIGN
+
+IMC | CREATIVE DIRECTOR
+DATA ROOM · VISUAL SYSTEM & INFORMATION DESIGN
+
+CONTESTO
+La Data Room IMC è diventata il centro operativo per ticket, REQUEST, RESPONSE, CASE, aree operative e documentazione tra Direzione, Database Manager, Engineer, Intelligence, Creative Director e altri ruoli.
+
+La struttura funzionale esiste già, ma adesso serve una progettazione grafica/UX vera, coerente, leggibile e riconoscibile.
+
+OBIETTIVO
+Progettare il sistema visivo completo della Data Room IMC, con una gerarchia grafica chiara che permetta di distinguere immediatamente:
+- area/tipo di ticket;
+- REQUEST vs RESPONSE;
+- stato del CASE;
+- priorità;
+- natura READ-ONLY vs WRITE/EXECUTION;
+- root case / iteration / follow-up;
+- eventuali warning, blocchi, completed, pending.
+
+La Data Room non deve sembrare una directory tecnica grezza. Deve diventare un vero prodotto operativo IMC: leggibile, autorevole, veloce da usare, con identità visiva propria ma coerente con il master brand IMC.
+
+RICHIESTA CREATIVA
+Proponi un sistema grafico completo per:
+
+1. COLOR SYSTEM PER AREA
+Definisci una codifica colore stabile e riconoscibile per almeno:
+- DB
+- ENG
+- INTEL
+- CREATIVE
+- SITE / PRODUCT se pertinente
+- eventuali future aree
+
+I colori devono funzionare sia in dark mode sia in light/neutral surfaces, con sufficiente contrasto e senza sembrare un arcobaleno casuale.
+
+2. REQUEST vs RESPONSE
+Definisci una distinzione visiva netta tra:
+- REQUEST
+- RESPONSE
+- CASE_META
+- eventuale SUMMARY / DECISION / APPROVAL
+
+La distinzione non deve dipendere solo dal colore: usare anche iconografia, label, edge treatment, typography, badge o layout.
+
+3. STATUS SYSTEM
+Progetta badge/stati per almeno:
+- DRAFT
+- OPEN
+- IN PROGRESS
+- WAITING
+- BLOCKED
+- COMPLETED
+- APPROVED
+- REJECTED
+- NEEDS DIRECTOR DECISION
+- READ ONLY
+- WRITE AUTHORIZED
+
+Evita di usare verde per tutto ciò che è semplicemente "attivo" e rosso per tutto ciò che non lo è. Il sistema deve avere semantica precisa.
+
+4. CASE CARD SYSTEM
+Progetta una card standard per la lista ticket contenente almeno:
+- CASE_ID
+- AREA
+- TOPIC
+- DATE
+- STATUS
+- CASE_KIND
+- ROOT_CASE_ID quando presente
+- modalità/autorizzazione
+- ultima attività
+- indicatori REQUEST/RESPONSE disponibili
+
+La card deve essere leggibile in 2 secondi.
+
+5. CASE DETAIL
+Progetta la struttura visuale della pagina dettaglio CASE:
+- header;
+- metadata;
+- timeline/request-response flow;
+- pannello stato;
+- legami con root/parent/child cases;
+- action area;
+- eventuali warning e constraints;
+- sezione deliverable/result.
+
+6. INFORMATION HIERARCHY
+Definisci cosa deve essere visibile:
+A. a colpo d'occhio;
+B. dopo un click;
+C. solo nel dettaglio tecnico.
+
+La Data Room deve ridurre il rumore e non mostrare 40 metadati tutti allo stesso livello.
+
+7. TYPOGRAPHY & SPACING
+Proponi:
+- font roles;
+- monospace usage per CASE_ID/code/status;
+- hierarchy title/subtitle/body/meta;
+- spacing rhythm;
+- density desktop/mobile.
+
+8. ICONOGRAPHY
+Definisci un set minimo coerente per:
+- DB
+- Engineering
+- Intelligence
+- Creative
+- Request
+- Response
+- Warning
+- Approval
+- Blocked
+- Write
+- Read-only
+- Dependency
+- Root case / child case
+
+9. FILTERS & NAVIGATION
+Progetta filtri/selector per:
+- AREA
+- STATUS
+- DATE
+- CASE_KIND
+- ROOT_CASE
+- REQUEST/RESPONSE presence
+- search by CASE_ID/topic
+
+Definisci anche la navigazione ideale per passare rapidamente da un CASE ai suoi follow-up.
+
+10. DARK/LIGHT OR MASTER MODE
+Valuta se la Data Room debba avere:
+- un'unica identità dark premium;
+- dark/light;
+- dark con surfaces differenziate;
+- altra direzione.
+
+Motiva la scelta.
+
+11. VISUAL LANGUAGE
+La Data Room deve sembrare:
+- IMC;
+- premium;
+- tecnica ma non fredda;
+- operativa;
+- ad alta densità informativa;
+- leggibile per uso quotidiano.
+
+NON deve sembrare:
+- Jira clone;
+- GitHub clone;
+- Notion clone;
+- dashboard SaaS generica;
+- foglio Excel con badge.
+
+12. ACCESSIBILITY
+Definisci contrasto, stati non basati solo sul colore, focus, keyboard states, mobile readability e touch target.
+
+13. DESIGN TOKENS
+Fornisci una proposta concreta di token per:
+- colors;
+- semantic status colors;
+- surfaces;
+- borders;
+- radius;
+- shadows;
+- spacing;
+- typography;
+- icon sizes;
+- card states.
+
+14. COMPONENT INVENTORY
+Restituisci l'inventario dei componenti UI necessari, ad esempio:
+- top bar;
+- side nav;
+- case card;
+- case header;
+- metadata grid;
+- status badge;
+- area badge;
+- request/response switch;
+- timeline item;
+- warning banner;
+- approval block;
+- decision block;
+- linked-case chip;
+- filter bar;
+- search field;
+- empty/loading/error states.
+
+15. MOBILE
+Progetta anche la logica mobile, evitando che il dettaglio CASE diventi un muro verticale ingestibile.
+
+16. OUTPUT FINALE
+Restituisci:
+- creative direction;
+- palette e semantic colors;
+- component system;
+- layout desktop;
+- layout mobile;
+- REQUEST/RESPONSE visual distinction;
+- status system;
+- case card spec;
+- case detail spec;
+- navigation/filtering;
+- design token proposal;
+- implementation notes per Engineer;
+- rischi/anti-pattern da evitare.
+
+IMPORTANTE
+Questo CASE è DESIGN ONLY.
+NON modificare codice.
+NON fare commit.
+NON fare deploy.
+NON cambiare la Data Room esistente.
+
+L'obiettivo è produrre una direzione creativa completa e implementabile che poi verrà passata all'Engineer.
+
+OUTPUT AUTORITATIVO
+tickets/CREATIVE/2026/IMC-CREATIVE-001-03/RESPONSE.txt
