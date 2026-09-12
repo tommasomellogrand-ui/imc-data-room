@@ -1,0 +1,196 @@
+CASE_ID: IMC-DB-001-18
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_END_OF_SECTION_NAVIGATION_FIX
+STATUS: COMPLETED
+VERDICT: READY_FOR_MANUAL_RETEST
+
+1. INPUT E BASE
+
+Letti integralmente nella stessa Work e recuperati dal repository:
+- IMC-DB-001-18/REQUEST.txt (2110c0a654261fd519165943d1a06768a125d102)
+- IMC-DB-001-15/OUTPUT_RESULTS_IMPORT.js (32c832de108a7a88bf516b1bb72b53039df07230)
+- IMC-DB-001-15/RESPONSE.txt (aba52f2364e038f7f1ac4fa1494cb06971068786)
+- IMC-DB-001-17/REQUEST.txt (5ba8178e8b6a4506fcd416dd231bf003eaa6926e)
+- IMC-DB-001-17/RESPONSE.txt (0e73bb4aa4c99678568d8c49cb79b8fbad839c79)
+- IMC-DB-001-16/RESPONSE.txt (2a8d58c3054f181c10635765b2c7c3569c4ff330)
+
+Percorsi sotto tickets/DB/2026/ in tommasomellogrand-ui/imc-data-room.
+Base esclusiva: OUTPUT 001-15. Nessuna sovrascrittura dei CASE precedenti.
+
+Nuovo file completo:
+tickets/DB/2026/IMC-DB-001-18/OUTPUT_RESULTS_IMPORT.js
+SHA256: 260454b0d07dc7f5acd9f5f8244b4bd9e1c39f56c7ed629294039f3c5a64a15d
+
+2. ROOT CAUSE FINALE
+
+La semantica della fine sezione mancava dal percorso Precedenti.
+001-15 attendeva esclusivamente fixture IDs diversi e snapshot stabili.
+Un click no-op e un target vuoto potevano soltanto arrivare al timeout.
+Inoltre resultButtons riconosce anche fixture con solo orario: il solo
+ID parseabile non dimostra che una partita sia stata giocata.
+
+Il CASE 001-18 stabilisce esplicitamente che tali esiti sono conclusioni
+normali. Il fix implementa questa decisione senza richiedere una nuova
+attribuzione della condizione raw dello storico timeout 001-17.
+Non viene affermato di aver acquisito il DOM del fallimento live.
+
+3. FUNZIONI MODIFICATE
+
+goPrevious():
+ritorna oggetti con status e reason, distinguendo:
+- MOVED_TO_PREVIOUS_RESULTS
+- END_OF_SECTION
+- REAL_ERROR
+
+processSection():
+consuma lo status esplicito; END_OF_SECTION viene loggato, interrompe
+normalmente il while e incrementa S.done. Solo REAL_ERROR solleva errore.
+MOVED_TO_PREVIOUS_RESULTS prosegue con processPage().
+
+Nuova playedResult(button):
+score esatto composto da cifre, separatore trattino/en dash e cifre,
+con spazi opzionali. Un orario 20:00 non passa.
+
+resultRows():
+filtra i button tramite playedResult prima della costruzione delle righe.
+Nessuna fixture senza score entra nel payload.
+
+processPage():
+restituisce gli IDs delle righe giocate elaborate, non tutti i button.
+
+Nuova previousSnapshot():
+snapshot per il solo percorso Precedenti, capace di rappresentare anche
+zero Results giocati. Verifica root visibile, contesto canonico,
+concordanza country e division League, data parseabile.
+Un button con score ma fixture ID non parseabile invalida la snapshot.
+
+run() non richiede modifiche: riceve normalmente il controllo quando
+processSection termina, procede nelle division League e poi nelle
+country; nelle coppe passa direttamente alla country successiva.
+Conservato il ricalcolo del piano division per ciascuna country.
+
+4. SEMANTICA E READINESS
+
+Precedenti assente con blocco Results visibile:
+END_OF_SECTION immediato, nessun click.
+
+Dopo il click:
+poll ogni 500 ms, tre osservazioni consecutive uguali della snapshot.
+Sono osservati raw/canonical context, date/stage/round, identità corrente
+e HTML Results; non si attende ciecamente per poi presupporre successo.
+
+Con snapshot stabile e contesto canonico invariato:
+- zero Results giocati => END_OF_SECTION;
+- stesso set giocato e stessa data => END_OF_SECTION;
+- nuovo set giocato, data non successiva => MOVED_TO_PREVIOUS_RESULTS.
+
+Restano REAL_ERROR:
+- Results root non visibile/non verificabile;
+- fixture set modificato prima del click;
+- eccezione nell'esecuzione del click;
+- cambio di competizione/country/division CANONICA inatteso;
+- stesse fixture giocate associate a data diversa;
+- navigazione indietro che raggiunge risultati giocati di data successiva;
+- DOM incoerente o instabile oltre 25 secondi.
+
+STOP resta un'interruzione richiesta dall'utente.
+
+La division raw non-League può cambiare: il target viene confrontato
+tramite competition_key canonica. Questo non altera la grammatica.
+I token raw restano comunque nella firma di stabilità tra i poll.
+
+Non è stato modificato waitForStableResultState() globale né switchTo():
+la classificazione fine-sezione è limitata a goPrevious.
+Non vengono accettati contesti arbitrari o dati da workingCopy.
+Un target vuoto ma privo anche di un contesto/data verificabili rimane
+non verificabile e quindi REAL_ERROR: non si maschera un DOM corrotto.
+
+5. TEST
+
+Harness Node/jsdom sui due fullHTML originali già recuperati dalla
+File Library in 001-14/15:
+SM_DOM_20260912_130340.json (GW001 League)
+SM_DOM_20260912_130458.json (GW007 League).
+Nessuna esecuzione degli script Soccer Manager e nessuna richiesta DB.
+Layout/visibilità emulati come in 001-15.
+
+Gli scenari Precedenti/copppe sono mutazioni SINTETICHE su quella base;
+il dispatch click, i cambi select e le scritture sono simulati.
+Non costituiscono una prova live Safari/iOS.
+
+11 gruppi di controlli mirati: PASS.
+1. Precedenti rimosso -> END_OF_SECTION.
+2. Click presente senza mutazioni -> END_OF_SECTION.
+3. Target con soli orari 20:00 -> END_OF_SECTION e resultRows vuoto.
+4. Nuovi fixture ID con score -> MOVED_TO_PREVIOUS_RESULTS.
+5. Target senza button giocati -> END_OF_SECTION.
+6. Stessi ID giocati con data diversa -> REAL_ERROR.
+7. run + processSection reali su leagueshield:
+   ENG -> END -> ITA -> END -> FRA -> END.
+   Visitate tutte e tre le country, S.done=3, S.errors=0.
+   Nel test sono simulati solo processPage (nessuna scrittura) e
+   l'applicazione del target select; goPrevious esegue il no-op stabile.
+8. GW007 League mantiene piano di due divisioni nel DOM ESP.
+9. Le quattro classi idempotenza producono gli esiti invariati.
+10. workingCopy anticipato nel documento non contamina il contesto.
+11. GW001: nessun piano country, quattro divisioni, key SINGLE corretta.
+
+Regressione suite 001-15 eseguita sul nuovo OUTPUT: 207 controlli PASS.
+Include parsing dei 15 Results visibili, key GW001/GW007, registry dei
+nove GW e dieci action, controlled club/manager, RC-09, idempotenza,
+conflitti intra-batch e workingCopy.
+
+node --check: PASS.
+
+Totale: 218 controlli/gruppi riportati dagli harness; non 218 test live.
+
+6. CASO GW007 E RETEST
+
+Conservare le 164 righe già presenti. NON ripartire da DB vuoto.
+
+La Direzione può sostituire soltanto la COPIA DI TEST del Comando Rapido
+con l'intero OUTPUT 001-18, verificando l'hash sopra.
+La Work non ha sostituito o distribuito lo Shortcut.
+
+Rilanciare su GW007 / Results / leagueshield:
+- preload delle righe esistenti;
+- IDENTICAL -> skip;
+- CHANGED_EXISTING -> segnalazione, nessun update;
+- DUPLICATE_CONTENT -> nessuna scrittura;
+- NEW -> normale insert quando il test manuale è autorizzato.
+
+Alla fine naturale ITA deve apparire END_OF_SECTION nel log, senza
+incrementare ERRORI; il loop passa alla prossima country secondo
+l'ordine del selector. ENG e le altre country seguono la stessa regola.
+Le divisioni sono iterate soltanto per League.
+Alla fine dell'ultimo target il run termina normalmente.
+
+Controllare anche un vero precedente con risultati, un no-op e un target
+senza punteggio; verificare che SALVATI non aumenti per la pagina futura.
+Non cancellare righe per preparare il test.
+
+7. LIMITI
+
+La distinzione no-op/risposta AJAX tardiva usa tre osservazioni stabili,
+normalmente circa un secondo tra prima e terza, oltre al tempo di lettura.
+Un AJAX che inizi o termini dopo questa finestra potrebbe apparire come
+no-op; non esiste negli input un segnale certificato di completamento
+della rete Soccer Manager. Il retest live deve verificare questo limite.
+Non è stata introdotta una falsa garanzia di stabilità assoluta.
+
+La firma HTML può cambiare per elementi decorativi: in tal caso persiste
+REAL_ERROR dopo timeout, invece di allentare globalmente le protezioni.
+Un DOM privo di data/action verificabili resta fail-closed.
+L'ID world-local del club controllato resta unresolved/null come in 001-15.
+
+8. PERIMETRO
+
+Nessuna modifica DB, Gateway, grammar, world registry, fingerprint,
+idempotenza, Schedule, Match Report o minisiti.
+Nessuna bonifica delle 164 righe.
+Nessun deploy.
+Scritture autorizzate: soltanto i due deliverable del CASE 001-18.
+
+VERDICT: READY_FOR_MANUAL_RETEST
