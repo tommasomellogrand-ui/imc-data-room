@@ -1,0 +1,694 @@
+CASE_ID: IMC-DB-001-06
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: CORE_MISSING_CAPABILITIES_NECESSITY_AUDIT
+STATUS: COMPLETED
+MODE: READ_ONLY
+MYSQL_TARGET: Sql1956795_1
+
+IMC | DATABASE MANAGER
+CORE MISSING CAPABILITIES · NECESSITY & COVERAGE AUDIT
+
+======================================================================
+0. EXECUTIVE RESULT
+======================================================================
+
+Il CASE è stato eseguito esclusivamente in READ-ONLY.
+Nessuna tabella/colonna/migration/codice/deploy è stata creata o modificata.
+
+Stato CORE verificato:
+- 11 tabelle totali;
+- 11 tabelle IMC;
+- 0 tabelle non-IMC;
+- 68 colonne complessive nelle 11 IMC;
+- 2 FK IMC->IMC;
+- nessuna colonna JSON nelle 11 IMC attuali.
+
+Conclusione principale:
+NON esistono sei nuovi blocchi DB da ricostruire.
+Le sei aree residue si dividono così:
+- 1 area ALREADY COVERED;
+- 2 aree PARTIALLY COVERED;
+- 0 aree NOT COVERED ma già tecnicamente dimostrate come indispensabili;
+- 1 area NOT NECESSARY come struttura separata;
+- 2 aree NEEDS DIRECTOR DECISION.
+
+Il risultato più importante è che il CORE attuale contiene già molta più semantica utile di quanto implicassero i vecchi nomi legacy. In particolare:
+- il Competition Codex copre già la maggior parte della funzione operativa del vecchio meta-layer;
+- il Player Codex applicativo può essere ricostruito come ACCESS/RESOLUTION layer sulle tre IMC Player esistenti, senza nuovo schema;
+- il club mapping esiste già come membership per-GW, ma è incompleto come copertura dei Game World e non dimostra l'esistenza di un identificativo world-local distinto;
+- il national team world-local mapping non è presente, ma la sua necessità di prodotto non è ancora dimostrata al di fuori dei consumer legacy/guarded;
+- season/context è l'unico vero DATA GAP strutturale già visibile se si vuole mantenere una funzione season-aware;
+- ingestion/provenance è soprattutto una decisione di modello operativo: il CORE deve essere aggiornato automaticamente/auditably oppure mantenuto come catalogo canonico curato?
+
+======================================================================
+1. MAPPA SEMANTICA DELLE 11 TABELLE IMC LIVE
+======================================================================
+
+1. IMC Club Codex Global
+ROWS: 7.072
+KEY: id
+DIMENSIONE: GLOBAL / IDENTITY
+COPRE:
+- identità club globale;
+- nome canonico;
+- image_file / image_url.
+NON COPRE:
+- relazione completa club <-> Game World;
+- eventuale identificativo world-local distinto.
+
+2. IMC Competition Codex Global
+ROWS: 326
+KEY: id
+DIMENSIONE: WORLD-SCOPED CONFIGURATION
+COLONNE:
+- game_world_id
+- sm_action
+- custom_competition
+- sm_action_group
+- sm_country
+- sm_division
+- teams_count
+- expected_match
+- is_sm_action
+COPRE REALMENTE:
+- catalogo competizioni per Game World;
+- distinzione DOMESTIC / INTERNATIONAL / NATIONAL TEAM;
+- action Soccer Manager e competizioni custom;
+- scope country/division;
+- team count;
+- expected match;
+- playoff custom;
+- Kick Off Cup custom;
+- differenze strutturali SINGLE/MULTI materializzate nei dati.
+EVIDENZA:
+- 133 righe League, tutte 133 con teams_count e expected_match;
+- 52 righe playoff custom;
+- 68 League Shield;
+- 9 League Cup;
+- 9 Charity Shield;
+- 9 SMFA Cup / Shield / Super Cup;
+- 9 World Cup / International Qualifier.
+NON COPRE:
+- un motore astratto separato di regole/priority/config JSON;
+- flag generici come has_knockout_stage/has_group_stage.
+Non esistono JSON/config nascosti nella tabella.
+
+3. IMC Country Codex Global
+ROWS: 37
+KEY: id; name UNIQUE
+DIMENSIONE: GLOBAL DIMENSION
+COPRE:
+- country/scope code canonici;
+- 25 codici paese + 12 scope regionali usati da GW008.
+
+4. IMC Game World Club Mapping
+ROWS: 1.434
+KEY: (Game World, SM Club ID)
+FK: Game World -> IMC Game World Codex Global.IMC GW
+DIMENSIONE: WORLD-SCOPED RELATION
+COLONNE:
+- Club ID
+- Club Name
+- Game World
+- SM Club ID
+COPRE:
+- membership club per Game World;
+- relazione GW -> club globale/SM.
+COPERTURA LIVE:
+- GW001: 40
+- GW002: 590
+- GW003: 590
+- GW004: 80
+- GW005: 24
+- GW006: 80
+- GW009: 30
+Totale 1.434.
+MANCANO:
+- GW007: 616 club attivi da Game World Codex;
+- GW008: 380;
+- GW010: 24.
+EVIDENZA CRITICA:
+- in 1.434/1.434 righe Club ID = SM Club ID.
+Questa tabella quindi NON dimostra che esista oggi un secondo ID world-local distinto; dimostra membership e SM/global club identity.
+
+5. IMC Game World Codex Global
+ROWS: 10
+KEY: IMC GW
+DIMENSIONE: GLOBAL REGISTRY + CURRENT CONTEXT
+COPRE:
+- GW001..GW010;
+- nome IMC;
+- SM Game World ID;
+- numero club attivi;
+- Country/scope corrente per i world multi-country.
+NON COPRE:
+- stagione IMC;
+- stagione Soccer Manager corrente/storica;
+- start/end season date;
+- history multi-season;
+- esplicito game_world_type.
+
+6. IMC Manager Assignment Global
+ROWS: 272
+KEY: id
+DIMENSIONE: WORLD-SCOPED + HISTORICAL RELATION
+COPRE:
+- manager -> Game World;
+- club assignment;
+- national team assignment;
+- assignment_type;
+- start_date / end_date.
+PROFILO:
+- 204 club assignments;
+- 68 national team assignments.
+È già una vera tabella storica, non un semplice snapshot corrente.
+
+7. IMC Manager Codex Global
+ROWS: 60
+KEY: manager_id
+DIMENSIONE: GLOBAL IDENTITY
+COPRE:
+- manager IMC;
+- full_name;
+- join date;
+- sm_manager_id.
+
+8. IMC National Team Codex Global
+ROWS: 80
+KEY: id
+DIMENSIONE: GLOBAL IDENTITY
+COPRE:
+- identità nazionale;
+- nome;
+- image_file / image_url.
+NON COPRE:
+- membership per Game World;
+- world-local national team ID.
+
+9. IMC Player Codex Global
+ROWS: 176.687
+KEY: id
+DIMENSIONE: GLOBAL IDENTITY
+COPRE:
+- identità giocatore globale;
+- forename/surname;
+- image_file / image_url.
+
+10. IMC Player Codex Global Data
+ROWS: 2.297
+KEY: player_id
+DIMENSIONE: CURRENT ENRICHED PLAYER STATE
+COPRE PER 2.297/2.297 RIGHE:
+- full_name;
+- nationality;
+- position;
+- rating;
+- market_value;
+- age;
+- date_of_birth;
+- height_cm;
+- weight_kg;
+- foot;
+- soccerwiki_club_name/id;
+- wage;
+- updated_at.
+Tutti i campi funzionali sopra risultano valorizzati su tutte le 2.297 righe.
+MAX updated_at: 2026-09-10 10:15:58.
+
+11. IMC Player Codex Global Rating History
+ROWS: 11.848
+KEY: id
+UNIQUE: player_id + change_date + old_rating + new_rating
+FK: player_id -> IMC Player Codex Global.id
+DIMENSIONE: HISTORICAL
+COPRE:
+- cronologia rating;
+- change_date;
+- old_rating / new_rating;
+- imported_at.
+PROFILO:
+- 11.848 eventi;
+- 2.053 player distinti;
+- storico 2009-06-11 -> 2026-09-10.
+
+======================================================================
+2. AREA A · WORLD-LOCAL CLUB MAPPING
+======================================================================
+
+1. AREA
+WORLD-LOCAL CLUB MAPPING
+
+2. OLD/RESIDUAL NEED
+Il vecchio modello usava un mapping club globale -> identificativo club nel Game World per Team Hub, API, enrichment e ingestion.
+
+3. CURRENT PRODUCT NEED
+Consumer correnti nel repository continuano a contenere riferimenti al vecchio clubs_game_world_id, in particolare:
+- api/imc-gateway/team-hub.php;
+- site-assets/master/api.php;
+- api/imc-data/v1/index.php.
+Il Team Hub è oggi protetto da core_mapping_rebuild_required; quindi il bisogno non è soltanto teorico, ma una capability attualmente disabilitata.
+Parte dell'ingestion che usava il mapping è invece legacy/bloccata e non va presa come prova di necessità.
+
+4. IMC COVERAGE
+IMC Game World Club Mapping copre già:
+- Game World;
+- Club ID globale;
+- Club Name;
+- SM Club ID.
+IMC Club Codex Global copre identità e asset.
+IMC Game World Codex Global copre il parent GW.
+
+5. COVERAGE LEVEL
+PARTIAL.
+
+6. REAL GAP
+DATA GAP:
+- mancano le membership di GW007, GW008 e GW010 nella mapping corrente (1.020 club attivi complessivi secondo Game World Codex).
+- non esiste evidenza nel CORE di un identificativo world-local distinto da Club ID/SM Club ID: nelle 1.434 righe presenti i due ID sono sempre uguali.
+
+ACCESS GAP:
+- i consumer legacy/current non sono stati ancora riscritti per usare IMC Game World Club Mapping.
+
+Non è quindi dimostrato che serva una NUOVA struttura. Prima va verificato se `SM Club ID` è semanticamente sufficiente per l'identità richiesta dai consumer moderni.
+
+7. CONSEQUENCE OF DOING NOTHING
+- Team Hub club dataset resta bloccato;
+- alcuni enrichment/API che si aspettano un local club ID restano non funzionanti;
+- le 1.434 membership esistenti restano comunque disponibili.
+
+8. NECESSITY CLASSIFICATION
+PARTIALLY COVERED.
+
+9. RECOMMENDATION
+REUSE EXISTING prima di costruire qualsiasi nuova tabella.
+FUTURE MINIMAL ADDITION solo se una verifica delle fonti correnti dimostra che esiste davvero un ID per-GW distinto da `SM Club ID`.
+Completare la copertura GW007/GW008/GW010 è prima di tutto un data-population gap, non una prova di schema insufficiente.
+
+10. PRIORITY
+HIGH, perché una capability prodotto è attualmente guarded.
+
+GAP TYPE:
+DATA GAP + ACCESS/RESOLUTION GAP.
+
+======================================================================
+3. AREA B · WORLD-LOCAL NATIONAL TEAM MAPPING
+======================================================================
+
+1. AREA
+WORLD-LOCAL NATIONAL TEAM MAPPING
+
+2. OLD/RESIDUAL NEED
+Il vecchio modello manteneva nation_id + game_world_id + nation_gw_id per Team Hub/API e resolver nazionali.
+
+3. CURRENT PRODUCT NEED
+Riferimenti correnti esistono ancora in:
+- api/imc-gateway/team-hub.php;
+- api/imc-data/v1/index.php.
+Il Team Hub è però oggi esplicitamente guarded. Non è stata trovata, nel perimetro del CASE, una funzione live non-legacy che dimostri che il world-local national ID sia indispensabile alla user experience corrente.
+Le nazionali come concetto sono invece sicuramente vive: Competition Codex contiene National Team Competition e Manager Assignment Global contiene 68 national_team assignments.
+
+4. IMC COVERAGE
+IMC National Team Codex Global copre:
+- 80 identità nazionali globali;
+- nome e asset.
+IMC Manager Assignment Global copre national_team_id nelle assegnazioni.
+IMC Competition Codex Global copre le competizioni nazionali.
+
+5. COVERAGE LEVEL
+PARTIAL sul dominio nazionale globale; NONE sul mapping world-local.
+
+6. REAL GAP
+Potenziale DATA GAP:
+- manca una relazione Game World -> National Team -> eventuale world-local ID.
+
+Ma la necessità del world-local ID non è dimostrabile dal solo CORE corrente: potrebbe essere un residuo dell'architettura vecchia se le nuove pipeline usano già ID globali.
+
+7. CONSEQUENCE OF DOING NOTHING
+- Team Hub national dataset resta guarded;
+- l'identità globale delle nazionali, gli assignment manager e la classificazione delle competizioni nazionali continuano a funzionare concettualmente;
+- nessun altro dato canonico nazionale viene perso.
+
+8. NECESSITY CLASSIFICATION
+NEEDS DIRECTOR DECISION.
+
+Decisione binaria proposta:
+"Il prodotto deve continuare ad avere un resolver/percorso Team Hub per identificativi nazionali specifici del singolo Game World?"
+- NO -> BUILD NOTHING; il gap è legacy-only.
+- SI -> serve una futura verifica tecnica dell'ID sorgente e poi una soluzione minima.
+
+9. RECOMMENDATION
+DIRECTOR DECISION.
+
+10. PRIORITY
+LOW/MEDIUM fino a decisione prodotto.
+
+GAP TYPE:
+POTENTIAL DATA GAP + LEGACY-ONLY GAP.
+
+======================================================================
+4. AREA C · GAME WORLD SEASON / CONTEXT
+======================================================================
+
+1. AREA
+GAME WORLD SEASON / CONTEXT
+
+2. OLD/RESIDUAL NEED
+Il vecchio modello conservava season IMC, season Soccer Manager e date start/end, oltre ad altri metadata del mondo.
+
+3. CURRENT PRODUCT NEED
+Esistono consumer correnti che chiedono ancora una dimensione stagione, fra cui:
+- site-assets/master/api.php;
+- api/imc-data/v1/index.php.
+Alcuni handler ingestion/schedule contengono ancora assunzioni season-aware, ma l'ingestion è bloccata e non conta come prova sufficiente da sola.
+La presenza di consumer sito/API rende però il bisogno season-aware più concreto delle sole dipendenze legacy.
+
+4. IMC COVERAGE
+IMC Game World Codex Global copre:
+- identità GW;
+- nome;
+- SM Game World ID;
+- club attivi;
+- Country/scope.
+IMC Competition Codex Global copre il contesto competizione per GW.
+
+5. COVERAGE LEVEL
+PARTIAL.
+
+6. REAL GAP
+DATA GAP reale se il prodotto deve essere season-aware:
+- IMC season number;
+- Soccer Manager season number;
+- season start date;
+- season end date;
+- relazione one-to-many GW -> seasons/history.
+
+Questi dati non sono presenti in alcuna delle 11 IMC e non sono derivabili in modo autoritativo dalle colonne correnti.
+
+7. CONSEQUENCE OF DOING NOTHING
+- i consumer che devono mostrare/risolvere una stagione esplicita non possono farlo dal CORE;
+- il CORE può comunque rappresentare Game World e competizioni correnti senza il concetto di stagione.
+
+8. NECESSITY CLASSIFICATION
+PARTIALLY COVERED.
+
+9. RECOMMENDATION
+FUTURE MINIMAL ADDITION solo per la dimensione stagione realmente necessaria.
+NON ricostruire tutti i vecchi metadata di imc_game_worlds per inerzia.
+
+10. PRIORITY
+MEDIUM.
+Diventa HIGH solo se la UI/API season-aware è considerata requisito attuale.
+
+GAP TYPE:
+DATA GAP.
+
+======================================================================
+5. AREA D · COMPETITION META-LAYER / RULE ENGINE
+======================================================================
+
+1. AREA
+COMPETITION META-LAYER / RULE ENGINE
+
+2. OLD/RESIDUAL NEED
+Il vecchio modello aveva competition master + rules con family, scope, stage flags, priority e config.
+
+3. CURRENT PRODUCT NEED
+api/imc-data/v1 contiene ancora join al vecchio master per alcuni payload competition.
+Questa dipendenza è però strutturalmente legata alla vecchia architettura `gw_competitions + competition_master`.
+Non è stata trovata una funzione prodotto corrente che richieda necessariamente un motore astratto separato, anziché il Competition Codex canonico materializzato.
+
+4. IMC COVERAGE
+IMC Competition Codex Global copre già operativamente:
+- GW;
+- group;
+- action/custom competition;
+- country;
+- division;
+- teams_count;
+- expected_match;
+- SM/custom source flag.
+Contiene già:
+- 133 League con teams_count/expected_match;
+- 52 playoff custom;
+- League Cup / League Shield / Charity Shield;
+- International competitions;
+- National Team competitions;
+- Kick Off Cup.
+
+5. COVERAGE LEVEL
+FULL per il fabbisogno operativo osservato oggi.
+
+6. REAL GAP
+Nessun DATA GAP dimostrato necessario al prodotto attuale.
+Mancano solo astrazioni del vecchio rule engine, come generic stage flags/priority/config JSON, ma non è stata dimostrata una funzione corrente che le richieda.
+
+7. CONSEQUENCE OF DOING NOTHING
+- il vecchio endpoint che si aspetta competition_master resta da riscrivere;
+- il dato operativo necessario per identificare e configurare le competizioni resta disponibile nel Competition Codex.
+
+8. NECESSITY CLASSIFICATION
+NOT NECESSARY come struttura separata.
+
+9. RECOMMENDATION
+BUILD NOTHING.
+REUSE EXISTING IMC Competition Codex Global e risolvere eventuali consumer come ACCESS/RESOLUTION GAP.
+
+10. PRIORITY
+NONE per nuovo schema.
+MEDIUM soltanto per la riscrittura dei consumer che usano ancora il vecchio master.
+
+GAP TYPE:
+ACCESS/RESOLUTION GAP + LEGACY-ONLY GAP.
+
+======================================================================
+6. AREA E · INGESTION & PROVENANCE V2
+======================================================================
+
+1. AREA
+INGESTION & PROVENANCE V2
+
+2. OLD/RESIDUAL NEED
+La vecchia pipeline manteneva snapshot sorgente, raw/source tables, canonical rebuild, import errors e ingestion audit.
+È stata intenzionalmente bloccata da IMC-DB-001-05 per impedire la ricreazione legacy.
+
+3. CURRENT PRODUCT NEED
+Il CORE contiene dati che per loro natura possono richiedere aggiornamenti nel tempo:
+- Player Data updated_at massimo 2026-09-10 10:15:58;
+- Rating History imported_at massimo 2026-09-10 10:15:32;
+- Game World / Club / Manager / Competition Codex sono cataloghi operativi.
+Quindi una capacità di aggiornamento futura può essere utile.
+Ma il prodotto runtime non necessita di source_snapshots/raw source tables per LEGGERE i dati correnti.
+La necessità di una pipeline automatica/auditabile è una scelta operativa, non una conseguenza obbligatoria del modello dati.
+
+4. IMC COVERAGE
+Le 11 IMC coprono il dato canonico finale.
+Provenance attuale disponibile soltanto in forma minima:
+- Player Data.updated_at;
+- Rating History.imported_at.
+Non esiste audit generale di origine/import per gli altri Codex.
+
+5. COVERAGE LEVEL
+FULL per storage canonico corrente;
+NONE per una pipeline generale di provenance/ingestion audit.
+
+6. REAL GAP
+PROCESS/OPERATIONAL GAP, non necessariamente DATA GAP:
+- nessun flusso CORE V2 autorizzato oggi aggiorna automaticamente le 11 IMC da fonti esterne;
+- nessun lineage generale indica source/run/hash/import per tutte le entità.
+
+7. CONSEQUENCE OF DOING NOTHING
+- il CORE resta leggibile e funzionale come snapshot canonico;
+- i dataset che richiedono refresh non si aggiornano automaticamente tramite la pipeline legacy, che è correttamente bloccata;
+- la tracciabilità di origine resta limitata.
+
+8. NECESSITY CLASSIFICATION
+NEEDS DIRECTOR DECISION.
+
+Decisione binaria proposta:
+"Il CORE deve essere aggiornato automaticamente e con audit/provenance da sorgenti esterne, oppure può essere mantenuto come catalogo canonico aggiornato da processi specifici/curati?"
+- catalogo curato/specific updates -> nessun nuovo layer provenance obbligatorio;
+- auto-ingestion auditabile -> serve una nuova capability applicativa, ma NON è ancora dimostrato che richieda nuove tabelle DB.
+
+9. RECOMMENDATION
+DIRECTOR DECISION.
+Non progettare schema finché non è deciso il modello operativo.
+
+10. PRIORITY
+HIGH come decisione operativa; NONE per schema finché la decisione non è presa.
+
+GAP TYPE:
+PRODUCT/PROCESS GAP.
+
+======================================================================
+7. AREA F · PLAYER CODEX APPLICATION LAYER
+======================================================================
+
+1. AREA
+PLAYER CODEX APPLICATION LAYER
+
+2. OLD/RESIDUAL NEED
+La UI Global Player Codex legge ancora una tabella applicativa `player_codex_global` via Supabase e si aspetta un record denormalizzato con profilo + history.
+
+3. CURRENT PRODUCT NEED
+La funzione è attiva nel prodotto:
+- nexus/js/app.js apre IMC_PLAYER_CODEX_GLOBAL;
+- nexus/js/imc-player-codex-global.js carica lista/ricerca/sort;
+- nexus/js/imc-player-codex-global-detail.js apre il dettaglio e la cronologia rating;
+- alcuni match report usano la stessa sorgente per immagini.
+Questa non è una capability legacy da buttare: il Player Codex è prodotto corrente.
+
+4. IMC COVERAGE
+Le tre IMC Player coprono semanticamente i campi realmente usati dalla UI corrente:
+
+IMC Player Codex Global:
+- player_id -> id;
+- forename/surname;
+- image_url.
+
+IMC Player Codex Global Data:
+- full_name;
+- age;
+- date_of_birth;
+- nationality;
+- position;
+- foot;
+- height_cm;
+- weight_kg;
+- rating;
+- market_value;
+- soccerwiki_club_name/id;
+- wage.
+
+IMC Player Codex Global Rating History:
+- change_date;
+- old_rating;
+- new_rating;
+- history one-to-many.
+
+La UI list corrente seleziona proprio questi concetti: player_id, name, age, DOB, nationality, position, foot, height, weight, rating, old_rating, market value, club, image, history.
+`old_rating` è derivabile dalla rating history; `history` non richiede JSON denormalizzato perché esiste già come relazione storica.
+
+POPULATION NOTE:
+- identità globali: 176.687;
+- enriched Data: 2.297;
+- enriched Data ha i campi funzionali principali valorizzati 2.297/2.297;
+- Rating History: 11.848 eventi su 2.053 giocatori.
+Se la Direzione vuole un profilo arricchito per TUTTI i 176.687 player, quello sarebbe un data-population scope aggiuntivo, non un nuovo schema.
+
+5. COVERAGE LEVEL
+FULL per il modello informativo necessario al Player Codex corrente.
+
+6. REAL GAP
+ACCESS/RESOLUTION GAP:
+- manca un reader/resolver applicativo che esponga le tre tabelle IMC come record/list/detail consumabili dalla UI;
+- la UI corrente punta ancora a `player_codex_global` Supabase invece che alle IMC CORE.
+
+Nessun nuovo DATA MODEL è necessario per lista, dettaglio e cronologia rating correnti.
+
+7. CONSEQUENCE OF DOING NOTHING
+- il Player Codex continua a dipendere dalla sorgente applicativa precedente;
+- il CORE contiene già i dati ma non li serve direttamente alla UI.
+
+8. NECESSITY CLASSIFICATION
+ALREADY COVERED.
+
+9. RECOMMENDATION
+REUSE EXISTING.
+Futuro lavoro soltanto applicativo/API/resolver; BUILD NOTHING nel DB.
+
+10. PRIORITY
+HIGH per il riallineamento applicativo alla fonte CORE, NONE per nuovo schema DB.
+
+GAP TYPE:
+ACCESS/RESOLUTION GAP.
+
+======================================================================
+8. MATRICE FINALE
+======================================================================
+
+AREA | CURRENT NEED | IMC COVERAGE | REAL GAP | CLASSIFICATION | PRIORITY | RECOMMENDATION
+A WORLD-LOCAL CLUB MAPPING | Team Hub/enrichment club per-GW | membership già presente per 7 GW | GW007/008/010 missing + local-ID semantics non provata + resolver | PARTIALLY COVERED | HIGH | REUSE EXISTING FIRST; minimal addition only if distinct local ID proven
+B WORLD-LOCAL NATIONAL TEAM MAPPING | solo consumer guarded/legacy chiaramente identificati; global nation domain attivo | global identities + assignments + national competitions | eventuale GW-local nation ID | NEEDS DIRECTOR DECISION | LOW/MEDIUM | DIRECTOR DECISION
+C GAME WORLD SEASON/CONTEXT | site/API season-aware | GW identity/current scope covered | season number/history/start-end dates | PARTIALLY COVERED | MEDIUM | FUTURE MINIMAL ADDITION if season-aware product retained
+D COMPETITION META-LAYER/RULE ENGINE | operational competition metadata | rich Competition Codex already materializes needed config | old abstract engine only | NOT NECESSARY | NONE | BUILD NOTHING; REUSE EXISTING
+E INGESTION & PROVENANCE V2 | future refresh/audit of canonical datasets | final canonical storage covered; minimal timestamps only | automated refresh/provenance process | NEEDS DIRECTOR DECISION | HIGH decision | DIRECTOR DECISION; no schema yet
+F PLAYER CODEX APPLICATION | active Player Codex UI | identity + enriched data + rating history covered | API/resolver only | ALREADY COVERED | HIGH app / NONE DB | REUSE EXISTING; BUILD NOTHING in DB
+
+======================================================================
+9. RISPOSTE ESPLICITE ALLE 8 DOMANDE
+======================================================================
+
+1. Quante delle 6 aree sono già completamente coperte?
+1 come classificazione principale: F Player Codex Application Layer.
+Inoltre D Competition Meta-Layer ha il bisogno operativo già coperto, ma viene classificata NOT NECESSARY come struttura separata per evitare di contare due volte lo stesso concetto.
+
+2. Quante sono parzialmente coperte?
+2:
+- A World-local Club Mapping;
+- C Game World Season / Context.
+
+3. Quante non sono coperte ma sono realmente necessarie?
+0 dimostrate senza ulteriori decisioni/verifiche.
+Non emerge oggi una nuova struttura DB che possa essere dichiarata obbligatoria senza condizioni.
+
+4. Quante sono in realtà NOT NECESSARY?
+1:
+- D Competition Meta-Layer / Rule Engine come layer separato.
+La funzione operativa è già nel Competition Codex; ricreare master/rules riprodurrebbe debito architetturale.
+
+5. Quante richiedono una decisione della Direzione?
+2:
+- B World-local National Team Mapping;
+- E Ingestion & Provenance V2.
+
+6. Quali nuove strutture, se esistono, sono DAVVERO indispensabili?
+NESSUNA può essere dichiarata oggi incondizionatamente indispensabile.
+L'unico candidato con un DATA GAP chiaramente reale è una dimensione season/history per-GW, MA solo se la Direzione conferma che il prodotto deve rimanere season-aware.
+Per club mapping esiste già una IMC Mapping e va prima riutilizzata/completata.
+Per national mapping la necessità prodotto non è ancora confermata.
+Per competition meta-layer e Player Codex non serve nuovo schema.
+Per ingestion/provenance serve prima scegliere il modello operativo.
+
+7. Quali problemi possono essere risolti senza toccare lo schema DB?
+- Player Codex: API/resolver sulle 3 IMC Player.
+- Competition metadata: leggere IMC Competition Codex Global invece del vecchio master/rules.
+- Club mapping: migrare i resolver a IMC Game World Club Mapping e completare le membership mancanti se i dati sorgente dimostrano che `SM Club ID` è sufficiente.
+- Team Hub/consumer manager già possono usare Manager/Assignment Global.
+- Ingestion: si può progettare una pipeline che scriva direttamente le IMC esistenti; la necessità di nuove tabelle provenance non è implicita.
+
+8. Quale sarebbe il minimo set di lavoro necessario per avere il CORE funzionalmente completo senza ricostruire debito legacy?
+MINIMUM SET RACCOMANDATO:
+A. nessun nuovo schema Competition;
+B. nessun nuovo schema Player Codex;
+C. riscrivere i resolver Player Codex sulle IMC esistenti;
+D. riscrivere i consumer competition sul Competition Codex;
+E. verificare semanticamente `SM Club ID` e completare la Game World Club Mapping per GW007/GW008/GW010 prima di pensare a un'altra mapping;
+F. decisione Direzione sul national world-local mapping;
+G. decisione Direzione sul modello ingestion/provenance;
+H. solo se la funzione season-aware viene confermata, aprire un futuro CASE architetturale MINIMO per il season context.
+
+======================================================================
+10. VERDETTO
+======================================================================
+
+L'audit NON supporta la ricostruzione automatica delle sei aree legacy.
+
+Verdetto sintetico:
+- il CORE è già semanticamente forte;
+- molte rotture residue sono ACCESS GAP o LEGACY-ONLY GAP;
+- non serve ricreare il vecchio ecosistema di tabelle;
+- nessuna nuova struttura DB è oggi incondizionatamente obbligatoria;
+- il solo gap dati strutturale chiaramente visibile è la dimensione season, condizionata al requisito prodotto season-aware;
+- le decisioni che devono precedere qualsiasi nuovo schema sono national world-local mapping e modello ingestion/provenance.
+
+STOP APPLICATO:
+- nessuno schema progettato;
+- nessun ticket figlio creato;
+- nessuna implementazione eseguita.
+
+AUDIT RESULT: COMPLETE
+DB WRITES: NONE
+CODE WRITES: NONE
+DEPLOYS: NONE
