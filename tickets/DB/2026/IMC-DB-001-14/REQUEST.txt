@@ -1,0 +1,172 @@
+CASE_ID: IMC-DB-001-14
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_SAFE_PATCH_IMPLEMENTATION
+
+IMC | RESULTS IMPORTER · SAFE PATCH IMPLEMENTATION
+
+CONTESTO
+Questo CASE sarà eseguito in una NUOVA CHAT/WORK dedicata esclusivamente a questo intervento. Non usare memoria o ricostruzioni implicite: prima di fare qualsiasi modifica devi recuperare e leggere integralmente tutti gli input autoritativi indicati sotto.
+
+OBIETTIVO
+Produrre la patch sicura dell'importer `IMC Results` sulla base della diagnosi conclusiva IMC-DB-001-13, preservando il comportamento corretto esistente e senza bonificare automaticamente i dati storici.
+
+INPUT AUTORITATIVI OBBLIGATORI
+
+1. CODICE IMPORTER ATTUALE DA MODIFICARE
+Recuperare ESCLUSIVAMENTE da:
+`tommasomellogrand-ui/imc-data-room`
+`tickets/DB/2026/IMC-DB-001-12/INPUT_RESULTS_IMPORT.js`
+
+Questo è il codice sorgente di partenza del CASE. Non ricostruirlo dalla memoria e non usare versioni differenti senza prima segnalarlo.
+
+2. ANALISI PRECEDENTE
+Leggere integralmente:
+`tickets/DB/2026/IMC-DB-001-12/RESPONSE.txt`
+
+3. ANALISI FORENSE DEFINITIVA
+Leggere integralmente:
+`tickets/DB/2026/IMC-DB-001-13/RESPONSE.txt`
+
+La RESPONSE 001-13 ha verdict `READY_FOR_IMPLEMENTATION` ed è la specifica tecnica primaria per questa patch.
+
+4. DOM REALI SOCCER MANAGER
+Recuperare dalla File Library i due DOM usati e identificati in IMC-DB-001-13:
+- `SM_DOM_20260912_130340.json` = GW001 / HERTHA BSC / Results League / SINGLE
+- `SM_DOM_20260912_130458.json` = GW007 / REAL BETIS / Results League / MULTI/GOLD
+
+I DOM devono essere letti come evidenza reale del comportamento Soccer Manager. Non inferire markup alternativo se non presente.
+
+Se nella File Library il filename presenta un suffisso diverso, identificare il DOM dal contenuto come già fatto in 001-13, NON dal solo filename.
+
+VINCOLO DI PRE-FLIGHT
+Prima di scrivere codice:
+- leggere integralmente importer + RESPONSE 001-12 + RESPONSE 001-13;
+- aprire/analizzare entrambi i DOM;
+- produrre internamente una matrice `finding 001-13 -> funzione importer -> modifica prevista -> regression risk`;
+- se un finding della 001-13 non è riproducibile dagli input, fermarsi e documentarlo invece di inventare.
+
+SCOPE PATCH AUTORIZZATO
+Implementare esclusivamente quanto necessario per risolvere/irrobustire i punti certificati da IMC-DB-001-13:
+
+A. WORLD STRUCTURE
+- introdurre una fonte canonica esplicita SINGLE/MULTI per i GW supportati dall'importer;
+- GW001 deve essere SINGLE;
+- GW007 deve essere MULTI;
+- non dedurre SINGLE/MULTI dal DOM;
+- mantenere invariato il routing DB esistente.
+
+B. RAW CONTEXT VS CANONICAL CONTEXT
+- separare i token di navigazione Soccer Manager dal contesto persistito;
+- GW001 può usare `CUS` per navigare ma NON deve persisterlo come `sm_country`;
+- GW007 deve continuare a persistere country reale, es. `ESP`;
+- INTERNATIONAL e NATIONS devono restare senza country/division secondo la grammatica canonica.
+
+C. COMPETITION KEY
+Sostituire la costruzione generica tramite `.filter()` con grammatica esplicita.
+Minimo:
+- SINGLE League: `GW|DOMESTIC|league|division`
+- SINGLE DOMESTIC non-League: `GW|DOMESTIC|action`
+- INTERNATIONAL: `GW|INTERNATIONAL|action`
+- NATIONS: `GW|NATIONS|action`
+- MULTI League: `GW|country|DOMESTIC|league|division`
+- MULTI DOMESTIC country-scoped non-League: `GW|country|DOMESTIC|action`
+Qualsiasi eccezione deve provenire da regola canonica esplicita, non dalla presenza casuale di segmenti DOM.
+
+D. DOM SCOPING
+- tutte le lookup competition live pertinenti devono essere scoped a `#currentScreenA` / blocco Results corrente;
+- escludere sempre `#workingCopy`;
+- eliminare il fallback action document-global non visible-scoped identificato nella 001-13.
+
+E. NAVIGATION READINESS
+- sostituire/rafforzare gli sleep ciechi dove necessario con verifica semantica dello stato Results;
+- prima di processare una pagina verificare stabilità del context target e fixture set;
+- evitare che un cambio country/division/previous venga letto mentre il DOM è ancora in transizione.
+
+F. IDEMPOTENZA
+Non usare più il semplice `existsById || existsByFingerprint` come classificazione unica.
+Distinguere almeno:
+- NEW
+- IDENTICAL
+- CHANGED_EXISTING
+- DUPLICATE_CONTENT
+
+Policy in questa prima patch:
+- NEW -> insert
+- IDENTICAL -> skip
+- CHANGED_EXISTING -> NON aggiornare automaticamente; rilevare/loggare/conteggiare
+- DUPLICATE_CONTENT -> warning/rilevare, NON scrivere automaticamente
+
+Questa patch NON è autorizzata a correggere silenziosamente record storici già presenti.
+
+G. CONTROLLED CLUB ID
+I DOM reali dimostrano che HERTHA BSC e REAL BETIS, essendo club controllati, non espongono world-local club ID sul team node.
+
+VINCOLI:
+- NON usare gli ID logo SoccerWiki (`404`, `162`) come world-local ID;
+- NON inventare ID;
+- NON usare mapping attualmente non certificati per autofill;
+- se non esiste una fonte world-local certa, lasciare club ID unresolved/null in modo fail-safe e segnalarlo;
+- predisporre eventualmente un resolver isolato per futura integrazione con mapping canonico, senza hardcode Hertha/Betis.
+
+H. CURRENT MANAGER
+`CUSTOMERID` può essere usato come fallback SOLO se:
+- la squadra è identificata con certezza come controlled/current club;
+- il manager anchor di quella squadra non espone un ID;
+- l'identità current club è stabile.
+Non usare CUSTOMERID come fallback generico per altri club.
+
+I. STAGE NORMALIZATION
+Il typo `Quarti di Finalee` proviene dal DOM.
+È autorizzata una normalizzazione canonica minima solo se implementata in modo esplicito, testabile e senza alterare stage validi. Documentare esattamente la dictionary/regola introdotta.
+
+J. PRESERVARE GW007
+Il comportamento MULTI corretto di GW007 è un acceptance test obbligatorio.
+La patch che corregge GW001 NON deve rompere:
+- country loop;
+- division loop per country;
+- `sm_country` reale;
+- competition_key MULTI;
+- Results parsing esistente.
+
+K. NON AUTORIZZATO
+- nessuna modifica MySQL;
+- nessuna bonifica dati storici;
+- nessun UPDATE/DELETE sui repository Results;
+- nessuna modifica schema;
+- nessuna modifica Gateway salvo blocco tecnico dimostrato e nuova autorizzazione;
+- nessuna modifica minisiti;
+- nessun hardcode specifico HERTHA/REAL BETIS come soluzione;
+- nessun uso logo ID come world-local club ID;
+- nessuna espansione ad altri importer (Schedule/Match Report) in questo CASE.
+
+DELIVERABLE
+Produrre un nuovo file patchato nella Data Room, senza sovrascrivere l'input originale:
+`tickets/DB/2026/IMC-DB-001-14/OUTPUT_RESULTS_IMPORT.js`
+
+Produrre inoltre:
+`tickets/DB/2026/IMC-DB-001-14/RESPONSE.txt`
+
+La RESPONSE deve contenere:
+- input effettivamente letti;
+- matrice finding -> fix;
+- funzioni cambiate;
+- comportamento SINGLE GW001 atteso;
+- comportamento MULTI GW007 atteso;
+- grammatica competition_key implementata;
+- gestione controlled club/current manager;
+- nuova classificazione idempotenza;
+- test statici/fixture DOM effettuati sui due DOM;
+- regressioni verificate;
+- limiti residui;
+- istruzioni precise per test manuale dell'OUTPUT_RESULTS_IMPORT.js;
+- cosa succederà sui record storici CHANGED_EXISTING;
+- verdict finale READY_FOR_MANUAL_TEST oppure BLOCKED.
+
+IMPORTANTE
+Non distribuire o sostituire automaticamente lo Shortcut/iOS importer operativo. La Direzione deve prima ricevere OUTPUT_RESULTS_IMPORT.js e testarlo manualmente.
+
+WRITE AUTHORIZED: YES, esclusivamente nuovi file di deliverable nella Data Room per questo CASE.
+DB WRITE: NO.
+PRODUCTION DEPLOY: NO.
