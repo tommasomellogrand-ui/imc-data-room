@@ -1,0 +1,495 @@
+CASE_ID: IMC-CREATIVE-001-03
+DOC_TYPE: RESPONSE
+AREA: CREATIVE
+DATE: 2026-09-12
+TOPIC: DATA_ROOM_VISUAL_SYSTEM_DESIGN
+
+IMC | CREATIVE DIRECTOR
+DATA ROOM · VISUAL SYSTEM & INFORMATION DESIGN
+
+EXECUTIVE DIRECTION
+
+Creative thesis:
+
+IMC DATA ROOM = THE OPERATIONS LEDGER
+
+The Data Room is not a dashboard and not a folder browser. It is the authoritative operational ledger of IMC: every case has an identity, an owner domain, a state, an authorization level, a sequence and an outcome.
+
+The visual system must make those six things readable before the user reads the document itself.
+
+Design principles:
+1. IDENTITY BEFORE DECORATION — CASE_ID, AREA, TOPIC and STATUS dominate.
+2. DOCUMENTS HAVE DIRECTION — REQUEST enters the case; RESPONSE exits it.
+3. STATE IS SEMANTIC — status is encoded by shape/icon/word as well as color.
+4. AUTHORIZATION IS SEPARATE FROM STATUS — OPEN does not mean WRITE AUTHORIZED.
+5. LINEAGE IS VISIBLE — root, iteration and follow-up relationships are first-class.
+6. DENSITY WITH RHYTHM — compact lists, spacious reading surfaces.
+7. ONE ACCENT AT A TIME — area color identifies domain; status color communicates state. They must not compete.
+8. OPERATIONAL, NOT CORPORATE — precise, calm, editorially disciplined.
+
+The master visual character is deep graphite/ink with warm neutral reading surfaces, sharp typography, restrained dimensional depth and thin technical rules. Area colors enter as narrow rails, identifiers and small markers, never as full rainbow cards.
+
+1. COLOR SYSTEM PER AREA
+
+MASTER NEUTRALS
+--dr-ink-950: #0B0E12
+--dr-ink-900: #11161D
+--dr-ink-850: #171D25
+--dr-slate-700: #394452
+--dr-slate-500: #687585
+--dr-slate-300: #AAB4BF
+--dr-paper-100: #E9EDF0
+--dr-paper-050: #F5F6F4
+--dr-white: #FFFFFF
+
+AREA COLORS
+DB — Database / data authority
+--area-db: #2F9D78
+Character: controlled emerald. Data, persistence, verified source.
+
+ENG — Engineering
+--area-eng: #4D82D8
+Character: structural cobalt. Systems, implementation, architecture.
+
+INTEL — Intelligence
+--area-intel: #A875D6
+Character: analytic violet. Research, synthesis, investigation.
+
+CREATIVE — Creative Direction
+--area-creative: #D17A52
+Character: warm vermilion/copper. Direction, visual culture, authorship.
+
+SITE / PRODUCT
+--area-product: #3AA6B7
+Character: cyan-teal. Public product, experience, delivery.
+
+OPS / future operational area
+--area-ops: #C2A04D
+Character: ochre. Coordination/execution.
+
+GENERIC / future unassigned area
+--area-generic: #7D8792
+
+Rules:
+- Area color appears as 3px case rail, area glyph, small area badge edge, active filter marker and lineage connector.
+- Never fill an entire case card with area color.
+- Text on area color must meet WCAG AA; otherwise use area color as non-text accent on neutral surfaces.
+- New areas must be assigned from a controlled palette, never generated ad hoc.
+
+2. REQUEST vs RESPONSE vs DOCUMENT TYPES
+
+The distinction is structural, not merely chromatic.
+
+REQUEST
+Symbol: inward arrow / right-pointing entry marker.
+Label: REQUEST.
+Edge: solid left edge.
+Surface: neutral dark or paper according to mode.
+Typography: directive title, stronger weight.
+Timeline geometry: marker enters the central case spine from the left.
+Semantic meaning: instruction enters the case.
+
+RESPONSE
+Symbol: outward arrow / return marker.
+Label: RESPONSE.
+Edge: solid right edge or terminal underline.
+Surface: slightly elevated/readable neutral.
+Typography: result title + completion metadata.
+Timeline geometry: marker exits the spine to the right.
+Semantic meaning: delivery leaves the case.
+
+CASE_META
+Symbol: information/ledger mark.
+Label: CASE META.
+Treatment: compact technical strip, no document-sized panel.
+
+SUMMARY
+Symbol: stacked lines / abstract.
+Label: SUMMARY.
+Treatment: neutral editorial block.
+
+DECISION
+Symbol: fork resolved into one path.
+Label: DECISION.
+Treatment: heavier top rule and decision statement.
+
+APPROVAL
+Symbol: seal/check in outlined square.
+Label: APPROVAL.
+Treatment: authoritative terminal block, not celebratory green confetti.
+
+Document types must remain distinguishable in monochrome/print through label, icon, edge placement and geometry.
+
+3. STATUS SYSTEM
+
+Status and authorization are separate dimensions.
+
+CASE STATUS
+DRAFT — hollow circle; neutral grey; incomplete/not issued.
+OPEN — open ring; cool blue-grey; issued and available.
+IN PROGRESS — half-filled circle / progress arc; cobalt; active work.
+WAITING — pause bars; amber-grey; waiting on dependency/input.
+BLOCKED — barrier icon; burnt orange; cannot proceed.
+COMPLETED — filled check circle; restrained green; delivery completed.
+APPROVED — outlined seal + check; deep teal/green; formally accepted.
+REJECTED — crossed seal; muted crimson; formally rejected.
+NEEDS DIRECTOR DECISION — diamond/exclamation; amber; decision required.
+
+Semantic status tokens:
+--status-draft: #7B8490
+--status-open: #6D8EAD
+--status-progress: #4D82D8
+--status-waiting: #B38A45
+--status-blocked: #C56842
+--status-completed: #3F8B70
+--status-approved: #26785E
+--status-rejected: #A64C55
+--status-decision: #C39438
+
+AUTHORIZATION / MODE
+READ ONLY — eye/document icon; slate; rectangular outlined badge.
+WRITE AUTHORIZED — pen/action icon; copper; rectangular badge with solid leading edge.
+EXECUTION AUTHORIZED — play/bolt-like operational icon; stronger copper/ochre; only when explicitly represented by source metadata.
+
+Authorization must never inherit status color. A COMPLETED case may be READ ONLY; an OPEN case may or may not authorize writes.
+
+4. CASE CARD SYSTEM
+
+Target scan time: <= 2 seconds.
+
+Desktop card anatomy:
+
+[3px AREA RAIL] [AREA GLYPH + CASE_ID]          [STATUS BADGE]
+                 TOPIC
+                 DATE · CASE KIND · MODE
+                 ROOT / ITERATION if applicable
+                 ─────────────────────────────
+                 REQUEST ✓   RESPONSE ✓/—      LAST ACTIVITY
+
+Priority order:
+1. CASE_ID
+2. TOPIC
+3. STATUS
+4. AREA
+5. MODE/AUTHORIZATION
+6. DATE / LAST ACTIVITY
+7. lineage
+8. document presence
+
+CASE_ID uses monospace/tabular treatment.
+TOPIC is the largest semantic text on the card.
+STATUS occupies a stable top-right slot.
+REQUEST/RESPONSE availability uses document icons plus text, never checkmarks alone.
+
+Card states:
+Default — neutral surface + area rail.
+Hover — border/surface elevation only; no color wash.
+Focus — 2–3px high-contrast focus ring independent of area color.
+Selected — stronger neutral surface + area rail extended across top micro-rule.
+Blocked — status marker visible, but card remains area-identified.
+Unread/new activity if needed in future — small neutral activity dot, not another color family.
+
+Recommended desktop density: 72–92px card height for standard list mode; expanded cards only when lineage/constraints require it.
+
+5. CASE DETAIL
+
+Desktop composition:
+
+TOP BAR
+Global Data Room identity, search, high-level area filter.
+
+CASE MASTHEAD
+Left:
+AREA / CASE_ID
+TOPIC as H1
+root/iteration lineage
+
+Right:
+STATUS
+AUTHORIZATION
+DATE / LAST ACTIVITY
+
+Below masthead:
+CONSTRAINT STRIP when constraints exist.
+Warnings are not permanently visible if none exist.
+
+MAIN GRID
+Desktop >= 1200px:
+- 220–260px LEFT CONTEXT RAIL
+- minmax(0, 1fr) DOCUMENT / TIMELINE STAGE
+- 280–320px RIGHT STATE / LINKS RAIL
+
+LEFT CONTEXT RAIL
+- case metadata summary
+- root/parent
+- child/follow-up list
+- area
+- case kind
+- technical IDs
+
+CENTER STAGE
+A chronological CASE FLOW:
+REQUEST → iterations / decisions → RESPONSE → approval if present.
+
+The central spine is thin and neutral. Document items connect to it with area-colored micro-connectors, while document type geometry indicates direction.
+
+REQUEST and RESPONSE must be readable as proper documents, not squeezed into dashboard cards. On opening a document, typography switches from dense operational UI to a calmer reading measure (approximately 68–78 characters).
+
+RIGHT STATE RAIL
+- current status
+- authorization
+- dependency/blocker
+- decision required
+- deliverable/result summary
+- available actions, only when legitimate
+
+DELIVERABLE / RESULT
+A terminal section after RESPONSE with:
+- result label
+- artifact/reference
+- commit/deploy if present in source
+- approval state
+- next follow-up
+
+6. INFORMATION HIERARCHY
+
+A. VISIBLE AT A GLANCE
+- CASE_ID
+- TOPIC
+- AREA
+- STATUS
+- authorization mode
+- date / last activity
+- REQUEST presence
+- RESPONSE presence
+- root/iteration indicator when applicable
+
+B. AFTER ONE CLICK
+- full metadata summary
+- constraints
+- REQUEST/RESPONSE timeline
+- root/parent/child relations
+- dependencies
+- deliverable/result
+- approval/decision state
+
+C. TECHNICAL DETAIL ONLY
+- raw metadata
+- repository paths
+- commit identifiers
+- implementation references
+- internal document metadata
+- exhaustive timestamps
+- secondary source details
+
+Technical metadata should use disclosure panels rather than occupying the primary reading hierarchy.
+
+7. TYPOGRAPHY & SPACING
+
+TYPE ROLES
+DISPLAY / PAGE TITLES
+A contemporary condensed or semi-condensed grotesk with authority, not sports-display aggression.
+
+UI / BODY
+Highly legible neutral grotesk.
+
+MONOSPACE
+CASE_ID, repository paths, code identifiers, commit SHA, machine statuses only.
+Do not set whole metadata paragraphs in monospace.
+
+NUMERIC
+Tabular figures for dates, counts and sequence numbers.
+
+Recommended hierarchy:
+H1 Topic: 32–44 desktop / 27–32 mobile
+CASE_ID: 13–15 mono, high tracking discipline
+H2 section: 20–24
+Body document: 16–17 / line-height 1.55–1.7
+UI body: 14–15
+Metadata: 12–13
+Badge: 11–12 uppercase or compact caps
+
+SPACING SYSTEM
+Base unit: 4px.
+Tokens: 4, 8, 12, 16, 24, 32, 48, 64.
+Operational UI uses 8/12/16 rhythm.
+Document reading uses 24/32/48 rhythm.
+
+This intentional density switch is important: lists are fast; documents breathe.
+
+8. ICONOGRAPHY
+
+Style: one proprietary-feeling family of 1.5–1.75px outline icons, square optical box, minimal detail, no filled emoji-like glyphs.
+
+Required semantic set:
+DB — stacked database cylinders simplified to three lines.
+ENG — connected structural nodes / bracket.
+INTEL — lens + signal point.
+CREATIVE — framing corners + point.
+PRODUCT — window/frame + interaction point.
+REQUEST — arrow entering document.
+RESPONSE — arrow leaving document.
+WARNING — outlined triangle.
+APPROVAL — outlined seal/check.
+BLOCKED — barrier.
+WRITE — pen/action mark.
+READ ONLY — eye/document.
+DEPENDENCY — linked nodes.
+ROOT CASE — trunk node.
+CHILD CASE — branch node.
+DECISION — fork resolving to path.
+
+Area icons and document icons must never be interchangeable: one answers WHERE, the other WHAT.
+
+9. FILTERS & NAVIGATION
+
+DESKTOP
+Persistent side navigation or compact left rail:
+- All Cases
+- Areas
+- Active
+- Waiting / Blocked
+- Needs Decision
+- Completed
+
+Top utility/filter bar:
+SEARCH [CASE_ID / TOPIC]
+AREA
+STATUS
+DATE
+CASE KIND
+ROOT CASE
+DOCUMENTS
+
+Filters should display active selections as removable chips below the primary bar, not expand the bar indefinitely.
+
+Search prioritization:
+1. exact CASE_ID
+2. CASE_ID prefix/root
+3. TOPIC
+4. content metadata if supported
+
+CASE LINEAGE NAVIGATION
+Every child/follow-up page exposes:
+ROOT CASE → CURRENT CASE
+and sibling/follow-up rail.
+
+A compact sequence navigator should allow:
+001 ← 001-01 ← 001-02 ← 001-03
+when that is the actual lineage.
+
+Do not infer lineage merely from visual naming if metadata says otherwise; use authoritative relationships.
+
+10. MASTER MODE
+
+Recommendation:
+
+DARK OPERATIONAL SHELL + LIGHT/NEUTRAL READING SURFACES
+
+Not a user-toggle dual theme in V1.
+
+Reason:
+- a dark shell establishes a distinct IMC operational identity;
+- neutral/light document surfaces improve long-form REQUEST/RESPONSE reading;
+- area/status colors remain controlled against neutral backgrounds;
+- it creates an explicit separation between navigation/control layer and document/content layer;
+- avoids doubling design/testing complexity before the information architecture is mature.
+
+The system should be tokenized so a full light mode can be added later without redesign, but V1 should have one authoritative visual mode.
+
+11. VISUAL LANGUAGE
+
+Signature language:
+
+THE LEDGER SPINE
+A thin vertical/linear system that visually connects REQUEST, RESPONSE, decisions and follow-ups.
+
+AREA RAIL
+A narrow area-colored edge that identifies domain without flooding surfaces.
+
+DOCUMENT DIRECTION
+REQUEST enters; RESPONSE exits.
+
+AUTHORIZATION EDGE
+READ/WRITE is represented as a separate edge/badge grammar, never conflated with case status.
+
+CASE SEQUENCE
+Root and iterations use visible sequence typography and connectors.
+
+The overall impression should be closer to a premium operations journal + technical control ledger than a project-management board.
+
+No kanban as primary metaphor.
+No card mosaic as primary navigation.
+No gradients assigned to every area.
+No decorative glass panels behind dense text.
+
+12. ACCESSIBILITY
+
+- WCAG AA minimum for all text; target AAA for body text on primary reading surfaces where practical.
+- Status never color-only: icon + label + color.
+- Area never color-only: abbreviation/name + icon + rail.
+- Request/Response never color-only: label + direction icon + edge geometry.
+- Visible keyboard focus: minimum 2px, preferably 3px on dark shell.
+- Touch targets: minimum 44×44 CSS px.
+- No hover-only information.
+- Timeline must have semantic document order independent of visual left/right geometry.
+- Reduced motion support; no continuous ambient animation.
+- Tables on mobile must either recompose or provide controlled horizontal scrolling with visible affordance.
+- Monospace identifiers must wrap/copy safely on narrow screens.
+- Color contrast must be validated for both dark shell and light document surfaces.
+
+13. DESIGN TOKENS
+
+COLORS
+--dr-bg: #0B0E12
+--dr-shell: #11161D
+--dr-surface-1: #171D25
+--dr-surface-2: #202833
+--dr-paper: #F5F6F4
+--dr-paper-muted: #E9EDF0
+--dr-text-dark: #11161D
+--dr-text-light: #F5F6F4
+--dr-text-muted-dark: #687585
+--dr-text-muted-light: #AAB4BF
+--dr-border-dark: #2B3541
+--dr-border-light: #D3D9DE
+
+AREA
+--area-db: #2F9D78
+--area-eng: #4D82D8
+--area-intel: #A875D6
+--area-creative: #D17A52
+--area-product: #3AA6B7
+--area-ops: #C2A04D
+--area-generic: #7D8792
+
+STATUS
+--status-draft: #7B8490
+--status-open: #6D8EAD
+--status-progress: #4D82D8
+--status-waiting: #B38A45
+--status-blocked: #C56842
+--status-completed: #3F8B70
+--status-approved: #26785E
+--status-rejected: #A64C55
+--status-decision: #C39438
+
+RADIUS
+--radius-xs: 2px
+--radius-sm: 4px
+--radius-md: 8px
+--radius-lg: 12px
+Use restrained radii. Case cards 4–8px; document surfaces may use 8px. Avoid pill-everything UI.
+
+BORDERS
+--border-hairline: 1px
+--border-focus: 3px
+--area-rail: 3px
+
+SHADOWS
+--shadow-low: 0 2px 8px rgba(0,0,0,.14)
+--shadow-mid: 0 10px 30px rgba(0,0,0,.18)
+Use only to distinguish document/control layers. No floating-card field.
+
+SPACING
+--space-1: 
