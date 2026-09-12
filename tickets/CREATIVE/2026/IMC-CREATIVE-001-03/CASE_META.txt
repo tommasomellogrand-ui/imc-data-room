@@ -1,0 +1,9 @@
+CASE_ID: IMC-CREATIVE-001-03
+AREA: CREATIVE
+DOMAIN: DATA_ROOM
+GW: GLOBAL
+TOPIC: DATA_ROOM_VISUAL_SYSTEM_DESIGN
+TAGS: data-room, ui, ux, visual-system, status, request-response, colors, components, design-tokens
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-CREATIVE-001
+MODE: DESIGN_ONLY
