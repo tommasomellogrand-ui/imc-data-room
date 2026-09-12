@@ -1,0 +1,82 @@
+CASE_ID: IMC-DB-001-07
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-12
+TOPIC: GAME_WORLD_NATIONAL_TEAM_MAPPING_AUDIT_AND_PROPOSAL
+
+IMC | DATABASE MANAGER
+GAME WORLD NATIONAL TEAM MAPPING · AUDIT + PROPOSTA
+
+CONTESTO
+IMC-DB-001-06 ha classificato il World-local National Team Mapping come NEEDS DIRECTOR DECISION.
+
+DECISIONE DIREZIONE
+La Direzione conferma che il mapping delle Nazionali per Game World VA mantenuto e deve seguire lo stesso principio già esistente per i club.
+
+Se esiste `IMC Game World Club Mapping`, deve esistere un equivalente coerente per le Nazionali.
+
+PRIMA DI PROGETTARE QUALSIASI NUOVA STRUTTURA
+Verifica se la mappatura National Team per Game World esiste già in una delle sorgenti tecniche Supabase / IMC Nexus / strutture correnti utilizzate dal progetto, con copertura almeno GW001–GW009.
+
+Non assumere che il dato manchi solo perché non è presente nelle 11 tabelle CORE.
+
+OBIETTIVI
+1. individuare l'eventuale dataset/tabella già esistente che contiene la relazione:
+   - Game World
+   - National Team globale
+   - eventuale SM National Team ID / world-local ID
+2. verificare copertura per GW001–GW009;
+3. verificare qualità, chiavi, duplicati e semantica degli ID;
+4. confrontare il modello trovato con `IMC Game World Club Mapping`;
+5. proporre il modello IMC definitivo per il mapping National Team, preferibilmente coerente col pattern Club Mapping;
+6. includere GW010 nel design come nuovo Game World operativo, senza inventare dati non ancora disponibili.
+
+NAMING TARGET PREFERITO
+`IMC Game World National Team Mapping`
+
+Questo naming può essere modificato solo se esiste una ragione tecnica forte, da documentare.
+
+PRINCIPI
+- riuso prima di creazione;
+- nessuna resurrezione delle legacy eliminate;
+- nessun import automatico di dati dubbi;
+- nessun ID world-local deve essere inventato;
+- se SM National Team ID coincide col global ID, documentarlo;
+- se varia per Game World, documentare pattern e necessità;
+- mantenere separati GLOBAL IDENTITY e WORLD-SCOPED MAPPING.
+
+OUTPUT RICHIESTO
+Per ogni sorgente trovata:
+- nome tabella/dataset;
+- ambiente/progetto;
+- colonne;
+- row count;
+- copertura per GW;
+- chiavi;
+- duplicati;
+- null;
+- semantica ID;
+- affidabilità;
+- se è già sufficiente o richiede consolidamento.
+
+Poi produrre:
+A. CURRENT STATE
+B. SOURCE OF TRUTH RECOMMENDATION
+C. TARGET IMC MODEL
+D. COLUMN-BY-COLUMN PROPOSAL
+E. KEYS / UNIQUE / FK
+F. GW001–GW009 COVERAGE
+G. GW010 READINESS
+H. MIGRATION/POPULATION PLAN
+I. CONSUMER IMPACT
+J. VERDICT: REUSE / CONSOLIDATE / CREATE
+
+VINCOLI
+READ ONLY.
+Nessuna nuova tabella.
+Nessuna migration.
+Nessun write DB.
+Nessun deploy.
+
+OUTPUT AUTORITATIVO
+`tickets/DB/2026/IMC-DB-001-07/RESPONSE.txt`
