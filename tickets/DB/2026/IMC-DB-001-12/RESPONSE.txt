@@ -1,0 +1,911 @@
+CASE_ID: IMC-DB-001-12
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_ROOT_CAUSE_AUDIT_GW001_GW007
+STATUS: COMPLETED
+MODE: READ_ONLY_CODE_REVIEW
+
+IMC | DATABASE MANAGER
+RESULTS IMPORTER · ROOT CAUSE AUDIT · GW001 + GW007
+
+======================================================================
+0. EXECUTIVE RESULT
+======================================================================
+
+Il CASE è stato eseguito esclusivamente in READ ONLY / CODE REVIEW ONLY.
+Nessuna modifica DB, schema, importer, Gateway, GitHub code o dati è stata eseguita.
+
+INPUT AUTORITATIVO LETTO INTEGRALMENTE:
+`tickets/DB/2026/IMC-DB-001-12/INPUT_RESULTS_IMPORT.js`
+
+PERIMETRO DATI USATO SOLO PER VALIDAZIONE:
+- GW001 / Sql1956795_3 / GW001_IMC Results
+- GW007 / Sql1956795_2 / GW007_IMC Results
+- IMC Game World Codex Global
+- IMC Game World Club Mapping
+- IMC Manager Codex Global
+- IMC Manager Assignment Global, solo come evidenza accessoria
+
+VERDETTO PRINCIPALE
+
+Le anomalie GW001/GW007 non hanno una sola causa.
+Sono presenti quattro categorie distinte:
+
+1. IMPORTER BUG
+   - l'importer non distingue esplicitamente SINGLE da MULTI;
+   - accetta country/division dal DOM senza validarli contro il tipo del Game World;
+   - competitionKey() costruisce chiavi a segmenti variabili eliminando semplicemente i valori vuoti;
+   - team() copre una sola variante DOM per l'ID club;
+   - splitExisting() impedisce la correzione automatica di una fixture già presente.
+
+2. SOURCE / DOM ISSUE
+   - CUS può essere esposto dal pager/select DOM e viene accettato alla cieca;
+   - `Quarti di Finalee` non è creato dal parser: dateInfo() copia il testo del DOM;
+   - il manager ID viene letto letteralmente dal DOM e può riflettere stato/timing diverso tra Results e Match Report.
+
+3. MAPPING GAP
+   - l'attuale IMC Game World Club Mapping non è un fallback world-local utilizzabile per questi casi:
+     * GW001 Hertha è presente come SM Club ID 404, mentre il Results/Match Report world-local è 94079171;
+     * GW007 non ha righe nella Club Mapping corrente.
+
+4. EXISTING DATA / IDEMPOTENCY EFFECT
+   - qualunque fixture già presente viene skippata per sm_fixture_id anche se una nuova versione del parser produrrebbe un fingerprint diverso.
+   - quindi una patch importer NON correggerebbe automaticamente i record storici.
+
+ROOT CAUSE PIÙ IMPORTANTE
+
+GW001 `CUS` è un vero bug dell'importer:
+`context()` non conosce il world structure e `competitionKey()` inserisce ogni country non vuota.
+Il DOM può quindi trasformare un mondo SINGLE in una key MULTI-like senza alcun errore o warning.
+
+GW007 country/division/key risultano corretti perché, nel mondo MULTI, il comportamento attuale coincide casualmente con la semantica desiderata: il pager fornisce country+division reali e competitionKey() li include.
+
+======================================================================
+1. CODICE AUDITATO · RESPONSABILITÀ DELLE FUNZIONI
+======================================================================
+
+1. countrySelect()
+- cerca esclusivamente `#country-selector select`;
+- lo usa se visibile;
+- non sa se S.gw è SINGLE o MULTI.
+
+RISCHIO:
+un country selector presente per ragioni DOM/UI può diventare fonte country anche in un mondo SINGLE.
+
+2. divisionSelect()
+- cerca il primo select visibile che contenga opzioni `Divisione N` / `Division N`;
+- non valida la division rispetto alla competition corrente.
+
+RISCHIO:
+una divisione DOM residua può contaminare una competizione che semanticamente non deve avere division.
+
+3. pagerContext()
+Legge dal pager Results:
+- `action`
+- `data-country`
+- `data-division`
+
+Priorità alta perché context() usa prima pagerContext() e solo dopo i select.
+
+RISCHIO:
+se un anchor del pager contiene `data-country="CUS"`, l'importer accetta CUS come sm_country senza alcuna validazione.
+
+4. context()
+Ordine:
+- prende action/country/division dal pager;
+- se mancanti, usa countrySelect()/divisionSelect();
+- macro(action) determina DOMESTIC / INTERNATIONAL / NATIONS;
+- azzera country+division SOLO per INTERNATIONAL e NATIONS.
+
+BUG:
+non esiste alcuna regola:
+- SINGLE => country NULL;
+- non-League domestic standard => division NULL;
+- MULTI => country obbligatoria per context country-scoped.
+
+5. macro()
+La classificazione macro è corretta per le action osservate:
+DOMESTIC:
+league, leaguecup, leagueshield, charityshield, playoff
+INTERNATIONAL:
+smfacup, smfashield, supercup
+NATIONS:
+interqualifier, worldcup
+
+macro() NON è la root cause delle anomalie rilevate.
+
+6. competitionKey()
+Costruisce:
+[
+  S.gw,
+  c.sm_country,
+  c.competition_group,
+  c.sm_action,
+  c.sm_division
+]
+.filter(x=>clean(x))
+.join('|')
+
+BUG STRUTTURALE:
+non esiste una grammatica canonica esplicita.
+Ogni segmento presente viene semplicemente aggiunto e ogni segmento assente viene cancellato.
+
+Conseguenze:
+- country spuria => key apparentemente valida ma semanticamente errata;
+- country obbligatoria mancante in MULTI => key apparentemente valida ma semanticamente incompleta;
+- division spuria => key division-scoped anche per competizioni che non devono esserlo;
+- la lunghezza della key non garantisce semantica corretta.
+
+7. team()
+Cerca:
+- `#homeTeam` / `#awayTeam`
+- onclick ESATTAMENTE compatibile con `MENU_clubOverviewDraw(<digits>)`
+
+Se il nome è presente ma l'ID:
+- è su un child/parent;
+- è in href/data-*;
+- usa un altro handler;
+- il club gestito è reso come elemento non cliccabile;
+- il markup speciale non possiede quell'onclick;
+
+team() restituisce id=null.
+
+8. managerId()
+Cerca:
+- `#homeManagerImage` / `#awayManagerImage`
+- onclick compatibile con `PROFILE_viewFriendsProfileNew(<digits>)`
+
+Il parser NON trasforma l'ID.
+Se salva 20605515, quel numero era presente nel DOM letto da quella funzione.
+
+9. dateInfo()
+Legge `.scheduleScreen-Heading`.
+Il prefisso prima della data viene copiato quasi testualmente come stage/round.
+
+Non esiste nel codice la stringa `Quarti di Finalee`.
+Quindi il parser può PROPAGARE il typo, non generarlo autonomamente.
+
+10. resultRows()
+Costruisce la riga finale usando context(), competitionKey(), dateInfo(), team(), managerId().
+Il fingerprint include anche i campi strutturali sbagliati.
+
+Conseguenza:
+un record semanticamente errato riceve comunque un fingerprint coerente con la sua versione errata.
+
+11. plan() / switchTo() / run()
+run() fa prima:
+`const countries=plan("country")`
+
+Se trova un country selector, cicla le country.
+Non esiste gating SINGLE/MULTI.
+
+BUG:
+un mondo SINGLE può essere trattato come country-scoped solo perché il DOM espone un select country.
+
+switchTo() / goPrevious() attendono:
+- presenza/change dei fixture ID;
+- sleep fissi.
+
+Non verificano che manager/team/context siano stabilizzati per due letture consecutive.
+Questo lascia una possibile finestra di race DOM sui campi secondari.
+
+12. splitExisting()
+Una riga viene skippata se:
+`existsById || existsByFingerprint`
+
+BUG DI REMEDIATION:
+se sm_fixture_id esiste già, il fingerprint nuovo non viene confrontato per decidere update/conflict.
+La fixture è skippata incondizionatamente.
+
+======================================================================
+2. MATRIX ROOT CAUSE
+======================================================================
+
+Anomalia | Root cause | Funzione coinvolta | Certainty | Fix importer proposto | Historical remediation
+
+GW001 · 20 League 10/09 con sm_country='CUS'
+ROOT CAUSE:
+IMPORTER BUG attivato da SOURCE/DOM STATE
+FUNZIONI:
+pagerContext() -> context() -> competitionKey(); countrySelect()/run() sono un secondo percorso possibile
+CERTAINTY:
+HIGH sul bug; HIGH che CUS arriva da DOM; MEDIUM/HIGH sul fatto che il percorso specifico osservato sia pager data-country, perché il DOM storico non è stato catturato
+FIX:
+world structure esplicito; SINGLE forza country=NULL prima della key e non cicla country
+HISTORICAL REMEDIATION:
+YES
+
+GW001 · 20 key `GW001|CUS|DOMESTIC|league|N`
+ROOT CAUSE:
+IMPORTER BUG
+FUNZIONE:
+competitionKey()
+CERTAINTY:
+VERY HIGH
+FIX:
+builder canonico per grammar, non array.filter()
+HISTORICAL REMEDIATION:
+YES
+
+GW001 · HERTHA BSC club ID null in 20 Results
+ROOT CAUSE:
+IMPORTER BUG + SOURCE/DOM ISSUE; MAPPING GAP impedisce fallback sicuro
+FUNZIONE:
+team()
+CERTAINTY:
+HIGH sul parser incompleto; MEDIUM sulla specifica variante markup che Soccer Manager usa, perché il DOM storico non è disponibile
+FIX:
+parser multi-source dell'ID + unresolved policy esplicita; non usare current Club Mapping come world-local fallback
+HISTORICAL REMEDIATION:
+YES
+
+GW001 · `Quarti di Finalee`
+ROOT CAUSE:
+SOURCE/DOM ISSUE, con assenza di normalization nell'importer
+FUNZIONE:
+dateInfo()
+CERTAINTY:
+VERY HIGH che il parser non genera il typo
+FIX:
+normalizzazione opzionale tramite dictionary canonico di stage/round; non hardcodare correzioni sparse dentro dateInfo
+HISTORICAL REMEDIATION:
+YES se il valore deve essere canonico/UI-safe
+
+GW001 · manager conflict fixture 367418923
+Results home manager = 20605515
+Match Report home manager = 5053060
+ROOT CAUSE:
+SOURCE/DOM ISSUE oppure DOM timing/state; NOT EXPLAINED come trasformazione algoritmica del Results importer
+FUNZIONE:
+managerId(); indirettamente goPrevious()/switchTo() readiness
+CERTAINTY:
+HIGH che managerId() salva letteralmente il DOM; MEDIUM sulla causa specifica del DOM discrepante
+FIX:
+attesa di stabilità row/context dopo navigation; eventuale validation/audit dei manager ID, senza inventare sostituzioni
+HISTORICAL REMEDIATION:
+YES, ma solo dopo source-of-truth verification
+
+GW007 · REAL BETIS club ID null in 8 Results
+ROOT CAUSE:
+IMPORTER BUG + SOURCE/DOM ISSUE + MAPPING GAP
+FUNZIONE:
+team()
+CERTAINTY:
+HIGH sul parser incompleto
+FIX:
+stessa patch team() di HERTHA; unresolved identity esplicita
+HISTORICAL REMEDIATION:
+YES
+
+GW007 · 34 country/division/key League corretti
+ROOT CAUSE:
+NESSUNA ANOMALIA
+FUNZIONI:
+pagerContext(), context(), macro(), competitionKey(), plan/switchTo
+CERTAINTY:
+VERY HIGH
+MOTIVO:
+nel MULTI il DOM country+division coincide con la semantica desiderata. Le 34 combinazioni Results corrispondono 34/34 al Competition Codex.
+FIX:
+nessuno sul risultato; la futura patch SINGLE/MULTI deve preservare esattamente questo comportamento per MULTI League
+HISTORICAL REMEDIATION:
+NO
+
+Persistenza di tutti i record sbagliati dopo futura patch
+ROOT CAUSE:
+EXISTING DATA / IDEMPOTENCY EFFECT
+FUNZIONE:
+splitExisting()
+CERTAINTY:
+VERY HIGH
+FIX:
+distinguere SAME / CHANGED_EXISTING / NEW invece di skip OR assoluto
+HISTORICAL REMEDIATION:
+YES
+
+======================================================================
+3. A · PERCHÉ GW001 PUÒ ACQUISIRE CUS PUR ESSENDO SINGLE?
+======================================================================
+
+Perché il codice NON sa che GW001 è SINGLE.
+
+Flusso principale:
+1. pagerContext() cerca il pager Results.
+2. legge `data-country` senza validazione.
+3. context() assegna:
+   `let country=p.sm_country||null`
+4. macro('league') restituisce DOMESTIC.
+5. context() azzera country SOLO per INTERNATIONAL/NATIONS.
+6. competitionKey() include country perché non vuota.
+
+Quindi:
+DOM `data-country="CUS"`
+→ sm_country='CUS'
+→ `GW001|CUS|DOMESTIC|league|division`
+
+Percorso secondario possibile:
+se pager non espone country ma esiste `#country-selector select`, context() può usare testo/value della option selezionata.
+
+EVIDENZA LIVE:
+le 20 righe CUS hanno tutte:
+`imported_at = 2026-09-11 07:11:16`
+
+Quindi l'errore è stato introdotto in un singolo run/page state coerente da 20 fixture, non gradualmente nella stagione.
+
+======================================================================
+4. B · DA QUALE ELEMENTO DOM PUÒ ARRIVARE CUS?
+======================================================================
+
+PRIMA FONTE:
+anchor pager dentro `leagueResultsContainer` selezionato da:
+- #ResultsprevWeek_click a[action]
+- #ResultsnextWeek_click a[action]
+- #ResultssnextWeek_click a[action]
+
+Attributo letto:
+`data-country`
+
+SECONDA FONTE FALLBACK:
+`#country-selector select`
+
+Valore usato:
+prima `option.textContent`, poi `select.value`.
+
+Il codice non possiede altra sorgente per sm_country.
+
+======================================================================
+5. C · PAGER, COUNTRY SELECT O COMBINAZIONE?
+======================================================================
+
+ROOT BUG = COMBINAZIONE ARCHITETTURALE:
+- pagerContext()/countrySelect() producono un candidate country dal DOM;
+- context() non valida quel candidate contro il tipo del GW;
+- competitionKey() lo serializza senza grammar check;
+- run() può perfino iterare country in un SINGLE se il select è visibile.
+
+Il singolo valore `CUS` può provenire da pager o select.
+Il percorso più diretto e prioritario nel codice è `pagerContext().data-country`.
+
+======================================================================
+6. D · COME DISTINGUERE SINGLE DA MULTI SENZA HARDCODING FRAGILE
+======================================================================
+
+NON inferire il world structure dal DOM Soccer Manager.
+Il DOM è source data, non authority IMC.
+
+SOURCE CANONICA DISPONIBILE OGGI:
+`IMC Game World Codex Global`.`Country`
+
+GW001-GW009 live:
+SINGLE signal, Country NULL:
+- GW001
+- GW004
+- GW005
+- GW006
+- GW009
+
+MULTI signal, Country valorizzato:
+- GW002
+- GW003
+- GW007
+- GW008
+
+RACCOMANDAZIONE TARGET:
+un piccolo repository/world registry server-side o config canonica restituisce:
+`world_structure = SINGLE | MULTI`
+
+L'importer deve ricevere/risolvere questo valore una volta all'avvio e non dedurlo dai select DOM.
+
+PATCH MINIMA TRANSITORIA, se non si vuole modificare il Gateway:
+un unico `GW_STRUCTURE` config accanto a GW_ROUTE è accettabile come bridge temporaneo, perché esplicito, centralizzato e testabile; NON spargere if(GW001...) nel parser.
+
+Preferenza architetturale:
+registry centralizzato > mappa locale importer > DOM inference.
+
+======================================================================
+7. E · GRAMMATICA CANONICA competition_key
+======================================================================
+
+La key deve essere costruita da una grammar esplicita.
+
+SINGLE League:
+`GW|DOMESTIC|league|division`
+Esempio:
+`GW001|DOMESTIC|league|4`
+Country obbligatoriamente NULL.
+
+SINGLE non-League DOMESTIC standard:
+`GW|DOMESTIC|action`
+Esempio:
+`GW001|DOMESTIC|leaguecup`
+Country NULL.
+Division NULL per leaguecup/leagueshield/charityshield.
+
+NOTA PLAYOFF CUSTOM:
+non applicare la regola generica "non-League = no division" ai custom playoff senza consultare Competition Codex, perché alcuni GW SINGLE possono avere playoff division-scoped.
+
+INTERNATIONAL:
+`GW|INTERNATIONAL|action`
+Country NULL.
+Division NULL.
+
+NATIONS:
+`GW|NATIONS|action`
+Country NULL.
+Division NULL.
+
+MULTI/GOLD League:
+`GW|country|DOMESTIC|league|division`
+Esempio:
+`GW007|ENG|DOMESTIC|league|2`
+Country obbligatoria.
+Division obbligatoria.
+
+MULTI non-League DOMESTIC:
+seguire la configurazione Competition Codex del relativo action/context; non dedurre automaticamente country/division solo perché un select è presente.
+
+======================================================================
+8. F · `.filter(x=>clean(x))` È PERICOLOSO?
+======================================================================
+
+SI.
+
+Non è il produttore autonomo di CUS, ma trasforma qualunque combinazione parziale in una key sintatticamente plausibile.
+
+Esempi:
+SINGLE con country spuria:
+[GW001,CUS,DOMESTIC,league,4]
+→ key errata accettata.
+
+MULTI con country mancante:
+[GW007,NULL,DOMESTIC,league,2]
+→ `GW007|DOMESTIC|league|2`
+che sembra valida ma perde la country obbligatoria.
+
+Non esiste error state.
+
+FIX:
+builder per tipo di competition che:
+- valida campi obbligatori;
+- rigetta campi vietati;
+- restituisce key canonica o errore/segregazione.
+
+======================================================================
+9. G/H · PERCHÉ TEAM ID PUÒ ESSERE NULL? REGEX SUFFICIENTE?
+======================================================================
+
+NO, la regex non è sufficiente come parser DOM generale.
+
+team() copre soltanto:
+- elemento esatto `#homeTeam/#awayTeam`
+- onclick sullo stesso elemento
+- funzione esatta `MENU_clubOverviewDraw(...)`
+- primo argomento numerico.
+
+Non copre, ad esempio:
+- onclick sul child anchor;
+- onclick sul parent;
+- href javascript;
+- data-club-id / data-team-id / data-id;
+- altro handler Soccer Manager;
+- elemento testuale non cliccabile per il club dell'utente;
+- markup speciale/mobile/managed-team.
+
+PATTERN DATI:
+GW001 HERTHA BSC:
+20 Results non-NATIONS con ID null distribuiti su quattro import timestamp.
+Match Report possiede world-local ID 94079171.
+
+GW007 REAL BETIS:
+8 Results con ID null, distribuiti su due import timestamp.
+
+La ripetitività per nome club e non per competition/date indica un DOM variant deterministico o semi-deterministico, non null casuali.
+
+======================================================================
+10. I · FALLBACK VERSO IMC GAME WORLD CLUB MAPPING?
+======================================================================
+
+NON NELLO STATO ATTUALE.
+
+Evidenza CORE:
+`IMC Game World Club Mapping` ha colonne:
+- Club ID
+- Club Name
+- Game World
+- SM Club ID
+
+GW001 Hertha:
+- Club Name = Hertha Berlino
+- SM Club ID = 404
+
+Ma il world-local ID osservato nel Match Report GW001 è:
+94079171
+
+GW007:
+la Club Mapping attuale non contiene righe GW007.
+
+Quindi il mapping corrente NON può essere usato come fallback per home_sm_club_id/away_sm_club_id del Results importer.
+
+PROPOSTA:
+1. tentare parsing DOM multi-source;
+2. se ID ancora unresolved:
+   - se in futuro esiste una mapping world-local canonical certificata, usarla;
+   - altrimenti NON inventare ID;
+   - segnare la riga unresolved/segregata oppure bloccarne il salvataggio secondo policy importer.
+
+Per Results club fixture non-NATIONS è preferibile una unresolved state esplicita a un null silenzioso.
+
+======================================================================
+11. J · managerId() PUÒ SPIEGARE 367418923?
+======================================================================
+
+DATI:
+fixture 367418923 · 2026-08-23
+Club América vs River Plate
+
+Results:
+home_sm_manager_id = 20605515
+→ Manager Codex: Emanuele Delli Calici
+
+Match Report:
+home_sm_manager_id = 5053060
+home_manager_name = Giuseppe Trovato
+→ Manager Codex: Giuseppe Trovato
+
+managerId() non applica mapping, fallback o trasformazione.
+Legge semplicemente il primo numero da:
+`PROFILE_viewFriendsProfileNew(...)`
+
+Quindi:
+- il valore 20605515 doveva essere presente nell'homeManagerImage DOM letto dal Results importer;
+- non esiste una branch nel codice che possa trasformare 5053060 in 20605515.
+
+CAUSE POSSIBILI:
+1. DOM Results realmente mostrava un manager diverso in quel momento;
+2. stato DOM stale durante navigazione previous;
+3. aggiornamento asincrono del manager image completato dopo fixture list;
+4. Results e Match Report rappresentavano state snapshot differenti.
+
+RISCHIO IMPORTER:
+goPrevious() considera la pagina cambiata appena cambiano i fixture ID e poi aspetta solo 650ms.
+switchTo() aspetta resultButtons/container e poi 500ms.
+Non verifica stabilità dei manager/team onclick.
+
+CLASSIFICAZIONE:
+SOURCE/DOM ISSUE con timing susceptibility dell'importer.
+NON classificabile come deterministic manager parser bug sulla sola evidenza corrente.
+
+PATCH PROPOSTA:
+post-navigation readiness più forte:
+- fixture IDs stabili;
+- context target coerente;
+- row identity stable per due poll consecutivi;
+- non inventare manager se link assente.
+
+======================================================================
+12. K · `Quarti di Finalee`
+======================================================================
+
+dateInfo() prende il prefix della schedule heading e lo assegna direttamente a stage quando contiene parole come quarti/semifinale/finale.
+
+Non concatena `e`.
+Non contiene una costante `Finalee`.
+
+Quindi:
+- parser typo generation: NO
+- source text / DOM typo propagation: YES
+
+Il Results importer ha comunque un limite:
+non normalizza stage/round contro un vocabulary canonico.
+
+PATCH MINIMA:
+funzione separata normalizeStageRound() con dictionary autorizzato e testato.
+NON mettere sostituzioni casuali dentro dateInfo().
+
+======================================================================
+13. L · IDEMPOTENZA E RISCHIO DI PERSISTENZA
+======================================================================
+
+splitExisting():
+- existsById se sm_fixture_id già noto
+- existsByFingerprint se fingerprint già noto
+- SKIP se uno dei due è vero
+
+Quindi per una fixture già presente:
+sm_fixture_id uguale + fingerprint nuovo
+=> SKIP comunque.
+
+Questo impedisce qualsiasi auto-healing.
+
+QUANTIFICAZIONE GENERALE ATTUALE:
+GW001 Results: 791 fixture esistenti
+GW007 Results: 2.464 fixture esistenti
+Totale: 3.255 fixture
+
+Tutte le 3.255, se ri-scansionate, vengono skippate per ID prima che una versione corretta possa sostituire i campi esistenti.
+
+QUANTIFICAZIONE ANOMALIE NOTE DEL CASE:
+GW001, union distinta di:
+- country CUS
+- HERTHA ID null
+- stage `Quarti di Finalee`
+- manager conflict 367418923
+= 60 fixture distinte
+
+GW007 REAL BETIS null:
+= 8 fixture distinte
+
+TOTALE KNOWN-ANOMALY FIXTURES NON AUTO-RIPARABILI:
+68
+
+EFFETTO FINGERPRINT:
+il fingerprint include i dati strutturali sbagliati.
+Una futura riga corretta avrebbe fingerprint diverso, ma `existsById` è sufficiente a skippare.
+
+PATCH IDEMPOTENCY PROPOSTA:
+per sm_fixture_id esistente:
+- fingerprint uguale => SKIP_IDENTICAL
+- fingerprint diverso => CHANGED_EXISTING
+
+Default iniziale:
+CHANGED_EXISTING non viene sovrascritto automaticamente; viene loggato/segnalato.
+
+Modalità remediation futura autorizzata:
+CHANGED_EXISTING può essere aggiornato in modo controllato, field-level, con audit.
+
+Se sm_fixture_id non esiste ma fingerprint esiste:
+SKIP_DUPLICATE_CONTENT.
+
+Se nessuno esiste:
+INSERT_NEW.
+
+======================================================================
+14. M · COME BONIFICARE LE RIGHE STORICHE
+======================================================================
+
+NON raccomandato:
+clear totale + reimport completo.
+
+Motivi:
+- blast radius inutile;
+- potrebbe reimportare source state cambiato;
+- espone a nuove differenze manager/stage;
+- Match Report/Schedule alignment potrebbe essere alterato mentre si corregge Results.
+
+RACCOMANDAZIONE:
+TARGETED HISTORICAL REMEDIATION in CASE separato.
+
+Strategia:
+1. patch importer prima;
+2. generare elenco fixture autorizzate;
+3. leggere current row;
+4. calcolare expected canonical row/fields;
+5. aggiornare solo i campi comprovati;
+6. ricalcolare fingerprint;
+7. verificare fixture-to-fixture con Schedule/Match Report;
+8. zero change sulle fixture non incluse.
+
+GW001 CUS:
+20 update controllati:
+- sm_country -> NULL
+- competition_key -> SINGLE canonical
+- fingerprint recompute
+
+GW001 HERTHA:
+20 fixture richiedono world-local club ID certificato.
+Match Report dimostra 94079171 sulle fixture condivise.
+La fonte autorizzativa per tutte le 20 va certificata nel remediation CASE.
+
+GW001 manager 367418923:
+NON correggere automaticamente solo perché Match Report differisce.
+Prima determinare source-of-truth del manager alla fixture date.
+
+GW001 stage typo:
+normalizzare solo se la Direzione approva vocabulary canonico stage/round.
+
+GW007 REAL BETIS:
+8 fixture da correggere solo dopo recupero di world-local SM club ID da fonte autorizzata.
+Current Club Mapping non basta.
+
+======================================================================
+15. FIX PROPOSAL · PATCH MINIMA CONCETTUALE
+======================================================================
+
+PATCH 1 · WORLD STRUCTURE
+Aggiungere una sola risoluzione iniziale:
+`S.worldStructure = SINGLE | MULTI`
+
+Fonte preferita:
+registry/config canonica server-side.
+
+Fallback transitorio:
+GW_STRUCTURE centralizzata accanto a GW_ROUTE.
+
+NON inferire da countrySelect().
+
+PATCH 2 · GATING NAVIGATION
+run():
+
+MULTI:
+- country plan ON
+- division plan ON dove presente
+
+SINGLE:
+- country plan OFF anche se il DOM mostra country selector
+- division plan ON dove semanticamente previsto
+
+PATCH 3 · CANONICAL CONTEXT
+Dopo context DOM raw creare:
+`canonicalContext(raw, worldStructure)`
+
+Regole minime:
+- INTERNATIONAL/NATIONS => country=null, division=null
+- SINGLE DOMESTIC => country=null
+- League => division obbligatoria
+- standard domestic non-League => division=null
+- custom competition => regola da Competition Codex/registry
+- MULTI League => country e division obbligatorie
+
+PATCH 4 · CANONICAL competitionKey
+Eliminare generic `.filter()` come grammar builder.
+Usare branch esplicite per macro/action/world structure.
+
+PATCH 5 · TEAM ID PARSER
+team():
+provare in ordine fonti DOM autorizzate:
+1. onclick elemento team attuale
+2. onclick/href child cliccabile
+3. data attributes noti e verificati
+4. parent cliccabile se semanticamente lo stesso team element
+
+Ogni parser deve estrarre solo ID numerico da pattern allowlisted.
+
+Se unresolved:
+- non inventare ID;
+- return status `UNRESOLVED_TEAM_ID` internamente;
+- policy salvataggio esplicita.
+
+PATCH 6 · DOM READINESS
+Dopo previous/switch:
+non basarsi solo su fixture IDs + sleep fisso.
+Aspettare almeno:
+- fixture IDs stabili;
+- context stable;
+- row identity/team elements stable per due poll consecutivi.
+
+PATCH 7 · IDEMPOTENCY DETECTION
+Cambiare splitExisting() logicamente da boolean skip a:
+- NEW
+- IDENTICAL
+- CHANGED_EXISTING
+- DUPLICATE_CONTENT
+
+Default business-compatible:
+- IDENTICAL skip
+- CHANGED_EXISTING log/segregate, non update automatico finché non autorizzato
+- NEW insert
+
+PATCH 8 · NESSUNA MODIFICA GATEWAY NECESSARIA PER LE ROOT CAUSE ATTUALI
+Il Gateway riceve ciò che l'importer gli manda.
+Non è la causa di CUS, key errate o team null.
+
+Una futura registry API server-side per world structure sarebbe architetturalmente migliore, ma non è obbligatoria per la patch minima se viene usata una config importer centralizzata.
+
+======================================================================
+16. PRESERVAZIONE GW001–GW009
+======================================================================
+
+La patch proposta preserva il routing corrente:
+GW001 -> Sql1956795_3
+GW002 -> Sql1956795_2
+GW003 -> Sql1956795_2
+GW004 -> Sql1956795_3
+GW005 -> Sql1956795_3
+GW006 -> Sql1956795_3
+GW007 -> Sql1956795_2
+GW008 -> Sql1956795_2
+GW009 -> Sql1956795_3
+
+World structure live verificabile dal Game World Codex:
+SINGLE:
+GW001, GW004, GW005, GW006, GW009
+
+MULTI:
+GW002, GW003, GW007, GW008
+
+La patch NON deve alterare la navigation country/division dei MULTI.
+GW007 dimostra che l'attuale risultato MULTI League è corretto:
+34/34 contexts country+division coincidono con Competition Codex.
+
+======================================================================
+17. RISPOSTE TECNICHE OBBLIGATORIE · SUMMARY
+======================================================================
+
+A. Perché GW001 acquisisce CUS?
+Perché context() accetta country DOM e non sa che GW001 è SINGLE.
+
+B. Da quale DOM?
+Priorità: pager anchor `data-country`; fallback `#country-selector select`.
+
+C. Quale componente è responsabile?
+Combinazione pager/select + assenza world-mode validation in context() + generic competitionKey().
+
+D. Come distinguere SINGLE/MULTI?
+Registry/config canonica per GW; non DOM inference. Current Game World Codex Country NULL/non-NULL separa correttamente GW001-GW009.
+
+E. Key canonicali?
+Definite nella sezione 7.
+
+F. `.filter()` è rischioso?
+Sì. Nasconde componenti mancanti/spuri e produce key plausibili senza validation.
+
+G. Perché HERTHA/REAL BETIS null?
+team() supporta una sola variante onclick; pattern ricorrente per club indica markup non coperto.
+
+H. Esistono varianti DOM non coperte?
+Sì per definizione del parser attuale: qualunque child/parent/href/data-* o handler diverso non è letto. I dati mostrano almeno una variante reale non coperta.
+
+I. Fallback Club Mapping?
+Non oggi. Current mapping non possiede world-local ID corretto per Hertha e non copre GW007.
+
+J. managerId() spiega 367418923?
+Non come trasformazione. Legge il numero presente nel DOM. Possibile source/timing divergence; parser readiness può contribuire.
+
+K. `Quarti di Finalee`?
+Source typo propagato da dateInfo(), non typo generato dal codice.
+
+L. Idempotency impedisce correzione?
+Sì. ID existing => skip anche con fingerprint diverso. 3.255 fixture correnti sono non-auto-updatable; 68 known anomaly fixtures sono certamente bloccate.
+
+M. Historical remediation?
+Targeted field-level updates per fixture in CASE separato; no clear totale.
+
+======================================================================
+18. FINAL VERDICT
+======================================================================
+
+GW001 CUS:
+IMPORTER BUG = YES
+
+GW001 CUS competition_key:
+IMPORTER BUG = YES
+
+GW001 HERTHA null:
+IMPORTER PARSER GAP = YES
+SOURCE/DOM VARIANT = VERY LIKELY
+CURRENT MAPPING FALLBACK = NOT SAFE
+
+GW001 stage typo:
+IMPORTER GENERATED = NO
+SOURCE/DOM PROPAGATED = YES
+
+GW001 manager conflict 367418923:
+DETERMINISTIC RESULTS PARSER BUG = NOT PROVEN
+SOURCE/DOM STATE OR TIMING = PLAUSIBLE / MOST CONSISTENT WITH CODE
+
+GW007 REAL BETIS null:
+IMPORTER PARSER GAP = YES
+SOURCE/DOM VARIANT = VERY LIKELY
+CURRENT MAPPING FALLBACK = UNAVAILABLE
+
+GW007 competition semantics:
+IMPORTER OUTPUT CORRECT FOR OBSERVED MULTI LEAGUE = YES
+
+IDEMPOTENCY:
+CURRENT LOGIC PREVENTS AUTO-REPAIR = YES
+
+PATCH MINIMA POSSIBILE SENZA GATEWAY CHANGE:
+YES
+
+HISTORICAL DATA REMEDIATION AFTER PATCH:
+REQUIRED
+
+NO REMEDIATION EXECUTED.
+DB WRITES EXECUTED: NONE
+SCHEMA WRITES EXECUTED: NONE
+CODE WRITES EXECUTED: NONE
+GITHUB CODE CHANGES EXECUTED: NONE
+DEPLOYS EXECUTED: NONE
+
+IMC-DB-001-12: COMPLETED
