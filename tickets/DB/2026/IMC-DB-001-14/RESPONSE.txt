@@ -1,0 +1,196 @@
+CASE_ID: IMC-DB-001-14
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_SAFE_PATCH_IMPLEMENTATION
+STATUS: BLOCKED
+VERDICT: BLOCKED
+MODE: PRE_FLIGHT_ONLY
+
+1. ESITO E VINCOLO APPLICATO
+
+Implementazione non iniziata. Il REQUEST impone, prima di scrivere codice:
+"se un finding della 001-13 non è riproducibile dagli input, fermarsi e documentarlo invece di inventare."
+
+Il finding RC-09 / origine DOM del testo "Quarti di Finalee" non è
+riproducibile sulle due snapshot autoritative fornite.
+La stringa è documentata nelle RESPONSE precedenti, ma è assente da
+entrambi i JSON completi, da fullHTML e da visibleText.
+
+Questo NON dimostra che il typo storico non sia mai esistito.
+Conferma soltanto che le due snapshot fornite non ne offrono una
+riproduzione diretta. Il codice originale conferma l'assenza di una
+normalizzazione e la possibilità di propagare un prefix contenente
+"quarti", ma non prova da solo la presenza storica del typo nel DOM.
+
+La normalizzazione è espressamente autorizzata dalla sezione I del
+REQUEST. Resta tuttavia il vincolo preliminare di riproducibilità:
+non è stata sostituita l'evidenza reale assente con un DOM inventato.
+Nessuna patch parziale o file JavaScript segnaposto è stato prodotto.
+
+2. INPUT LETTI
+
+Repository tommasomellogrand-ui/imc-data-room:
+- tickets/DB/2026/IMC-DB-001-14/REQUEST.txt, integralmente.
+- tickets/DB/2026/IMC-DB-001-12/INPUT_RESULTS_IMPORT.js, integralmente.
+- tickets/DB/2026/IMC-DB-001-12/RESPONSE.txt, integralmente.
+- tickets/DB/2026/IMC-DB-001-13/RESPONSE.txt, integralmente.
+
+File Library, recuperati e analizzati come JSON completi e fullHTML:
+A. SM_DOM_20260912_130340.json
+   library_file_id: libfile_1984332042c88191b1e6aefbb99e282e
+   bytes: 2425188
+   SHA256: f28081c396e0a58eade53f1dd3f4c169df0ac5afcec1dd7afa702922bf8b7c8a
+   generatedAt: 2026-09-12T11:03:40.431Z
+   Identità da contenuto: top-nav Hertha BSC; pager league/CUS/4.
+B. SM_DOM_20260912_130458.json
+   library_file_id: libfile_ece830662a848191848d157d14706094
+   bytes: 2538911
+   SHA256: 8f34253359f70ef12d61db62e7adfc2844bb3567b7d5c5a475dedcbfa36f5b8e
+   generatedAt: 2026-09-12T11:04:58.223Z
+   Identità da contenuto: top-nav Real Betis; pager league/ESP/1.
+
+Il download ha incluso anche SM_DOM_20260912_130340(1).json.
+Non è stato usato come versione alternativa del sorgente o della prova.
+
+3. VERIFICHE PRE-FLIGHT
+
+Parsing integrale dei JSON: eseguito.
+Parsing fullHTML con HTMLParser della libreria standard Python:
+6016 start-tag nella snapshot GW001, 7579 nella snapshot GW007.
+Questi sono conteggi del parser statico, non misure del browser live.
+
+Ricerca typo:
+- JSON completo, case-insensitive: 0 occorrenze in entrambi.
+- fullHTML, regex quarti\\s+di\\s+finalee case-insensitive: 0 in entrambi.
+- visibleText, medesima regex: 0 in entrambi.
+
+Verifiche statiche ulteriori:
+- GW001 pager Results: action league, data-country CUS, data-division 4.
+- GW001 country-selector presente, display:none, vuoto.
+- GW007 country-selector con 19 opzioni nel markup acquisito.
+- GW007 pager Results: action league, data-country ESP, data-division 1.
+- top-nav-title contiene Hertha BSC / Real Betis.
+- logo top-nav: namespace SoccerWiki, clubs/404.png e clubs/162.png.
+- controlled club Results rappresentato senza onclick sul team anchor.
+- CUSTOMERID = 13051324 presente in entrambe le snapshot.
+- currentScreenA e workingCopy presenti in entrambe.
+- heading Playoff Semifinale presente nel DOM GW001 in sezione Fixtures.
+
+Non eseguita navigazione live; non effettuate chiamate al Gateway.
+Non eseguite simulazioni JavaScript di accettazione della patch, poiché
+la patch non è stata scritta. Non dichiarata validazione in Safari/iOS.
+Il runtime locale non disponeva del browser Chromium richiesto da
+Playwright; le verifiche sopra sono statiche. Questo è un limite del
+metodo usato, distinto dal vincolo pre-flight che determina il verdict.
+
+4. MATRICE FINDING -> FUNZIONE -> FIX PREVISTO -> RISCHIO
+
+Tutte le modifiche sotto sono PREVISTE, NON APPLICATE.
+
+RC-01 | context, plan, run; nuovo worldStructure
+Config SINGLE/MULTI centralizzata GW001-GW009 da RESPONSE 001-12/13,
+routing invariato. Rischio basso, da verificare matrice dei nove GW.
+
+RC-02 | pagerContext, context, countrySelect
+Separare raw navigation da canonical context; CUS solo navigazione.
+Rischio medio: non alterare onchange e loop MULTI.
+
+RC-03 | competitionKey
+Grammatica esplicita e campi obbligatori, senza filter come builder.
+Rischio medio: regressioni League/non-League/INTERNATIONAL/NATIONS.
+
+RC-04 | team; nuovo resolver isolato
+Riconoscere controlled club; world-local unresolved/null con diagnostic.
+Nessun logo ID o mapping non certificato.
+Rischio basso se conservato parser diretto dei normali club.
+
+RC-05 | managerId, current club identity
+CUSTOMERID solo sul club controllato con identità stabile e manager ID
+assente; conservare parsing degli anchor manager anche se hidden.
+Rischio medio: attribuzione manager errata se identità non certa.
+
+RC-06 | context, pagerContext, dateInfo, resultButtons, selectors, prevButton
+Scope currentScreenA/Results ed esclusione workingCopy.
+Rischio medio: i controlli validi devono rimanere raggiungibili.
+
+RC-07 | switchTo, goPrevious, processPage
+Attesa semantica di target e snapshot stabile, includendo fixture,
+heading, team e manager; timeout fail-safe.
+Rischio medio: navigazione AJAX da validare manualmente.
+La divergenza storica della fixture 367418923 non è riproducibile,
+come già espressamente riconosciuto e non considerato bloccante da 001-13.
+Nessuna sostituzione arbitraria del manager prevista.
+
+RC-08 | preloadExisting, splitExisting, insertRows, processPage
+Mappa fixture/fingerprint; quattro classi, insert solo NEW.
+Rischio medio: dati preload incompleti e duplicati nello stesso batch.
+
+RC-09 | dateInfo; nuovo normalizeStageRound
+Dictionary minima proposta: "Quarti di Finalee" -> "Quarti di Finale".
+Rischio basso per lookup esatto; nessuna modifica agli stage validi.
+BLOCCO: origine reale del typo non riproducibile nei DOM indicati.
+Dictionary NON implementata, test sintetici NON sostituiti alla prova.
+
+5. COMPORTAMENTO ATTESO DOPO EVENTUALE SBLOCCO
+
+GW001:
+SINGLE, nessun country loop; League division loop conservato;
+raw CUS ammesso per navigazione; sm_country NULL;
+key osservata attesa GW001|DOMESTIC|league|4.
+
+GW007:
+MULTI, country loop conservato e division plan ricalcolato per country;
+sm_country reale ESP nel current state;
+key attesa GW007|ESP|DOMESTIC|league|1.
+Questi sono acceptance target, NON risultati di una patch eseguita.
+
+Grammatica richiesta, NON ancora implementata:
+SINGLE League: GW|DOMESTIC|league|division
+SINGLE DOMESTIC non-League: GW|DOMESTIC|action
+MULTI League: GW|country|DOMESTIC|league|division
+MULTI DOMESTIC country-scoped non-League: GW|country|DOMESTIC|action
+INTERNATIONAL: GW|INTERNATIONAL|action
+NATIONS: GW|NATIONS|action
+Eccezioni solo da regola canonica esplicita.
+
+Controlled club/current manager:
+club ID unresolved/null e diagnostic, nessun autofill logo;
+CUSTOMERID condizionato a identità controllata stabile.
+Nessuna funzione cambiata nel presente CASE.
+
+Idempotenza richiesta:
+NEW -> insert
+IDENTICAL -> skip
+CHANGED_EXISTING -> rilevazione/log/conteggio, nessun update
+DUPLICATE_CONTENT -> warning, nessuna scrittura
+Classificazione NON implementata.
+I record storici rimangono invariati, anche dopo la futura patch secondo
+la policy richiesta. Questa sessione non ha letto né modificato MySQL.
+
+6. DELIVERABLE E TEST MANUALE
+
+Creato soltanto:
+tickets/DB/2026/IMC-DB-001-14/RESPONSE.txt
+
+NON creato:
+tickets/DB/2026/IMC-DB-001-14/OUTPUT_RESULTS_IMPORT.js
+
+Nessuna istruzione di esecuzione manuale di un OUTPUT inesistente.
+Nessuna regressione della patch può essere dichiarata verificata.
+Non sostituire lo Shortcut operativo sulla base di questo esito.
+
+Per riprendere senza richiedere a Tom di rimandare file:
+la Direzione può indicare nel CASE il percorso di un'evidenza già raccolta
+che contenga il typo, oppure chiarire esplicitamente che RC-09 può essere
+validato tramite la diagnosi precedente e un test sintetico della
+dictionary, come eccezione al vincolo pre-flight.
+Questa RESPONSE documenta il punto; non modifica le istruzioni del CASE.
+
+DB WRITE: NONE
+SCHEMA WRITE: NONE
+GATEWAY CHANGES: NONE
+PRODUCTION DEPLOY: NONE
+SHORTCUT DISTRIBUTION: NONE
+IMPORTER CODE CHANGES: NONE
+VERDICT: BLOCKED
