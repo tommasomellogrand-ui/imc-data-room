@@ -1,0 +1,191 @@
+CASE_ID: IMC-DB-001-11
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-12
+TOPIC: GW001_GW007_RESULTS_SCHEDULE_MATCH_REPORT_DATA_COHERENCE_AUDIT
+
+IMC | DATABASE MANAGER
+GW001 + GW007 · RESULTS / SCHEDULE / MATCH REPORT · DATA COHERENCE AUDIT
+
+MODE
+READ ONLY.
+Nessuna modifica DB, schema, trigger, codice, Gateway, importer o sito.
+
+PERIMETRO ESATTO
+Verificare esclusivamente:
+
+GW007 → Sql1956795_2 (GOLD/MULTI)
+- `GW007_IMC Results`
+- `GW007_IMC Schedule`
+- `GW007_IMC Match Report`
+
+GW001 → Sql1956795_3 (CUSTOM/SINGLE)
+- `GW001_IMC Results`
+- `GW001_IMC Schedule`
+- `GW001_IMC Match Report`
+
+NON auditare altri repository.
+NON auditare altri Game World.
+NON auditare frontend/minisiti/GitHub.
+NON modificare nulla.
+
+OBIETTIVO
+Certificare che Results, Schedule e Match Report di GW001 e GW007 siano internamente corretti e coerenti tra loro nei campi strutturali/semantici necessari al consumo dati, con particolare attenzione a competition_key, competition_group e contesto competizione.
+
+A · INVENTARIO
+Per ciascuna delle 6 tabelle:
+1. SHOW COLUMNS / schema effettivo;
+2. COUNT(*) totale;
+3. range match_date dove presente;
+4. conteggi distinct principali per competition_key, competition_group/competition_group_name, sm_action, sm_country, sm_division, competition_stage, competition_round dove presenti.
+
+Non assumere che i tre repository abbiano colonne identiche: adattare l'audit allo schema reale e dichiarare i campi non presenti.
+
+B · GAME WORLD ID
+Per ogni repository verificare:
+- game_world_id presente dove previsto;
+- valore uniforme e corretto;
+- GW001 contiene esclusivamente GW001;
+- GW007 contiene esclusivamente GW007;
+- null/blank/anomalie.
+
+C · COMPETITION SEMANTICS
+Dove i campi esistono, verificare:
+- competition_key valorizzata;
+- competition_key coerente con il contesto della riga;
+- competition_group / competition_group_name coerente;
+- sm_action coerente;
+- sm_country coerretto dove previsto;
+- sm_division coerretta dove prevista;
+- competition_stage coerente;
+- competition_round coerente;
+- nessun valore strutturale palesemente impossibile o incoerente.
+
+Usare come riferimento canonico, quando necessario, `IMC Competition Codex Global` del CORE Sql1956795_1, esclusivamente in READ per validare la semantica attesa del GW. Non ampliare l'audit ad altri domini CORE.
+
+D · GW001 SPECIFIC CHECK
+GW001 è SINGLE.
+Verificare che Results/Schedule/Match Report rispettino la struttura effettiva del mondo e che country/division/competition semantics non introducano logiche MULTI errate.
+
+Verificare in particolare:
+- divisioni previste e valori osservati;
+- competition_key coerenti con SINGLE;
+- competition_group coerenti;
+- sm_country assente/null oppure semanticamente giustificato secondo schema/dato reale;
+- nessun contesto country improprio introdotto nelle chiavi;
+- competition round/stage coerenti con le competizioni osservate.
+
+E · GW007 SPECIFIC CHECK
+GW007 è MULTI/GOLD.
+Verificare che Results/Schedule/Match Report rispettino country + division quando richiesto dal contesto.
+
+Verificare in particolare:
+- country osservati e validità;
+- division osservate e validità;
+- competition_key coerenti con MULTI/GOLD;
+- competition_group coerenti;
+- combinazioni country/division/sm_action coerenti col Competition Codex;
+- competition round/stage coerenti.
+
+F · FIXTURE ID / CROSS-REPOSITORY COHERENCE
+Usare `sm_fixture_id` come chiave di confronto dove presente.
+
+Verificare:
+1. null/blank sm_fixture_id;
+2. duplicati sm_fixture_id all'interno di ciascun repository;
+3. Results fixture mancanti in Schedule;
+4. Match Report fixture mancanti in Results;
+5. Match Report fixture mancanti in Schedule;
+6. Schedule fixture con Results disponibile ma non correttamente collegabile;
+7. eventuali fixture presenti più volte con dati strutturali divergenti.
+
+Distinguere correttamente fixture future senza Result/Match Report da anomalie reali: una Schedule futura non è un errore solo perché non possiede ancora Result/Match Report.
+
+G · CROSS-FIELD PARITY PER FIXTURE
+Per fixture condivise tra repository, confrontare dove i campi sono presenti in entrambi:
+- game_world_id;
+- competition_key;
+- competition_group / competition_group_name;
+- sm_action;
+- sm_country;
+- sm_division;
+- competition_stage;
+- competition_round;
+- match_date;
+- home_sm_club_id / away_sm_club_id;
+- home_name / away_name;
+- home_sm_manager_id / away_sm_manager_id dove presenti.
+
+Segnalare mismatch esatti con:
+- GW;
+- sm_fixture_id;
+- repository A;
+- repository B;
+- campo;
+- valore A;
+- valore B.
+
+H · DUPLICATE AUDIT
+Per Results e Schedule, dove presenti:
+- audit fingerprint;
+- audit sm_fixture_id;
+- distinguere duplicati identici da stesso sm_fixture_id con fingerprint/dati differenti.
+
+Per Match Report:
+- verificare unicità prevista per game_world_id + sm_fixture_id secondo schema effettivo;
+- distinguere duplicazione reale da eventuale struttura lecita se lo schema dimostra granularità diversa.
+
+I · NULL / STRUCTURAL QUALITY
+Per ciascun repository produrre conteggio dei NULL/blank nei campi strutturali realmente presenti, almeno:
+- game_world_id;
+- sm_fixture_id;
+- competition_key;
+- competition_group/competition_group_name;
+- sm_action;
+- match_date;
+- home/away club IDs;
+- home/away names;
+- sm_country/sm_division quando semanticamente obbligatori.
+
+Non trattare come errore un NULL che sia semanticamente corretto per quel tipo di competizione.
+
+J · OUTPUT / VERDICT
+Per ciascun GW produrre una matrice:
+
+Repository | Rows | Structural Quality | Competition Semantics | Fixture Integrity | Cross-Repo Parity | Verdict
+
+Verdict ammessi:
+- PASS
+- WARNING
+- FAIL
+
+Per ogni WARNING/FAIL fornire elenco preciso e quantificato delle anomalie.
+Quando possibile fornire gli sm_fixture_id coinvolti; se sono molti, fornire conteggio totale + campione rappresentativo + query/regola che identifica l'intero insieme.
+
+K · DOMANDE FINALI OBBLIGATORIE
+Per GW001:
+1. Results è coerente? PASS/WARNING/FAIL e perché.
+2. Schedule è coerente? PASS/WARNING/FAIL e perché.
+3. Match Report è coerente? PASS/WARNING/FAIL e perché.
+4. competition_key è semanticamente corretta e coerente tra i tre repository?
+5. competition_group è semanticamente corretta e coerente?
+6. esistono fixture cross-repository discordanti?
+7. quali anomalie devono essere corrette prima di considerare i dati GW001 affidabili per il minisito?
+
+Per GW007:
+8. Results è coerente? PASS/WARNING/FAIL e perché.
+9. Schedule è coerente? PASS/WARNING/FAIL e perché.
+10. Match Report è coerente? PASS/WARNING/FAIL e perché.
+11. competition_key è semanticamente corretta e coerente tra i tre repository?
+12. competition_group è semanticamente corretta e coerente?
+13. country/division sono coerenti col modello MULTI/GOLD?
+14. esistono fixture cross-repository discordanti?
+15. quali anomalie devono essere corrette prima di considerare i dati GW007 affidabili per il minisito?
+
+VINCOLO FINALE
+Questo CASE deve SOLO trovare e documentare anomalie.
+NON correggerle.
+Qualsiasi remediation richiederà autorizzazione separata della Direzione.
+
+OUTPUT AUTORITATIVO
+`tickets/DB/2026/IMC-DB-001-11/RESPONSE.txt`
