@@ -1,0 +1,199 @@
+CASE_ID: IMC-DB-001-20
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_FINAL_END_OF_SECTION_AND_NO_COMPETITION_HANDLING
+
+IMC | RESULTS IMPORTER · FINAL END-OF-SECTION + NO-COMPETITION FIX
+
+MODE
+CODE FIX / DATA ROOM ONLY.
+
+OBIETTIVO
+Correggere definitivamente il flusso di navigazione Results quando Soccer Manager segnala la fine reale di una competizione o l'assenza totale di risultati per quella competizione/nazione.
+
+Questo CASE parte dal codice completo prodotto da:
+`tickets/DB/2026/IMC-DB-001-19/OUTPUT_RESULTS_IMPORT.js`
+
+Il fix NATIONS di 001-19 deve essere preservato integralmente.
+Il fix END_OF_SECTION di 001-18 deve essere preservato e raffinato, non riscritto da zero.
+
+INPUT AUTORITATIVI
+Leggere integralmente:
+- tickets/DB/2026/IMC-DB-001-18/RESPONSE.txt
+- tickets/DB/2026/IMC-DB-001-19/OUTPUT_RESULTS_IMPORT.js
+- tickets/DB/2026/IMC-DB-001-19/RESPONSE.txt
+
+CASI LIVE OSSERVATI DALLA DIREZIONE
+
+CASO A · SAME PAGE + PRECEDENTI DIVENTA NON PIÙ CLICCABILE
+Sequenza reale osservata su Soccer Manager:
+1. la sezione corrente è valida e mostra Results;
+2. `Precedenti` è inizialmente disponibile;
+3. cliccando `Precedenti`, Soccer Manager riapre esattamente la stessa pagina / stesso turno / stesso fixture set;
+4. subito dopo il controllo `Precedenti` sparisce oppure diventa disabled/non cliccabile;
+5. non esiste quindi alcun turno precedente reale.
+
+Questo caso deve essere classificato in modo definitivo come:
+`END_OF_SECTION`
+
+NON deve diventare:
+`REAL_ERROR`
+NON deve attendere inutilmente il timeout completo.
+
+Regola richiesta:
+`same page after Previous + Previous disappears/disabled = END_OF_SECTION`
+
+CASO B · COMPETIZIONE NON DISPONIBILE PER QUELLA NAZIONE
+È stata osservata una schermata Soccer Manager in cui, dopo il cambio nazione, la pagina Results mostra esplicitamente il messaggio:
+
+`Nessun risultato è attualmente disponibile per questo tipo di competizione in questa stagione.`
+
+In questo stato:
+- non ci sono Results da importare;
+- `Precedenti` è disabled/non cliccabile;
+- la competizione per quella nazione non ha risultati disponibili nella stagione corrente.
+
+Questo NON è errore.
+Deve essere classificato come:
+`END_OF_SECTION`
+
+L'importer deve quindi:
+- non scrivere nulla;
+- non incrementare ERRORI;
+- non cercare action/pager inesistenti come requisito per fallire;
+- restituire normalmente il controllo a `run()`;
+- passare alla prossima nazione/divisione/target naturale.
+
+PROBLEMA LIVE DA RISOLVERE
+Durante un run GW007 su competizioni DOMESTIC non-League, dopo aver processato correttamente più nazioni, il flusso su una nazione successiva è terminato con:
+`REAL_ERROR · Precedenti: stato incoerente o non stabile · Action Results corrente non verificata`
+
+La Direzione ha verificato manualmente che in tali casi Soccer Manager può:
+- riaprire lo stesso turno e poi disabilitare Precedenti;
+- oppure mostrare direttamente il messaggio di assenza risultati per quella competizione/stagione.
+
+Entrambi devono essere trattati come fine naturale della sezione.
+
+COMPORTAMENTO RICHIESTO
+
+A. RILEVAZIONE NO-COMPETITION / NO-RESULTS
+Introdurre una funzione dedicata, con nome a scelta chiaro, che rilevi esclusivamente nel live Results root il messaggio canonico:
+`Nessun risultato è attualmente disponibile per questo tipo di competizione in questa stagione.`
+
+La rilevazione deve:
+- ignorare workingCopy;
+- usare testo normalizzato ma match preciso sul significato;
+- non cercare il messaggio globalmente fuori dallo screen Results attivo;
+- restituire uno stato semantico esplicito.
+
+Quando presente:
+- processSection / goPrevious / readiness devono poter concludere con END_OF_SECTION;
+- nessuna riga viene costruita;
+- nessuna scrittura viene effettuata.
+
+B. PREV BUTTON STATE
+`prevButton()` o helper equivalente deve distinguere almeno:
+- disponibile/cliccabile;
+- presente ma disabled/non cliccabile;
+- assente.
+
+Present-but-disabled e assente, nel contesto di fine storico/no-results, sono END_OF_SECTION.
+
+C. SAME PAGE AFTER CLICK
+Dopo click `Precedenti`, se il DOM si stabilizza su:
+- stessa competition key canonica;
+- stessa data;
+- stesso fixture set giocato;
+- e il controllo Precedenti è poi assente o disabled/non cliccabile;
+allora restituire immediatamente:
+`END_OF_SECTION`
+con reason tipo:
+`same_page_previous_disabled`
+
+Se resta stessa pagina ma Precedenti rimane ancora realmente cliccabile, conservare il comportamento prudente già esistente e non inventare conclusioni non supportate.
+
+D. NO-COMPETITION MESSAGE
+Se il DOM si stabilizza sul messaggio canonico di assenza Results:
+- `END_OF_SECTION` immediato;
+- nessun requisito di action/pager per dichiarare errore;
+- nessuna attesa al timeout completa se lo stato è già semanticamente definitivo.
+
+E. SWITCH COUNTRY / DIVISION
+Dopo END_OF_SECTION:
+- per League: proseguire con la prossima divisione, poi prossima nazione;
+- per coppe/non-League: prossima nazione;
+- a fine targets: COMPLETATO.
+
+F. REAL_ERROR RESTA REALE
+NON trasformare indiscriminatamente ogni action mancante in END_OF_SECTION.
+Action/pager mancante deve essere tollerato come fine sezione SOLO quando uno dei segnali semantici autorizzati è presente:
+1. messaggio canonico no-results;
+2. same page dopo Precedenti + Precedenti poi disabled/assente.
+
+Negli altri casi mantenere fail-closed / REAL_ERROR.
+
+G. PRESERVARE TUTTI I FIX PRECEDENTI
+NON rompere:
+- parser NATIONS `MENU_association_draw(...)` di 001-19;
+- END_OF_SECTION per Precedenti assente;
+- END_OF_SECTION per target senza score / turno futuro;
+- END_OF_SECTION per same fixture set già gestito;
+- GW001 SINGLE;
+- GW007 MULTI;
+- competition_key grammar;
+- NEW / IDENTICAL / CHANGED_EXISTING / DUPLICATE_CONTENT;
+- controlled club behavior;
+- workingCopy exclusion;
+- Gateway payload/schema.
+
+IMPLEMENTAZIONE AUTORIZZATA
+Produrre il nuovo file completo:
+`tickets/DB/2026/IMC-DB-001-20/OUTPUT_RESULTS_IMPORT.js`
+
+Non modificare i file dei CASE precedenti.
+
+TEST OBBLIGATORI
+Testare almeno:
+1. no-results message presente -> END_OF_SECTION, 0 rows, 0 write, 0 errors;
+2. Precedenti present-but-disabled -> END_OF_SECTION quando coerente col no-results/end storico;
+3. click Precedenti -> same page/same date/same fixture set -> Precedenti disabled -> END_OF_SECTION immediato;
+4. click Precedenti -> same page ma Precedenti ancora cliccabile -> non usare automaticamente il nuovo shortcut semantico;
+5. action/pager assente SENZA segnali autorizzati -> REAL_ERROR;
+6. nuovo turno precedente con Results validi -> MOVED_TO_PREVIOUS_RESULTS;
+7. target futuro/no score -> END_OF_SECTION;
+8. sequenza multi-country con una nazione senza coppa -> salta quella nazione e continua con la successiva;
+9. GW007 leagueshield/cup non deve fermarsi alla prima nazione senza Results;
+10. GW007 NATIONS parser 001-19 invariato;
+11. GW001 SINGLE regressione completa;
+12. tutte le classi idempotenza invariate;
+13. nessuna lettura workingCopy;
+14. node --check PASS.
+
+OUTPUT RESPONSE
+Registrare:
+`tickets/DB/2026/IMC-DB-001-20/RESPONSE.txt`
+
+La RESPONSE deve contenere:
+- root cause finale;
+- funzioni modificate;
+- nuova semantica degli stati;
+- come viene rilevato il messaggio no-results;
+- come viene rilevato same-page + previous-disabled;
+- test eseguiti;
+- regressioni eseguite;
+- eventuali limiti live residui;
+- verdict finale:
+`READY_FOR_MANUAL_RETEST`
+oppure
+`BLOCKED`
+
+VINCOLI
+DB READ: NO salvo eventuali letture non necessarie al fix; preferire nessun DB.
+DB WRITE: NO.
+DB DELETE/RESET: NO.
+GATEWAY CHANGE: NO.
+SCHEMA CHANGE: NO.
+SCHEDULE/MATCH REPORT: NO.
+PRODUCTION DEPLOY: NO.
+WRITE AUTHORIZED: esclusivamente deliverable Data Room del CASE.
