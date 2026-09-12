@@ -1,0 +1,229 @@
+CASE_ID: IMC-ENG-009-04
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-12
+TOPIC: MINISITE_PLATFORM_PHASE_1_GW001_GW007
+
+IMC | MINISITE IMPLEMENTATION WORK
+PHASE 1 · PLATFORM FOUNDATION FOR GW001 + GW007
+
+CONTESTO AUTORITATIVO
+La Direzione ha concluso la fase decisionale e progettuale dei minisiti.
+
+Decisioni definitive già approvate:
+- ONE UNIVERSAL MINISITE CORE;
+- TWO UX FAMILY CONTRACTS;
+- SINGLE Golden Master = GW001 Road To History;
+- MULTI/GOLD Golden Master = GW007 The Four Kingdoms;
+- GW Creative Package mantiene identità/composizione/signature components;
+- optional features restano capabilities dichiarative;
+- comportamento prevedibile tra mondi della stessa famiglia, identità creativa autonoma.
+
+Fonti autoritative precedenti da leggere integralmente prima di eseguire:
+- IMC-ENG-009-02 RESPONSE;
+- IMC-CREATIVE-001-02 RESPONSE · FINAL CREATIVE SIGN-OFF;
+- IMC-ENG-009-03 RESPONSE · FINAL IMPLEMENTATION BLUEPRINT.
+
+Questa nuova Work/chat sarà dedicata esclusivamente all'implementazione dei minisiti. Quando riceve un CASE_ID deve risolverlo nella IMC Data Room e leggere REQUEST.txt prima di interpretare o eseguire.
+
+SCOPE DI QUESTO CASE
+Partiamo dalla PHASE 1.
+Il perimetro operativo iniziale è ESCLUSIVAMENTE:
+- GW001;
+- GW007;
+- foundation/platform condivisa necessaria a questi due Golden Master.
+
+NON lavorare ancora su GW002/GW003/GW004/GW005/GW006/GW008/GW009/GW010.
+La copertura dati degli altri mondi NON blocca questo CASE.
+
+OBIETTIVO PHASE 1
+Creare la foundation reale del nuovo minisite platform e i contratti approvati, in parallelo al runtime esistente, preparando GW001 e GW007 alle successive fasi adapter senza modificarne ancora l'esperienza live.
+
+PRINCIPIO DI ESECUZIONE
+NON MIGRARE PRIMA L'INTERFACCIA.
+MIGRARE PRIMA CONTRATTI E COMPORTAMENTO DIETRO L'INTERFACCIA.
+
+GW001 e GW007 sono acceptance tests del sistema, NON template da ricostruire.
+
+A · PRE-FLIGHT OBBLIGATORIO
+Prima di modificare:
+1. leggere lo stato corrente del repository `tommasomellogrand-ui/imc-website`;
+2. leggere integralmente i file correnti che verranno toccati;
+3. verificare gli entrypoint e runtime attuali di GW001 e GW007;
+4. inventariare riferimenti a `site-assets/gameworld/app-core.js` e `/minisite/shared/app-core.js` pertinenti a GW001/GW007;
+5. identificare i workflow di deploy pertinenti;
+6. registrare baseline SHA/stato iniziale.
+
+B · PLATFORM FOUNDATION DA CREARE
+Implementare soltanto lo scaffolding/foundation necessario, seguendo il Blueprint 009-03 e adattandolo allo stato reale del repository.
+
+Target minimo:
+`minisite/platform/`
+con separazione coerente di:
+- core;
+- contracts;
+- families/single;
+- families/multi-gold;
+- data/selectors/view-model boundary;
+- feature/capability registry foundation;
+- renderer/extension registry foundation;
+- utilities strettamente necessarie.
+
+Creare anche la foundation test/golden-master necessaria per GW001/GW007.
+
+NON riempire directory con placeholder inutili solo per replicare un diagramma.
+Creare soltanto file che abbiano un contratto/ruolo concreto in questa fase.
+
+C · CONTRACTS DA MATERIALIZZARE
+Materializzare in codice/config versionato almeno:
+1. Core Behavior Contract;
+2. SINGLE Family Contract;
+3. MULTI/GOLD Family Contract;
+4. UNICO Creative Freedom Contract che incorpora i guardrail approvati dal Creative Director;
+5. semantic component contracts minimi necessari alla foundation.
+
+I contract devono descrivere semantica/comportamento, NON imporre componenti visuali condivisi.
+
+D · GW001 GOLDEN MASTER BASELINE
+In questa fase NON migrare ancora il renderer GW001.
+
+Creare baseline verificabile per almeno:
+- route/destination inventory reale;
+- deep-link/back behavior;
+- Home;
+- Competition;
+- Results;
+- Schedule;
+- Standings;
+- Match;
+- Archive;
+- desktop;
+- mobile;
+- signature/editorial components realmente presenti.
+
+Preservare integralmente runtime e rendering attuali.
+
+GW001 deve poter continuare a funzionare con il runtime precedente anche se l'intera nuova `minisite/platform/` venisse rimossa.
+
+E · GW007 GOLDEN MASTER BASELINE
+In questa fase NON migrare ancora il renderer GW007.
+
+Creare baseline verificabile per almeno:
+- Home;
+- four-context surface;
+- Kingdom;
+- Territory/Map;
+- Results;
+- Schedule;
+- Standings/Power Ranking;
+- Match;
+- context switching;
+- URL/deep-link/back;
+- desktop/mobile;
+- signature territorial components.
+
+Preservare integralmente Four Kingdoms identity, composition, map, colors, narrative, motion e assets.
+
+GW007 deve continuare a funzionare con il runtime precedente anche se `minisite/platform/` venisse rimossa.
+
+F · FAMILY DECLARATION FOUNDATION
+Predisporre il modello dichiarativo necessario affinché nelle fasi successive:
+- GW001 dichiari family=SINGLE;
+- GW007 dichiari family=MULTI_GOLD;
+- GW007 possa dichiarare context.type=TERRITORY / model=KINGDOM / provider=FIXED_CONTEXT_SET senza `if(GW007)` nel Core.
+
+In Phase 1 NON spostare ancora il comportamento live sul nuovo provider se ciò modifica runtime/output.
+
+G · CREATIVE FREEDOM CONTRACT
+Deve essere UN SOLO sistema/contract e proteggere tecnicamente:
+- Golden Master non-degradation;
+- semantic contract != visual template;
+- composition sovereignty;
+- signature components first-class;
+- theme oltre palette/font;
+- motion ownership;
+- responsive composition freedom;
+- editorial storytelling;
+- asset sovereignty;
+- primary-context logic separata dal renderer;
+- minimum information hierarchy come floor;
+- new-world stress-test capability.
+
+Non creare dodici sistemi separati.
+
+H · TEST FOUNDATION
+Predisporre test/harness sufficienti per le successive fasi:
+- contract validation;
+- route/deep-link/back baseline;
+- responsive baseline;
+- accessibility baseline;
+- data-state baseline dove riproducibile;
+- Golden Master visual baseline GW001/GW007 quando tecnicamente sostenibile;
+- rollback verification.
+
+Se screenshot automation non è sostenibile nell'attuale CI, documentare il limite e predisporre il minimo harness utile senza introdurre dipendenze sproporzionate.
+
+I · COSA NON DEVE ESSERE TOCCATO
+In Phase 1:
+- NON cambiare la UX live di GW001;
+- NON cambiare la UX live di GW007;
+- NON cambiare la grafica/composizione di GW001;
+- NON cambiare la grafica/composizione di GW007;
+- NON migrare gli altri GW;
+- NON ritirare ancora `site-assets/gameworld/app-core.js`;
+- NON fare mass replacement di `/minisite/shared/app-core.js`;
+- NON modificare DB;
+- NON modificare Gateway salvo necessità dimostrata e autorizzazione separata;
+- NON creare `if(GW001)` / `if(GW007)` nel nuovo Core come strategia;
+- NON introdurre un template visuale universale.
+
+J · GITHUB / DEPLOY
+Questa Phase 1 AUTORIZZA modifiche repository necessarie alla foundation.
+
+Procedura:
+- leggere file corrente prima di modificare;
+- modifica minima/progressiva;
+- commit;
+- GitHub Actions pertinenti;
+- verifica che GW001 e GW007 live continuino a funzionare come prima.
+
+Il nuovo platform può restare non referenziato dal runtime live in Phase 1.
+Non dichiarare `online` per nuovi comportamenti perché Phase 1 non deve ancora cambiare il runtime.
+
+K · ACCEPTANCE CRITERIA
+Phase 1 è completata solo se:
+1. foundation `minisite/platform/` esiste ed è coerente col Blueprint;
+2. contract set approvato è materializzato;
+3. Creative Freedom Contract è unico;
+4. family declaration model SINGLE/MULTI_GOLD è predisposto;
+5. baseline GW001 è registrata;
+6. baseline GW007 è registrata;
+7. test foundation è eseguibile/documentata;
+8. nessun altro GW è stato migrato;
+9. GW001 live non presenta regressioni;
+10. GW007 live non presenta regressioni;
+11. rollback è banale perché il nuovo platform non è ancora runtime-critical;
+12. Actions pertinenti sono verificate.
+
+L · RESPONSE
+Registrare:
+`tickets/ENG/2026/IMC-ENG-009-04/RESPONSE.txt`
+
+La RESPONSE deve includere:
+- pre-flight inventory;
+- file creati/modificati;
+- architecture foundation realmente implementata;
+- contracts creati;
+- baseline GW001;
+- baseline GW007;
+- test eseguiti/esito;
+- commit SHA;
+- Actions;
+- verifica live GW001/GW007;
+- eventuali limiti;
+- rollback;
+- proposta precisa per PHASE 2, senza eseguirla automaticamente.
+
+WRITE AUTHORIZED: YES, repository only within this scope.
+DB WRITE: NO.
+LIVE UX CHANGE: NO.
