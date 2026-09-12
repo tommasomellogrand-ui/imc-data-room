@@ -282,3 +282,24 @@ Write GitHub: esclusivamente OUTPUT_RESULTS_IMPORT.js e RESPONSE.txt
 nel CASE IMC-DB-001-15.
 
 VERDICT: READY_FOR_MANUAL_TEST
+
+8. VERIFICA CONSEGNA GITHUB E CI
+
+OUTPUT registrato con commit 1e71f3ce9ec8d99f2a7f779d6d2af44844236f68.
+RESPONSE iniziale con commit 2c04c29ecf84e41a44c9592307c93f910884dd4f.
+Entrambi i file riletti a quel commit e confrontati integralmente con
+gli output locali: corrispondenza esatta.
+
+GitHub Actions, run 34691763601:
+https://github.com/tommasomellogrand-ui/imc-data-room/actions/runs/34691763601
+Esito: FAILURE nello step Validate metadata and build registries/site.
+I log riportano CASE_META.txt mancanti per IMC-DB-001-15 e IMC-DB-001-16,
+oltre a errori gerarchia/ROOT_CASE_ID/DOMAIN/GW/TAGS in altri CASE DB,
+ENG e INTEL. Nessun errore JavaScript importer è riportato: il workflow
+valida i metadati e costruisce la Data Room, non esegue questa patch.
+
+I CASE_META e il builder non rientrano nei due deliverable autorizzati.
+Non sono stati modificati. Questa anomalia CI è distinta dai 219
+controlli offline superati dall'importer. Nessun deploy eseguito o
+dichiarato riuscito. Il verdict tecnico della patch resta
+READY_FOR_MANUAL_TEST; la CI globale Data Room non è verde.
