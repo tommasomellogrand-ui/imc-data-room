@@ -1,0 +1,119 @@
+CASE_ID: IMC-DB-001-17
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_GW007_LIVE_TIMEOUT_FIX
+
+IMC | RESULTS IMPORTER · GW007 LIVE ERROR REMEDIATION
+
+CONTESTO
+Questo CASE va eseguito dalla stessa Work/chat che ha prodotto la patch Results in IMC-DB-001-15.
+
+La Direzione ha eseguito il primo test live reale del nuovo importer su GW007 dopo aver svuotato GW007_IMC Results.
+Il test NON ha completato l'intero mondo: l'importer ha salvato correttamente una prima parte, poi si è fermato con timeout di stabilizzazione.
+
+INPUT AUTORITATIVI
+Leggere integralmente:
+- tickets/DB/2026/IMC-DB-001-15/OUTPUT_RESULTS_IMPORT.js
+- tickets/DB/2026/IMC-DB-001-15/RESPONSE.txt
+- tickets/DB/2026/IMC-DB-001-16/RESPONSE.txt
+- tickets/DB/2026/IMC-DB-001-13/RESPONSE.txt
+
+Non ripartire dal vecchio importer 001-12: il codice da correggere è OUTPUT_RESULTS_IMPORT.js di 001-15.
+
+EVIDENZA LIVE REALE
+Test eseguito su Soccer Manager / GW007 / Results con DB inizialmente vuoto.
+
+Stato al momento dell'errore mostrato nell'interfaccia:
+- GAME WORLD: GW007
+- FASE: ERRORE
+- COUNTRY: ITA
+- DIVISION: —
+- AZIONE: leagueshield
+- DATA / TURNO: 2026-08-24 · Turno 1
+- SCANSIONATI: 164
+- NUOVI: 164
+- SKIP: 0
+- SALVATI: 164
+- ERRORI: 1
+- CHANGED: 0
+- DUPLICATE: 0
+- DESTINAZIONE: Sql1956795_2 · GW007_IMC Results
+
+Log precedente all'errore:
+- START GW007 · Sql1956795_2 · GW007_IMC Results
+- DB caricato · 0 fixture già presenti
+- NUOVI 8 · SALVATI 8 · ENG · — · 2026-09-07
+- NUOVI 16 · SALVATI 16 · ENG · — · 2026-08-31
+- NUOVI 32 · SALVATI 32 · ENG · — · 2026-08-24
+- NUOVI 52 · SALVATI 52 · ENG · — · 2026-08-17
+- NUOVI 8 · SALVATI 8 · ITA · — · 2026-09-07
+- NUOVI 16 · SALVATI 16 · ITA · — · 2026-08-31
+- NUOVI 32 · SALVATI 32 · ITA · — · 2026-08-24
+
+Errore finale esatto:
+`Results non stabile/target non raggiunto: nessuna scrittura della pagina`
+
+OSSERVAZIONE IMPORTANTE
+Il fallimento è avvenuto durante una competizione DOMESTIC non-League (`leagueshield`) in GW007 MULTI, quindi con country valorizzata e division NULL.
+Prima dell'errore l'importer aveva già navigato correttamente almeno ENG e ITA e aveva scritto 164 righe.
+
+OBIETTIVO
+Individuare la causa reale del timeout live e correggere SOLO la logica necessaria affinché il loop GW007 possa proseguire e completare le competizioni non-League senza perdere le protezioni introdotte in 001-15.
+
+DOMANDE OBBLIGATORIE
+1. Quale condizione di `waitForStableResultState()` / `stateSnapshot()` / `switchTo()` / `goPrevious()` non viene soddisfatta nel caso GW007 leagueshield?
+2. Il problema è dovuto al fatto che per non-League `division` deve essere NULL mentre il DOM/pager/select mantiene un token divisionale residuo?
+3. Il problema è dovuto a `beforeIds` / fixture set che non cambia tra due target validi?
+4. Il problema è dovuto a country pager/select discordanti durante il cambio competizione/country?
+5. Il problema è dovuto al riuso di `expected.action_raw`, `expected.country_raw`, `expected.division_raw` in `switchTo()` o `goPrevious()`?
+6. Il problema è specifico delle competizioni non-League (League Shield / League Cup / Charity Shield / Playoff) oppure più generale?
+7. Come correggere il readiness check senza tornare a sleep ciechi e senza riaprire il rischio workingCopy/stale DOM?
+
+VINCOLI HARD
+- NON modificare DB.
+- NON cancellare o bonificare le 164 righe già importate.
+- NON cambiare Gateway.
+- NON rimuovere la distinzione SINGLE/MULTI.
+- NON reintrodurre CUS in SINGLE.
+- NON allentare il fail-closed in modo generico.
+- NON usare sleep ciechi come soluzione principale.
+- NON rompere il percorso League già validato.
+- NON cambiare la grammatica competition_key approvata.
+- NON modificare Schedule/Match Report.
+
+IMPLEMENTAZIONE AUTORIZZATA
+Dopo aver identificato la root cause, correggere direttamente l'importer 001-15 e produrre:
+`tickets/DB/2026/IMC-DB-001-17/OUTPUT_RESULTS_IMPORT.js`
+
+Il nuovo file deve essere completo e pronto per sostituire la copia di test del Comando Rapido.
+Non sovrascrivere 001-15.
+
+TEST OBBLIGATORI
+Aggiungere test mirati almeno per:
+- GW007 MULTI League invariato;
+- GW007 MULTI League Shield con country e division NULL canonica;
+- cambio ENG -> ITA su non-League;
+- previous navigation su non-League;
+- pagina con stesso fixture set ma context realmente cambiato, se questo è il failure mode;
+- nessuna lettura workingCopy;
+- nessuna regressione GW001 SINGLE;
+- nessuna regressione idempotenza NEW / IDENTICAL / CHANGED_EXISTING / DUPLICATE_CONTENT.
+
+OUTPUT
+Registrare:
+`tickets/DB/2026/IMC-DB-001-17/RESPONSE.txt`
+
+La RESPONSE deve contenere:
+- root cause precisa;
+- funzione/condizione che falliva;
+- perché i test offline 001-15 non l'avevano intercettata;
+- fix applicato;
+- test eseguiti;
+- comportamento atteso al rilancio su GW007;
+- istruzione se rilanciare da zero oppure continuare sugli stessi 164 record già presenti;
+- verdict finale `READY_FOR_MANUAL_RETEST` oppure `BLOCKED`.
+
+PRODUCTION DEPLOY: NO.
+DB WRITE: NO.
+WRITE AUTHORIZED: solo deliverable Data Room del CASE.
