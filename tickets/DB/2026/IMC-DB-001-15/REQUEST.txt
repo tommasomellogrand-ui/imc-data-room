@@ -1,0 +1,123 @@
+CASE_ID: IMC-DB-001-15
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_PATCH_UNBLOCK_AND_COMPLETE
+
+IMC | RESULTS IMPORTER · UNBLOCK + COMPLETE PATCH
+
+PARENT CASE
+IMC-DB-001-14
+
+CONTESTO
+IMC-DB-001-14 è terminato con VERDICT=BLOCKED esclusivamente perché il REQUEST imponeva di fermarsi se anche un singolo finding della 001-13 non fosse riproducibile direttamente nei due DOM autoritativi.
+
+Il solo finding che ha causato il blocco è RC-09 relativo al typo storico:
+`Quarti di Finalee`
+
+La RESPONSE 001-14 conferma invece che tutti gli altri finding necessari alla patch sono stati letti, verificati e mappati.
+
+DECISIONE DELLA DIREZIONE · UNBLOCK ESPLICITO
+RC-09 NON È BLOCCANTE.
+
+L'assenza della stringa `Quarti di Finalee` nei due DOM correnti NON deve più fermare l'implementazione.
+
+Per RC-09 è autorizzato usare:
+- la diagnosi documentata nelle RESPONSE precedenti;
+- il comportamento del codice originale, che propaga il testo stage/round senza normalizzazione;
+- un test sintetico esatto della normalizzazione proposta.
+
+È autorizzata una dictionary minima e strettamente esplicita:
+`Quarti di Finalee` -> `Quarti di Finale`
+
+Non introdurre normalizzazioni generiche o fuzzy oltre questa regola se non già necessarie e giustificate dagli input.
+
+INCARICO
+Riprendere IMC-DB-001-14 e COMPLETARE l'implementazione della patch Results importer.
+
+Non rifare da zero l'analisi.
+Usare come input autoritativi:
+
+1. Codice importer originale:
+`tommasomellogrand-ui/imc-data-room`
+`tickets/DB/2026/IMC-DB-001-12/INPUT_RESULTS_IMPORT.js`
+
+2. Analisi:
+`tickets/DB/2026/IMC-DB-001-12/RESPONSE.txt`
+`tickets/DB/2026/IMC-DB-001-13/RESPONSE.txt`
+`tickets/DB/2026/IMC-DB-001-14/RESPONSE.txt`
+
+3. DOM reali dalla File Library:
+- `SM_DOM_20260912_130340.json` = GW001 / HERTHA BSC / SINGLE
+- `SM_DOM_20260912_130458.json` = GW007 / REAL BETIS / MULTI/GOLD
+
+REQUISITI TECNICI DA IMPLEMENTARE
+Implementare integralmente la patch già specificata in IMC-DB-001-14, includendo:
+- world structure canonica SINGLE/MULTI;
+- separazione raw navigation context / canonical persisted context;
+- CUS usato solo per navigazione GW001, mai persistito come country;
+- country reale preservata per GW007 MULTI;
+- competition_key con grammatica esplicita;
+- DOM scoping su current screen / current Results block;
+- esclusione workingCopy;
+- readiness semantica della navigazione;
+- idempotenza NEW / IDENTICAL / CHANGED_EXISTING / DUPLICATE_CONTENT;
+- nessun update automatico dei record CHANGED_EXISTING;
+- controlled club ID fail-safe unresolved/null se non esiste fonte world-local certa;
+- nessun uso degli ID logo SoccerWiki;
+- CUSTOMERID fallback solo per il controlled club identificato con certezza;
+- normalizzazione esatta `Quarti di Finalee` -> `Quarti di Finale` con test sintetico.
+
+ACCEPTANCE OBBLIGATORIA
+GW001:
+- world=SINGLE;
+- nessun country semantico persistito;
+- raw `CUS` può restare disponibile per la navigazione Soccer Manager;
+- League key attesa nel current DOM: `GW001|DOMESTIC|league|4`;
+- division loop preservato.
+
+GW007:
+- world=MULTI;
+- country loop preservato;
+- division plan ricalcolato per country;
+- `ESP` preservato come sm_country nel current DOM;
+- League key attesa: `GW007|ESP|DOMESTIC|league|1`.
+
+IDEMPOTENZA:
+- NEW -> insert;
+- IDENTICAL -> skip;
+- CHANGED_EXISTING -> rilevare/loggare, NON aggiornare;
+- DUPLICATE_CONTENT -> warning, NON scrivere.
+
+VINCOLI
+- NON modificare MySQL;
+- NON bonificare dati storici;
+- NON fare UPDATE/DELETE;
+- NON modificare Gateway;
+- NON modificare minisiti;
+- NON estendere a Schedule/Match Report;
+- NON sostituire o distribuire automaticamente Shortcut operativo;
+- NON sovrascrivere il file importer originale.
+
+DELIVERABLE OBBLIGATORI
+Creare:
+`tickets/DB/2026/IMC-DB-001-15/OUTPUT_RESULTS_IMPORT.js`
+
+Creare:
+`tickets/DB/2026/IMC-DB-001-15/RESPONSE.txt`
+
+La RESPONSE deve includere:
+- file/input letti;
+- funzioni modificate;
+- mapping finding -> fix;
+- test effettuati sui due DOM;
+- test sintetico RC-09;
+- test competition_key GW001/GW007;
+- test idempotenza per le quattro classi;
+- limiti residui;
+- istruzioni precise per test manuale;
+- verdict finale `READY_FOR_MANUAL_TEST` oppure `BLOCKED` solo per un nuovo blocco tecnico reale e documentato.
+
+WRITE AUTHORIZED: YES, esclusivamente i deliverable del CASE nella Data Room.
+DB WRITE: NO.
+PRODUCTION DEPLOY: NO.
