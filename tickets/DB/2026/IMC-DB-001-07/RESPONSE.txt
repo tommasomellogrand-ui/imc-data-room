@@ -1,0 +1,575 @@
+CASE_ID: IMC-DB-001-07
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: GAME_WORLD_NATIONAL_TEAM_MAPPING_AUDIT_AND_PROPOSAL
+STATUS: COMPLETED
+MODE: READ_ONLY
+
+IMC | DATABASE MANAGER
+GAME WORLD NATIONAL TEAM MAPPING · AUDIT + PROPOSTA
+
+======================================================================
+0. EXECUTIVE RESULT
+======================================================================
+
+Il mapping National Team per Game World ESISTE già nelle sorgenti tecniche IMC Nexus/Supabase.
+Non manca il dato: manca soltanto il consolidamento nel CORE MySQL canonico.
+
+Risultato principale:
+- 80 Nazionali globali;
+- 9 Game World coperti: GW001–GW009;
+- 720 mapping world-scoped complessivi;
+- 0 null sugli ID;
+- 0 null sui nomi;
+- 0 duplicati per ID all'interno di ciascun GW;
+- 0 duplicati per nome all'interno di ciascun GW;
+- 720/720 mapping delle tabelle per-GW coincidono esattamente con il JSON `worlds` di `national_team_codex_global`;
+- 80/80 identità globali Supabase coincidono con `IMC National Team Codex Global` in MySQL Aruba;
+- nessun SM world-local ID coincide con il global national team ID;
+- ciascuna delle 80 Nazionali possiede 9 ID SM distinti, uno per ogni GW001–GW009.
+
+Conclusione:
+VERDICT = CONSOLIDATE.
+
+Non serve ricostruire una legacy né inventare ID.
+Serve, in un futuro CASE WRITE separato, materializzare nel CORE una tabella canonica:
+`IMC Game World National Team Mapping`
+seguendo lo stesso principio di `IMC Game World Club Mapping`.
+
+GW010 è già presente nel Game World Codex, ma NON possiede ancora dati world-local National Team nelle sorgenti tecniche verificate. Il design deve supportarlo, ma il mapping deve restare vuoto finché non arriva un dato reale.
+
+Nessuna WRITE DB o codice è stata eseguita in questo CASE.
+
+======================================================================
+1. SORGENTI TROVATE
+======================================================================
+
+---------------------------------------------------------------------
+SOURCE 1 · public.national_team_codex_global
+---------------------------------------------------------------------
+AMBIENTE:
+- Supabase / IMC Nexus
+- project ref: toanuzojdkfjgucztpze
+
+STRUTTURA RILEVANTE:
+- id BIGINT NOT NULL PRIMARY KEY
+- n TEXT nullable a schema, ma 0 null/blank nei dati
+- i TEXT
+- worlds JSONB NOT NULL
+
+ROW COUNT:
+- 80 righe
+- 80 ID distinti
+- 80 nomi distinti
+- 0 nomi null/blank
+- 0 JSON worlds mancanti/non-object
+
+SEMANTICA:
+- `id` = National Team global identity
+- `n` = canonical/global nation name
+- `worlds` = oggetto JSON keyed per Game World
+- ogni `worlds.GWxxx` contiene almeno:
+  - active
+  - managed
+  - sm_nation_id
+
+COPERTURA:
+- GW001–GW009
+- 80 nazionali per ciascun GW
+- 720 mapping complessivi
+- 0 sm_nation_id null
+- tutte le 720 entry risultano active=true
+- 64 mapping risultano managed=true
+
+QUALITÀ:
+- molto alta
+- la tabella ha PK su id
+- il JSON consolida global identity + world-specific identity in una singola sorgente tecnica
+- 720/720 sm_nation_id coincidono con le nove tabelle per-GW indipendenti
+
+AFFIDABILITÀ:
+ALTA.
+È la migliore sorgente tecnica da usare per un futuro consolidamento perché:
+1. è già keyed sulla global identity;
+2. contiene tutti i GW001–GW009;
+3. evita join per nome in fase di migrazione;
+4. è stata validata 720/720 contro le tabelle per-GW.
+
+SUFFICIENZA:
+Sufficiente come SOURCE DI POPOLAMENTO/VERIFICA.
+Non deve diventare fonte autoritativa finale dopo il consolidamento: il target canonico finale deve vivere in MySQL Aruba CORE.
+
+---------------------------------------------------------------------
+SOURCE 2 · public.gw001_gw_national_teams ... gw009_gw_national_teams
+---------------------------------------------------------------------
+AMBIENTE:
+- Supabase / IMC Nexus
+
+TABELLE:
+- gw001_gw_national_teams
+- gw002_gw_national_teams
+- gw003_gw_national_teams
+- gw004_gw_national_teams
+- gw005_gw_national_teams
+- gw006_gw_national_teams
+- gw007_gw_national_teams
+- gw008_gw_national_teams
+- gw009_gw_national_teams
+
+COLONNE IDENTICHE:
+- sm_world_national_club_id BIGINT NULL a schema
+- nation_name TEXT NULL a schema
+
+ROW COUNT E QUALITÀ PER GW:
+- GW001: 80 righe, 80 ID, 80 nomi, 0 null, 0 duplicati
+- GW002: 80 righe, 80 ID, 80 nomi, 0 null, 0 duplicati
+- GW003: 80 righe, 80 ID, 80 nomi, 0 null, 0 duplicati
+- GW004: 80 righe, 80 ID, 80 nomi, 0 null, 0 duplicati
+- GW005: 80 righe, 80 ID, 80 nomi, 0 null, 0 duplicati
+- GW006: 80 righe, 80 ID, 80 nomi, 0 null, 0 duplicati
+- GW007: 80 righe, 80 ID, 80 nomi, 0 null, 0 duplicati
+- GW008: 80 righe, 80 ID, 80 nomi, 0 null, 0 duplicati
+- GW009: 80 righe, 80 ID, 80 nomi, 0 null, 0 duplicati
+
+TOTALE:
+- 720 righe
+
+CHIAVI/CONSTRAINT:
+- nessuna PK/UNIQUE/FK dichiarata sulle nove tabelle
+- la qualità logica dei dati è comunque perfetta nella fotografia corrente
+
+SEMANTICA ID:
+- `sm_world_national_club_id` è un ID Soccer Manager WORLD-SCOPED per la nazionale
+- il naming `...national_club_id` è legacy/tecnico e semanticamente ambiguo; non deve essere ereditato nel modello finale
+
+CONFRONTO CON national_team_codex_global:
+- 720/720 nomi matchano la global identity
+- 720/720 sm_world_national_club_id = worlds[GW].sm_nation_id
+- 0 mismatch
+
+AFFIDABILITÀ:
+ALTA come fonte di verifica indipendente.
+Inferiore alla SOURCE 1 come fonte primaria di consolidamento perché frammentata in nove tabelle e senza constraint.
+
+SUFFICIENZA:
+Sufficiente per verification/parity.
+Non raccomandata come source primaria finale.
+
+---------------------------------------------------------------------
+SOURCE 3 · public.gw_setup_nations
+---------------------------------------------------------------------
+AMBIENTE:
+- Supabase / IMC Nexus
+
+COLONNE:
+- nation_setup_id
+- game_world_id
+- nation_name
+- sort_order
+- created_at
+
+COPERTURA:
+- GW002: 19
+- GW003: 19
+- GW007: 19
+- GW008: 12
+- totale: 69
+
+SEMANTICA:
+È una tabella di configurazione/scope nazioni per mondi multi-league.
+NON contiene global national_team_id.
+NON contiene world-local SM national team ID.
+
+AFFIDABILITÀ:
+ALTA per il proprio scopo, ma NON è un mapping National Team world-local.
+
+SUFFICIENZA:
+NON sufficiente per questo CASE.
+Può restare utile come controllo di country/setup, non come sorgente del mapping nazionale.
+
+---------------------------------------------------------------------
+SOURCE 4 · MySQL Aruba `IMC National Team Codex Global`
+---------------------------------------------------------------------
+AMBIENTE:
+- CORE Sql1956795_1
+- fonte canonica globale IMC
+
+ROW COUNT:
+- 80
+
+COLONNE:
+- id
+- name
+- image_file
+- image_url
+
+VERIFICA IDENTITÀ:
+Hash ordinato id|name Supabase `national_team_codex_global`:
+81b2e5eeb9c5869ec59281d776bc859b
+
+Hash ordinato id|name MySQL `IMC National Team Codex Global`:
+81b2e5eeb9c5869ec59281d776bc859b
+
+Conclusione:
+- 80/80 identità globali corrispondono esattamente
+- nessun crosswalk aggiuntivo necessario
+
+ASSIGNMENT CHECK:
+`IMC Manager Assignment Global` contiene 68 assignment_type=national_team.
+- 68/68 national_team_id trovano match nel Global Codex
+- 0 unmatched
+- 34 nazionali globali distinte attualmente assegnate
+
+SUFFICIENZA:
+È la fonte autoritativa della GLOBAL IDENTITY.
+Non contiene la world-scoped identity, quindi deve essere parent del futuro mapping.
+
+======================================================================
+2. SEMANTICA DEGLI ID
+======================================================================
+
+GLOBAL IDENTITY:
+- `IMC National Team Codex Global.id`
+- valori globali 1..80 nel dataset corrente
+- stabili tra Game World
+
+WORLD-SCOPED SM IDENTITY:
+- Supabase `worlds[GWxxx].sm_nation_id`
+- equivalente a `gwxxx_gw_national_teams.sm_world_national_club_id`
+- varia per Game World
+
+PROVE:
+- 720 mapping totali
+- 0 casi in cui sm_nation_id = global id
+- ciascuna delle 80 nazionali ha 9 distinct sm_nation_id sui 9 GW
+- min sm_nation_id osservato: 13
+- max sm_nation_id osservato: 2.277.486
+
+Esempio England:
+- global ID = 1
+- GW001 = 1.869.096
+- GW002 = 1.842.073
+- GW003 = 1.863.736
+- GW004 = 74.986
+- GW005 = 2.277.431
+- GW006 = 1.868.936
+- GW007 = 646.508
+- GW008 = 13
+- GW009 = 2.226.721
+
+Conclusione:
+GLOBAL ID e WORLD-SCOPED SM ID sono concetti diversi e DEVONO restare separati.
+Il mapping è funzionalmente necessario.
+
+======================================================================
+3. A · CURRENT STATE
+======================================================================
+
+Il CORE MySQL possiede:
+- IMC National Team Codex Global = global identities
+- IMC Manager Assignment Global = assignment verso global national_team_id
+
+Il CORE MySQL NON possiede:
+- una tabella canonica Game World -> National Team Global -> SM National Team ID
+
+Supabase/IMC Nexus possiede invece già l'intero dataset GW001–GW009 in due forme coerenti:
+1. consolidata: `national_team_codex_global.worlds`
+2. per-GW: `gw001_gw_national_teams` ... `gw009_gw_national_teams`
+
+Quindi lo stato è:
+DATA EXISTS · CORE CONSOLIDATION MISSING.
+
+======================================================================
+4. B · SOURCE OF TRUTH RECOMMENDATION
+======================================================================
+
+PRE-CONSOLIDATION SOURCE PRIMARIA:
+Supabase `public.national_team_codex_global`.
+
+Ragioni:
+- 80 global IDs già allineati 80/80 al MySQL Global Codex;
+- `worlds` contiene tutte le 720 relazioni GW001–GW009;
+- 720/720 parity con le tabelle per-GW;
+- global identity già esplicita, quindi non serve matching per nome.
+
+VERIFICATION SOURCE:
+`gw001_gw_national_teams` ... `gw009_gw_national_teams`.
+
+POST-CONSOLIDATION SOURCE OF TRUTH:
+MySQL Aruba CORE `IMC Game World National Team Mapping`.
+
+Supabase deve restare sorgente tecnica/verification layer, non authority finale.
+
+======================================================================
+5. C · TARGET IMC MODEL
+======================================================================
+
+TARGET NAME RACCOMANDATO:
+`IMC Game World National Team Mapping`
+
+Non esiste ragione tecnica forte per cambiare il naming preferito.
+È coerente con:
+`IMC Game World Club Mapping`
+
+MODELLO LOGICO:
+Una riga = una National Team globale all'interno di un Game World, con il relativo identificativo Soccer Manager world-scoped.
+
+CARDINALITÀ ATTESA ATTUALE:
+- 80 righe per GW
+- 9 GW popolati
+- 720 righe totali
+
+GW010:
+- struttura pronta
+- 0 righe fino all'arrivo di dati reali
+
+======================================================================
+6. D · COLUMN-BY-COLUMN PROPOSAL
+======================================================================
+
+1. `National Team ID`
+TYPE LOGICO: BIGINT NOT NULL
+SEMANTICA: global identity IMC
+SOURCE: `national_team_codex_global.id`
+CANONICAL PARENT: `IMC National Team Codex Global.id`
+
+2. `National Team Name`
+TYPE LOGICO: TEXT NOT NULL
+SEMANTICA: display name della global identity
+SOURCE: `IMC National Team Codex Global.name` / stessa identità Supabase `n`
+NOTA: campo denormalizzato per coerenza col pattern Club Mapping; la fonte canonica del nome resta il Global Codex.
+
+3. `Game World`
+TYPE LOGICO: VARCHAR(255) NOT NULL
+SEMANTICA: GW001...GW010
+SOURCE: chiave JSON `worlds` / nome tabella per-GW
+CANONICAL PARENT: `IMC Game World Codex Global`.`IMC GW`
+
+4. `SM National Team ID`
+TYPE LOGICO: BIGINT NOT NULL
+SEMANTICA: Soccer Manager national team identity specifica del Game World
+SOURCE PRIMARIA: `worlds[GW].sm_nation_id`
+SOURCE VERIFICA: `gwxxx_gw_national_teams.sm_world_national_club_id`
+
+NON includere:
+- active: nella fotografia corrente è true 720/720; non serve come parte minima del mapping canonico
+- managed: è stato osservato in 64 mapping ma descrive uno stato operativo/manageriale, non l'identità world mapping; è già modellabile tramite Manager Assignment Global e non deve contaminare il mapping identitario
+- JSON worlds: il target deve essere relazionale, una riga per mapping
+
+======================================================================
+7. E · KEYS / UNIQUE / FK
+======================================================================
+
+PRIMARY KEY RACCOMANDATA:
+(`Game World`, `SM National Team ID`)
+
+Motivazione:
+- replica il pattern di `IMC Game World Club Mapping`, che usa (`Game World`, `SM Club ID`)
+- rende univoca la world-scoped identity nel singolo GW
+
+UNIQUE RACCOMANDATA:
+(`Game World`, `National Team ID`)
+
+Motivazione:
+- una global National Team deve avere un solo SM National Team ID all'interno dello stesso Game World
+- il dataset corrente rispetta questa regola 720/720
+
+FK RACCOMANDATE:
+1. `Game World`
+   -> `IMC Game World Codex Global`.`IMC GW`
+
+2. `National Team ID`
+   -> `IMC National Team Codex Global`.`id`
+
+INDEX:
+- index su `National Team ID` utile per query global->world mappings
+- la ricerca per Game World è già coperta dal prefisso della PK
+
+NOTA:
+Il Club Mapping attuale possiede FK esplicita sul Game World, ma non sul Club ID.
+Per il nuovo mapping nazionale è raccomandata anche la FK verso il Global National Team Codex, perché il parent canonico è già stabile e 80/80 verificato.
+
+======================================================================
+8. F · GW001–GW009 COVERAGE
+======================================================================
+
+GW001: 80/80
+GW002: 80/80
+GW003: 80/80
+GW004: 80/80
+GW005: 80/80
+GW006: 80/80
+GW007: 80/80
+GW008: 80/80
+GW009: 80/80
+
+Totale: 720
+
+DATA QUALITY:
+- null global identity: 0 dopo join al Codex
+- null SM ID: 0
+- null/blank name: 0
+- duplicate SM ID within GW: 0
+- duplicate global nation within GW: 0
+- mismatch fra consolidated JSON e per-GW tables: 0
+
+======================================================================
+9. G · GW010 READINESS
+======================================================================
+
+GW010 esiste già nel CORE:
+- IMC GW: GW010
+- IMC GW Name: Sensible Soccer Academy
+- SM Game World ID: 1111161
+- Active Club: 24
+
+Ma nelle sorgenti tecniche verificate:
+- `gw010_gw_national_teams` NON esiste
+- 0/80 righe `national_team_codex_global` contengono key GW010 nel JSON worlds
+
+Conclusione:
+Il target deve accettare GW010 tramite FK al Game World Codex, ma deve essere popolato con ZERO righe per GW010 fino a quando un importer/audit futuro non acquisirà ID reali.
+
+VIETATO:
+- copiare gli ID di un altro GW
+- usare global ID come SM National Team ID
+- inferire una sequenza
+- generare placeholder
+
+======================================================================
+10. H · MIGRATION / POPULATION PLAN
+======================================================================
+
+PIANO PROPOSTO PER FUTURO CASE WRITE SEPARATO:
+
+1. Creare `IMC Game World National Team Mapping` nel CORE con schema e constraint approvati.
+2. Leggere i 80 record di `national_team_codex_global` dalla sorgente tecnica Supabase.
+3. Esplodere `worlds` per GW001–GW009.
+4. Produrre 720 righe:
+   National Team ID | National Team Name | Game World | SM National Team ID.
+5. Usare il MySQL `IMC National Team Codex Global` come authority per ID/nome.
+6. Verificare che ogni source global ID esista 80/80 nel MySQL Codex.
+7. Verificare le 720 righe contro `gw001...gw009_gw_national_teams` prima della write.
+8. Popolare 720 righe.
+9. Verifiche post-write:
+   - COUNT total = 720
+   - 80 per ciascun GW001–GW009
+   - GW010 = 0
+   - null = 0
+   - duplicate PK = 0
+   - duplicate (`Game World`,`National Team ID`) = 0
+   - FK unresolved = 0
+10. Solo dopo parity completa, migrare i consumer.
+11. Non eliminare automaticamente le sorgenti Supabase: restano verification/source layer finché la Direzione non autorizza una loro razionalizzazione.
+
+Nessuna delle operazioni sopra è stata eseguita in questo CASE.
+
+======================================================================
+11. I · CONSUMER IMPACT
+======================================================================
+
+CONSUMER/RIFERIMENTI CORRENTI IDENTIFICATI:
+
+1. `api/imc-gateway/team-hub.php`
+- contiene ancora logica storica su `nations_game_world_id`
+- oggi il Team Hub mapping path è guarded dal CASE 001-05
+- futuro target: leggere `IMC Game World National Team Mapping`
+
+2. `api/imc-data/v1/index.php`
+- contiene query legacy su `nations_game_world_id`
+- futuro target: leggere il nuovo mapping IMC
+
+3. `nexus/v1/modules/clubhouse/clubhouse-national-team-fix.js`
+- usa semanticamente sia global nation ID sia `sm_world_national_club_id`
+- dimostra che il world-scoped ID ha una funzione applicativa reale
+- futuro target: ricevere lo stesso concetto dal mapping IMC canonico, con naming `SM National Team ID`
+
+4. `IMC Manager Assignment Global`
+- nessuna modifica strutturale richiesta
+- continua a conservare `national_team_id` GLOBAL, non world-local
+- 68/68 assignment nazionali sono già coerenti col Global Codex
+
+PRINCIPIO CONSUMER:
+- Global ID per identità, assignment e asset
+- SM National Team ID solo per risoluzione world-scoped
+- nessun consumer deve confondere i due domini
+
+======================================================================
+12. CONFRONTO CON `IMC Game World Club Mapping`
+======================================================================
+
+CLUB MODEL ATTUALE:
+- Club ID
+- Club Name
+- Game World
+- SM Club ID
+- PK (`Game World`,`SM Club ID`)
+- FK Game World -> IMC Game World Codex Global
+
+NATIONAL TEAM MODEL PROPOSTO:
+- National Team ID
+- National Team Name
+- Game World
+- SM National Team ID
+- PK (`Game World`,`SM National Team ID`)
+- UNIQUE (`Game World`,`National Team ID`)
+- FK Game World -> IMC Game World Codex Global
+- FK National Team ID -> IMC National Team Codex Global
+
+SIMMETRIA:
+Club:
+GLOBAL CLUB ID <-> GW <-> SM CLUB ID
+
+National Team:
+GLOBAL NATIONAL TEAM ID <-> GW <-> SM NATIONAL TEAM ID
+
+Differenza importante osservata:
+- nel Club Mapping corrente, Club ID = SM Club ID nelle 1.434 righe CORE verificate;
+- nel National Team mapping, global ID e SM National Team ID non coincidono MAI e cambiano per ogni Game World.
+
+Quindi il mapping National Team non è solo simmetrico concettualmente: è ancora più necessario semanticamente del mapping Club.
+
+======================================================================
+13. J · VERDICT
+======================================================================
+
+VERDICT: CONSOLIDATE.
+
+NON REUSE AS-IS:
+perché le sorgenti Supabase non sono la fonte dati autoritativa finale e il CORE deve poter risolvere la relazione senza dipendere da JSON o nove tabelle separate.
+
+NON CREATE FROM ZERO:
+perché i dati esistono già integralmente e sono verificati 720/720.
+
+CONSOLIDATE:
+- SOURCE = Supabase `national_team_codex_global.worlds`
+- VERIFICATION = `gw001_gw_national_teams` ... `gw009_gw_national_teams`
+- GLOBAL AUTHORITY = MySQL `IMC National Team Codex Global`
+- TARGET AUTHORITY = futuro MySQL `IMC Game World National Team Mapping`
+
+Il naming target preferito è confermato.
+
+======================================================================
+14. FINAL CERTIFICATION
+======================================================================
+
+DATASET FOUND: YES
+GW001–GW009 COVERAGE: COMPLETE
+ROWS: 720
+GLOBAL NATIONS: 80
+NULL WORLD IDs: 0
+DUPLICATE WORLD IDs WITHIN GW: 0
+DUPLICATE GLOBAL NATIONS WITHIN GW: 0
+SOURCE CROSS-CHECK: 720/720 EXACT
+GLOBAL IDENTITY CROSS-CHECK MYSQL/SUPABASE: 80/80 EXACT
+WORLD ID = GLOBAL ID: 0/720
+NATIONS WITH 9 DISTINCT WORLD IDs: 80/80
+GW010 DATA AVAILABLE: NO
+GW010 DESIGN READY: YES
+
+DB WRITES EXECUTED: NONE
+CODE WRITES EXECUTED: NONE
+DEPLOYS EXECUTED: NONE
+
+IMC-DB-001-07: COMPLETED
