@@ -1,0 +1,1153 @@
+CASE_ID: IMC-DB-001-08
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: IMC_INGESTION_AND_PROVENANCE_V1_ARCHITECTURE
+STATUS: COMPLETED
+MODE: READ_ONLY_DESIGN
+
+IMC | DATABASE MANAGER
+IMC INGESTION & PROVENANCE V1 · ARCHITECTURE PROPOSAL
+
+======================================================================
+0. EXECUTIVE RESULT
+======================================================================
+
+Questo CASE è stato eseguito esclusivamente in READ-ONLY / DESIGN-ONLY.
+Nessuna tabella è stata creata.
+Nessuna migration è stata eseguita.
+Nessun codice è stato modificato.
+Nessun deploy è stato eseguito.
+
+CORE live verificato durante il CASE:
+- 12 tabelle totali;
+- 12 tabelle IMC;
+- 0 tabelle non-IMC.
+
+La V1 proposta NON è una resurrezione della vecchia ingestion.
+È un nuovo sistema comune che governa l'ingresso verso repository IMC autorizzati mantenendo separati:
+- transport/auth/routing;
+- orchestration della run;
+- contract/adapter del repository;
+- validation;
+- normalization/resolution;
+- idempotency/skip;
+- write;
+- provenance/audit;
+- issue/error handling.
+
+Conclusione architetturale principale:
+NON serve riscrivere tutti gli importer.
+La strada più sicura è mantenere il loro lavoro di estrazione/parsing e sostituire progressivamente il tratto finale "read/skip/write" con un envelope V1 comune.
+
+Il Universal Gateway attuale è riusabile come transport boundary, ma il path `IMPORT + route_mode=explicit` NON deve essere considerato il modello finale V1 perché oggi:
+- il chiamante passa ancora `target_database` e `target_table`;
+- l'ingress path accetta un namespace tabella più ampio dell'allowlist repository finale;
+- fa INSERT puro;
+- non gestisce update/skip/idempotency canonica;
+- non registra una run persistente;
+- non conosce importer/versione/source in modo strutturato;
+- non ha adapter repository-specifici;
+- restituisce `skipped_rows=0` per design, non perché abbia verificato idempotenza.
+
+Il vecchio `__imc-sm-master/admin/ingestion/router.php` è attualmente hard-blocked con `legacy_core_removed` e NON deve essere riattivato.
+
+======================================================================
+A. EXECUTIVE ARCHITECTURE
+======================================================================
+
+TARGET LOGICO:
+
+SOURCE / IMPORTER
+    -> V1 INGESTION ENVELOPE
+    -> AUTH + ALLOWLIST
+    -> CREATE/RESUME INGESTION RUN
+    -> REPOSITORY ADAPTER
+    -> SCHEMA VALIDATION
+    -> SEMANTIC VALIDATION
+    -> REFERENCE RESOLUTION
+    -> NORMALIZATION
+    -> IDEMPOTENCY / SKIP DECISION
+    -> AUTHORIZED IMC WRITE
+    -> BATCH RESULT
+    -> PROVENANCE / ISSUE LOG
+    -> RUN FINALIZATION
+
+Principio fondamentale:
+L'importer NON sceglie database, tabella fisica o SQL.
+L'importer dichiara soltanto:
+- repository_key canonico;
+- game_world_id quando pertinente;
+- source identity;
+- importer identity/version;
+- source/run idempotency key;
+- rows/batch.
+
+Il repository registry V1 risolve internamente:
+- database family;
+- tabella fisica autorizzata;
+- adapter;
+- schema contract;
+- row identity;
+- idempotency policy;
+- write policy;
+- reference rules;
+- transaction policy.
+
+DDL è sempre fuori runtime ingestion.
+Solo Database Manager può creare/modificare schema tramite CASE autorizzato.
+
+======================================================================
+B. RESPONSIBILITY BOUNDARIES
+======================================================================
+
+1. IMPORTER / EXTRACTOR
+Responsabilità:
+- leggere Soccer Manager / fonte autorizzata;
+- estrarre i campi sorgente;
+- costruire source metadata;
+- dichiarare la propria versione reale;
+- dividere in batch;
+- inviare envelope + rows.
+
+NON deve:
+- creare tabelle;
+- conoscere credenziali DB;
+- scegliere SQL;
+- decidere il database Aruba;
+- scegliere liberamente una tabella fisica;
+- implementare regole semantiche duplicate se l'adapter V1 le possiede.
+
+2. UNIVERSAL GATEWAY / TRANSPORT
+Responsabilità:
+- autenticazione/autorizzazione canale;
+- rate/size limits;
+- parsing envelope;
+- correlation/trace ID;
+- consegna alla V1 orchestrator;
+- response transport.
+
+NON deve essere semantic owner di Results/Schedule/etc.
+NON deve accettare `target_database`, `target_table` o SQL come autorità dal client V1.
+
+3. V1 INGESTION ORCHESTRATOR
+Responsabilità:
+- aprire/resumere run;
+- validare repository allowlist;
+- validare Game World;
+- selezionare adapter/versione;
+- governare state machine;
+- coordinare batch;
+- aggiornare counters/stati;
+- registrare issue/provenance;
+- finalizzare run.
+
+4. REPOSITORY ADAPTER
+Responsabilità:
+- contract campi;
+- semantic rules;
+- foreign/reference resolution;
+- normalization specifica;
+- canonical row key;
+- fingerprint policy;
+- insert/update/skip/reject policy;
+- repository-specific duplicate semantics;
+- transaction policy.
+
+5. DATABASE MANAGER
+Responsabilità:
+- DDL/schema evolution;
+- migration controllate;
+- audit schema;
+- nessun ruolo di endpoint runtime ordinario dell'importer.
+
+6. CANONICAL IMC DESTINATION
+Responsabilità:
+- contenere soltanto dati canonici del repository;
+- constraint/index/FK;
+- NON essere anche il log della pipeline.
+
+7. PROVENANCE/AUDIT LAYER
+Responsabilità:
+- run/batch/outcome/issue;
+- non sostituire i repository canonici;
+- non duplicare payload massivi.
+
+======================================================================
+C. PROPOSED DATA MODEL
+======================================================================
+
+Modello minimo consigliato: 4 entità persistenti.
+
+1. `IMC Ingestion Run`
+Una riga per esecuzione logica completa di un importer verso un repository.
+
+2. `IMC Ingestion Batch`
+Una riga per chunk transazionale della run.
+Necessaria perché gli import correnti possono superare la dimensione di un singolo request e il Gateway attuale usa batch fino a 500 righe.
+
+3. `IMC Ingestion Issue`
+Una riga per warning/error/fatal issue a livello run/batch/record.
+Sostituisce concettualmente la frammentazione dei vecchi error log senza copiarne il modello.
+
+4. `IMC Ingestion Record Event`
+Ledger SPARSE, non copia completa di ogni record.
+Default: registra solo eventi che servono per spiegare una decisione row-level:
+- skipped;
+- rejected;
+- warning;
+- write error;
+- update quando serve una provenance esatta;
+- inserted solo per repository/modalità che richiedono exact-row lineage.
+
+Questo modello è intenzionalmente ibrido:
+- provenance persistente run/batch per tutto;
+- provenance row-level solo quando aggiunge valore reale.
+
+NON è proposta una tabella `Repository Registry` nel DB nella V1 iniziale.
+Il registry deve essere codice/config versionato e allowlisted, perché rappresenta policy eseguibile e non dati business.
+
+======================================================================
+D. TABLES / ENTITIES PROPOSED
+======================================================================
+
+D1. IMC Ingestion Run
+NECESSARIA: SI.
+Perché senza una run persistente non possiamo rispondere in modo affidabile a quando/chi/cosa/quanto/esito.
+
+D2. IMC Ingestion Batch
+NECESSARIA: SI.
+Perché serve retry/resume sicuro per import grandi e transaction boundaries realistiche.
+
+D3. IMC Ingestion Issue
+NECESSARIA: SI.
+Perché warning/error/reject devono avere struttura coerente e interrogabile.
+
+D4. IMC Ingestion Record Event
+NECESSARIA: SI, ma SPARSE.
+Perché skip/reject row-level richiedono motivo e record reference, senza salvare ogni payload intero.
+
+D5. Repository Registry
+NECESSARIA COME CONCETTO: SI.
+PERSISTENTE IN DB: NO nella V1 iniziale.
+TARGET: codice/config versionato nel repository GitHub.
+
+D6. Raw Snapshot table
+NECESSARIA: NO di default.
+Non costruirla nella V1 base.
+
+======================================================================
+E. COLUMN-BY-COLUMN DESIGN
+======================================================================
+
+E1. `IMC Ingestion Run`
+
+- run_id
+  BIGINT UNSIGNED AUTO_INCREMENT / PK interno.
+
+- run_uuid
+  CHAR(36) o equivalente, NOT NULL, UNIQUE.
+  Correlation ID pubblico stabile tra importer/gateway/log/UI.
+
+- scope_key
+  VARCHAR.
+  Valore non-null normalizzato, es. GW001 oppure GLOBAL.
+  Evita ambiguità di UNIQUE con NULL.
+
+- game_world_id
+  VARCHAR compatibile con IMC Game World Codex Global, NULL per dataset globali.
+  FK consigliata verso `IMC Game World Codex Global`.`IMC GW` quando non-null.
+
+- repository_key
+  VARCHAR, NOT NULL.
+  Esempi canonici: results, schedule, match_report, transfers, player_codex, sm_player_stats, gw_club_mapping, gw_national_team_mapping.
+  NON è un nome tabella libero.
+
+- adapter_name
+  VARCHAR, NOT NULL.
+  Adapter effettivamente usato.
+
+- adapter_version
+  VARCHAR, NOT NULL.
+
+- source_type
+  VARCHAR, NOT NULL.
+  Es. soccer_manager_dom, soccer_manager_api, manual_authorized, derived_internal.
+
+- source_name
+  VARCHAR, NULL.
+  Nome/versione descrittiva della fonte quando disponibile.
+
+- source_version
+  VARCHAR, NULL.
+
+- source_locator
+  VARCHAR/TEXT limitato, NULL.
+  URL logico/file ID/fixture scope/etc. Non credenziali.
+
+- source_fingerprint
+  CHAR(64), NULL.
+  SHA-256 del source artifact/batch manifest quando disponibile.
+
+- importer_name
+  VARCHAR, NOT NULL.
+
+- importer_version
+  VARCHAR, NOT NULL.
+
+- gateway_version
+  VARCHAR, NOT NULL.
+
+- idempotency_key
+  VARCHAR, NOT NULL.
+  Identifica logicamente la stessa import run/source.
+
+- retry_of_run_id
+  BIGINT UNSIGNED, NULL FK self.
+
+- transaction_mode
+  ENUM logico: ATOMIC_RUN / ATOMIC_BATCH / PARTIAL_ALLOWED.
+
+- status
+  ENUM logico definito nella state machine.
+
+- received_count
+- validated_count
+- inserted_count
+- updated_count
+- skipped_count
+- rejected_count
+- warning_count
+- error_count
+  BIGINT/INT counters NOT NULL DEFAULT 0.
+
+- started_at
+- completed_at
+  DATETIME/TIMESTAMP UTC.
+
+- metadata_json
+  JSON SMALL e bounded, NULL.
+  Solo metadata non strutturalmente rilevanti. Non raw payload.
+
+- created_at / updated_at
+  audit tecnico.
+
+E2. `IMC Ingestion Batch`
+
+- batch_id PK
+- run_id FK -> Run
+- batch_number NOT NULL
+- batch_idempotency_key NOT NULL
+- source_batch_fingerprint CHAR(64) NULL
+- status
+- received_count
+- validated_count
+- inserted_count
+- updated_count
+- skipped_count
+- rejected_count
+- warning_count
+- error_count
+- started_at
+- completed_at
+- attempt_number DEFAULT 1
+- metadata_json bounded NULL
+
+NON serve conservare row payload.
+
+E3. `IMC Ingestion Issue`
+
+- issue_id PK
+- run_id FK
+- batch_id FK NULL
+- row_event_id FK NULL
+- scope ENUM: RUN / BATCH / ROW
+- stage ENUM: ENVELOPE / SCHEMA / SEMANTIC / REFERENCE / NORMALIZATION / IDEMPOTENCY / WRITE / FINALIZATION
+- severity ENUM: WARNING / ERROR / FATAL
+- code VARCHAR NOT NULL
+- message VARCHAR/TEXT NOT NULL
+- row_ordinal NULL
+- source_record_key NULL
+- canonical_record_key NULL
+- retryable BOOLEAN NOT NULL
+- details_json bounded NULL
+- created_at
+
+`message` non deve contenere segreti, token, SQL completo o payload massivi.
+
+E4. `IMC Ingestion Record Event`
+
+- record_event_id PK
+- run_id FK
+- batch_id FK
+- row_ordinal NULL
+- source_record_key VARCHAR NULL
+- canonical_record_key VARCHAR NULL
+- fingerprint CHAR(64) NULL
+- outcome ENUM: INSERTED / UPDATED / SKIPPED / REJECTED / WRITE_ERROR
+- reason_code VARCHAR NULL
+- target_repository_key VARCHAR NOT NULL
+- target_record_locator VARCHAR NULL
+- created_at
+
+DEFAULT POLICY:
+- sempre per SKIPPED/REJECTED/WRITE_ERROR;
+- opzionale per INSERTED/UPDATED salvo repository che richieda exact provenance.
+
+======================================================================
+F. KEYS / UNIQUE / FK / INDEX
+======================================================================
+
+RUN:
+- PK run_id
+- UNIQUE run_uuid
+- UNIQUE raccomandata su (repository_key, scope_key, idempotency_key)
+- INDEX (status, started_at)
+- INDEX (game_world_id, repository_key, started_at)
+- INDEX (source_type, source_name)
+- FK game_world_id -> IMC Game World Codex Global.IMC GW, nullable
+- FK retry_of_run_id -> Run.run_id
+
+BATCH:
+- PK batch_id
+- UNIQUE (run_id, batch_number)
+- UNIQUE (run_id, batch_idempotency_key)
+- INDEX (run_id,status)
+- FK run_id -> Run.run_id
+
+ISSUE:
+- PK issue_id
+- INDEX (run_id,severity)
+- INDEX (code,created_at)
+- INDEX (batch_id)
+- FK run_id -> Run
+- FK batch_id -> Batch nullable
+
+RECORD EVENT:
+- PK record_event_id
+- UNIQUE possibile (run_id,batch_id,row_ordinal,outcome) se row_ordinal sempre presente
+- INDEX (run_id,outcome)
+- INDEX (canonical_record_key)
+- INDEX (fingerprint)
+- FK run_id -> Run
+- FK batch_id -> Batch
+
+NO FK dalle destination business verso ingestion tables nella V1 base.
+La provenance non deve trasformarsi in una dipendenza che impedisce retention/purge dei log.
+
+======================================================================
+G. INGESTION RUN STATE MACHINE
+======================================================================
+
+Stati consigliati:
+
+RECEIVED
+-> VALIDATING
+-> READY
+-> WRITING
+-> COMPLETED
+
+Varianti terminali:
+- COMPLETED_WITH_WARNINGS
+- PARTIAL
+- FAILED
+- ABORTED
+
+Stato retry operativo:
+- RETRY_PENDING
+- RESUMING
+
+Regole:
+
+RECEIVED
+Envelope autenticato e run creata/resolta.
+
+VALIDATING
+Repository, GW, source/importer metadata e batch contract in validazione.
+
+READY
+Envelope e contract validi, write non ancora iniziata.
+
+WRITING
+Uno o più batch in elaborazione.
+
+COMPLETED
+Tutto ciò che era eleggibile è stato processato senza warning/error bloccanti.
+
+COMPLETED_WITH_WARNINGS
+Write completata ma esistono warning non bloccanti.
+
+PARTIAL
+Almeno un batch committato e almeno un batch fallito/non completato in modalità partial/batch atomic.
+
+FAILED
+Nessun risultato valido committato oppure failure bloccante in modalità all-or-nothing.
+
+ABORTED
+Stop amministrativo esplicito prima del completamento.
+
+RETRY_PENDING / RESUMING
+Retry controllato della stessa run logica o di una run collegata.
+
+Transizioni illegali devono essere rifiutate.
+
+======================================================================
+H. PROVENANCE STRATEGY
+======================================================================
+
+STRATEGIA RACCOMANDATA: IBRIDA.
+
+RUN LEVEL: sempre.
+Conserva:
+- source;
+- importer/version;
+- repository;
+- GW;
+- start/end;
+- status;
+- counters;
+- idempotency.
+
+BATCH LEVEL: sempre per import multi-batch.
+Conserva retry/resume e transaction boundary.
+
+ROW LEVEL: sparse.
+Conserva solo ciò che è utile per spiegare una decisione o riprodurre un problema.
+
+Perché NON loggare ogni riga sempre:
+- Results/Schedule/Stats possono crescere molto;
+- duplicheremmo chiavi/fingerprint già nei repository;
+- il CORE audit diventerebbe più grande dei dati business;
+- retention diverrebbe costosa.
+
+Quando abilitare exact-row lineage:
+- import sensibili/manuali;
+- mapping globali;
+- migrazioni one-shot;
+- troubleshooting;
+- repository senza una chiave/fingerprint nativa sufficiente.
+
+======================================================================
+I. ERROR / WARNING MODEL
+======================================================================
+
+Categorie standard:
+
+ENVELOPE
+- missing_repository
+- invalid_game_world
+- importer_version_missing
+- source_metadata_invalid
+
+SCHEMA
+- required_field_missing
+- unknown_field
+- invalid_type
+- invalid_format
+- payload_too_large
+
+SEMANTIC
+- invalid_competition_identity
+- invalid_division_for_action
+- impossible_score_state
+- invalid_transfer_direction
+- invalid_repository_rule
+
+REFERENCE
+- game_world_not_found
+- club_not_resolved
+- national_team_not_resolved
+- manager_not_resolved
+- competition_not_resolved
+
+IDEMPOTENCY
+- duplicate_exact
+- duplicate_conflict
+- already_imported
+- stale_update
+
+WRITE
+- constraint_violation
+- destination_unavailable
+- transaction_rollback
+- write_timeout
+
+Severità:
+WARNING: record/run può proseguire.
+ERROR: record/batch non può essere scritto ma run può proseguire se policy lo consente.
+FATAL: run deve fermarsi.
+
+Ogni issue include retryable=true/false.
+
+======================================================================
+J. IDEMPOTENCY / SKIP MODEL
+======================================================================
+
+Due livelli distinti.
+
+1. RUN IDEMPOTENCY
+Chiave composta logicamente da:
+repository_key + scope_key + idempotency_key.
+
+L'idempotency_key può derivare da:
+- source fingerprint;
+- source date/version;
+- importer supplied stable key;
+- combinazione deterministica autorizzata dall'adapter.
+
+Stessa run idempotency:
+- se COMPLETED: rispondere already_completed / no-op;
+- se WRITING: reject/concurrency conflict;
+- se PARTIAL/FAILED retryable: resume/retry secondo policy.
+
+2. ROW IDEMPOTENCY
+Definita dall'adapter.
+
+L'adapter restituisce una decisione:
+- INSERT
+- UPDATE
+- SKIP_EXACT
+- SKIP_STALE
+- REJECT_CONFLICT
+
+Il Gateway non inventa questa decisione.
+
+Fingerprint:
+- usato quando il repository ha contenuto mutable o quando la natural key da sola non distingue versioni;
+- non obbligatorio universalmente.
+
+Esempi compatibili con strutture attuali:
+
+Results:
+- sm_fixture_id + fingerprint sono già concetti presenti nel repository;
+- adapter deve distinguere fixture già identica da stessa fixture con contenuto differente.
+
+Schedule:
+- fixture identity/stable key come base;
+- skip se record equivalente già presente;
+- update solo se contract lo autorizza.
+
+Match Report:
+- natural identity primaria: game_world_id + sm_fixture_id;
+- fingerprint come verifica di contenuto quando disponibile.
+
+Transfers:
+- usare la chiave canonica già definita dal repository/importer, non dedup generico del Gateway.
+
+Player Codex:
+- current profile tipicamente upsert per player identity;
+- history/eventi hanno chiavi dedicate e separate.
+
+SM Player Stats:
+- adapter deve definire identity per player + competition/scope canonico e la semantica snapshot/update.
+
+======================================================================
+K. REPOSITORY ADAPTER CONTRACT
+======================================================================
+
+Ogni adapter deve implementare concettualmente:
+
+adapter_key()
+adapter_version()
+repository_key()
+supported_scopes()
+destination_resolver(game_world_id)
+contract_version()
+validate_envelope(run)
+validate_row_schema(row)
+validate_semantics(row,context)
+resolve_references(row,context)
+normalize(row,context)
+canonical_record_key(row)
+fingerprint(row)
+idempotency_decision(row,existing)
+write_policy()
+transaction_policy()
+provenance_mode()
+retention_overrides()
+
+Output per riga dell'adapter prima del write:
+- canonical_row;
+- canonical_record_key;
+- fingerprint nullable;
+- action INSERT/UPDATE/SKIP/REJECT;
+- reason_code;
+- warnings[];
+- resolved references.
+
+Adapter iniziali previsti:
+- ResultsAdapter
+- ScheduleAdapter
+- MatchReportAdapter
+- TransfersAdapter
+- PlayerCodexAdapter
+- SmPlayerStatsAdapter
+- GameWorldClubMappingAdapter
+- GameWorldNationalTeamMappingAdapter
+
+Non è richiesto implementarli tutti nello stesso CASE futuro.
+
+======================================================================
+L. SECURITY / ALLOWLIST MODEL
+======================================================================
+
+1. Il client NON può inviare:
+- SQL;
+- target_database;
+- target_table fisica;
+- arbitrary action;
+- DDL.
+
+2. Envelope accetta solo repository_key allowlisted.
+
+3. Registry versionato risolve:
+repository_key -> adapter -> destination family/table.
+
+4. V1 runtime DB user dovrebbe avere privilegi minimi:
+- SELECT sui parent/reference necessari;
+- INSERT/UPDATE sulle sole destinazioni autorizzate;
+- INSERT/UPDATE sulle 4 tabelle V1 audit;
+- NO CREATE;
+- NO ALTER;
+- NO DROP;
+- NO TRUNCATE;
+- NO GRANT.
+
+5. Database Manager usa un percorso/ruolo separato.
+
+6. Game World validation obbligatoria contro IMC Game World Codex Global.
+
+7. Batch limits:
+- max rows;
+- max request bytes;
+- max JSON nesting;
+- timeout.
+
+8. Importer identity/version mandatory.
+
+9. Trace/run UUID in ogni response.
+
+10. Nessun token/segreto nei log o details_json.
+
+11. Unknown repository/action = reject, mai fallback dinamico.
+
+12. La regex `GWxxx_IMC <qualcosa>` da sola NON è sufficiente come allowlist V1.
+
+======================================================================
+M. RAW PAYLOAD + RETENTION POLICY
+======================================================================
+
+DEFAULT:
+NON conservare raw payload nel CORE.
+
+Conservare:
+- source fingerprint;
+- source locator;
+- counts;
+- record keys;
+- issue details bounded;
+- eventuale tiny excerpt redatto solo per error diagnosis.
+
+Raw snapshot opzionale solo quando:
+- fonte non è ripetibile;
+- audit/replay è business-critical;
+- CASE/import esplicitamente lo richiede;
+- errore complesso necessita forensic replay.
+
+Se necessario:
+- storage fuori dalle tabelle CORE business;
+- object/file storage privato o artifact storage;
+- hash nel Run;
+- retention corta.
+
+Retention proposta:
+
+Run:
+- 24 mesi minimo per summary audit;
+- success run può essere mantenuta più a lungo perché leggera.
+
+Batch:
+- 12 mesi;
+- success batch aggregabile/purgabile dopo retention.
+
+Issue ERROR/FATAL:
+- 12-24 mesi.
+
+Warning:
+- 6-12 mesi.
+
+Record Event successful exact-lineage:
+- 90-180 giorni salvo repository sensibile.
+
+Record Event skip/reject/error:
+- 12 mesi.
+
+Raw artifact:
+- default 0 giorni perché non creato;
+- se creato per debug: 7-30 giorni;
+- se audit-critical: retention esplicitamente autorizzata per CASE.
+
+======================================================================
+N. OBSERVABILITY
+======================================================================
+
+Metriche minime derivabili da Run/Batch:
+- runs_total per repository/GW/importer/version/status;
+- duration_ms;
+- received;
+- inserted;
+- updated;
+- skipped;
+- rejected;
+- warning_count;
+- error_count;
+- insert_rate;
+- skip_rate;
+- reject_rate;
+- records_per_second;
+- retries;
+- partial runs;
+- repeated failure code.
+
+Filtri amministrativi:
+- periodo;
+- repository;
+- Game World;
+- importer/version;
+- source type;
+- status;
+- issue code.
+
+Alert suggeriti:
+- schema mismatch improvviso;
+- reject rate > soglia;
+- reference resolution failure > soglia;
+- stessa run fallita ripetutamente;
+- importer version non prevista;
+- destination constraint violation;
+- run stuck in WRITING oltre timeout.
+
+Nessuna tabella metrics separata necessaria in V1 iniziale.
+
+======================================================================
+O. CURRENT IMPORTERS MIGRATION PATH
+======================================================================
+
+AUDIT CURRENT STATE
+
+1. UNIVERSAL GATEWAY
+Versione runtime nel codice: 2.2.13.
+Supporta IMPORT/CHATGPT.
+Esiste già un ramo `IMPORT + route_mode=explicit`.
+
+Punto positivo:
+- trasporto già centralizzato;
+- routing GW/DB già noto;
+- request/response JSON già usato;
+- batch insert e transaction support esistenti;
+- schema/type validation esiste nel core tradizionale;
+- alcuni repository hanno strict validators dedicati.
+
+Limiti incompatibili col target V1:
+- ingress explicit riceve target_database/target_table;
+- target table ingress è validata con regex/prefix, non solo registry semantico;
+- insert-only;
+- nessun run persistence;
+- nessun adapter contract;
+- nessun update/skip engine;
+- nessun importer/source version model strutturato;
+- nessuna provenance batch/row persistente.
+
+2. RESULTS
+Stato osservato:
+- supportato come repository import dal Universal Gateway;
+- import table con schema/type validation;
+- concetti fingerprint/sm_fixture_id già esistono nel dominio.
+
+Migrazione V1:
+- lasciare invariato extraction/parsing;
+- sostituire envelope finale con repository_key=results;
+- spostare row idempotency/semantic validation nel ResultsAdapter;
+- importer può mantenere temporaneamente il proprio read-before-write skip durante fase 1, ma deve diventare non-autoritativo e poi essere rimosso.
+
+3. SCHEDULE
+Stato osservato:
+- repository supportato dal Gateway;
+- generic import validation attuale.
+
+Migrazione V1:
+- payload sostanzialmente invariato;
+- ScheduleAdapter definisce stable identity e update policy;
+- nessuna necessità di riscrivere la navigazione Soccer Manager.
+
+4. MATCH REPORT
+Stato osservato:
+- supportato dal Gateway;
+- strict validator corrente controlla struttura esatta;
+- payload corrente include identity competizione, fixture, score, 5 JSON, fingerprint/imported_at.
+
+Migrazione V1:
+- spostare l'elenco campi e regole dal Gateway core al MatchReportAdapter;
+- mantenere one-row-per-fixture dove applicabile;
+- natural identity game_world_id + sm_fixture_id;
+- fingerprint per content equivalence/conflict;
+- nessuna mega-riscrittura importer.
+
+5. TRANSFERS
+Stato osservato:
+- strict validator corrente nel write path;
+- struttura repository specifica già separabile.
+
+Migrazione V1:
+- spostare contract nel TransfersAdapter;
+- mantenere parser/browser logic;
+- adapter governa identity, duplicate semantics e import number;
+- importer non deve più inviare target table/database.
+
+6. PLAYER CODEX
+Stato osservato:
+- strict validator dedicato esiste per GW Player Codex;
+- CORE possiede inoltre Player Codex Global/Data/Rating History canoniche.
+
+Migrazione V1:
+- PlayerCodexAdapter deve distinguere current profile, world-scoped profile e history/event semantics;
+- non usare un generico upsert per tutte le componenti;
+- migrare dopo Results/Schedule perché semanticamente più ricco.
+
+7. SM PLAYER STATS
+Stato osservato:
+- repository import supportato;
+- passa dal generic import contract corrente.
+
+Migrazione V1:
+- adapter definisce canonical identity per player + competition/scope;
+- chiarire snapshot/update policy nel contract;
+- extraction attuale può rimanere.
+
+8. CLUB/NATIONAL TEAM MAPPING
+Stato CORE attuale:
+- IMC Game World Club Mapping;
+- IMC Game World National Team Mapping.
+
+Migrazione V1:
+- adapter mapping usa global parent IDs + GW + SM world-scoped IDs;
+- provenance exact-row consigliata perché dataset piccolo e identity-critical.
+
+9. OLD `__imc-sm-master` INGESTION
+Stato osservato:
+router hard-fails con `legacy_core_removed: ingestion rebuild required`.
+
+Decisione V1:
+NON riattivarlo.
+NON usare i vecchi handler come runtime V1.
+Possono essere consultati solo per comprendere comportamenti storici, non come source of truth.
+
+======================================================================
+P. PHASED IMPLEMENTATION PLAN
+======================================================================
+
+PHASE 0 · CONTRACT FREEZE / INVENTORY
+- definire repository_key ufficiali;
+- inventory schema reali dei repository;
+- definire adapter contract interface;
+- definire V1 envelope;
+- definire current importer version reporting.
+Nessun cambio importer business logic.
+
+PHASE 1 · V1 SKELETON + RESULTS PILOT
+- creare le 4 tabelle V1 audit;
+- creare registry allowlist versionato;
+- creare orchestrator;
+- creare ResultsAdapter;
+- endpoint V1 accetta repository_key, non target table/db;
+- shadow/audit mode iniziale possibile;
+- poi write mode controllato.
+
+PHASE 2 · SCHEDULE + SM PLAYER STATS
+- adapter più semplici;
+- consolidare pattern schema/reference/idempotency.
+
+PHASE 3 · TRANSFERS + MATCH REPORT
+- spostare strict validators dal Gateway agli adapter;
+- introdurre skip/conflict semantics repository-specifiche.
+
+PHASE 4 · PLAYER CODEX
+- current profile + history policy;
+- provenance più ricca dove serve;
+- evitare generic upsert distruttivi.
+
+PHASE 5 · GLOBAL MAPPINGS
+- Club Mapping adapter;
+- National Team Mapping adapter;
+- exact-row provenance default.
+
+PHASE 6 · ADMIN / OBSERVABILITY / RETENTION
+- UI run browser;
+- issue explorer;
+- retention jobs;
+- alerting.
+
+PHASE 7 · REMOVE COMPATIBILITY SHIMS
+- gli importer usano solo V1 envelope;
+- rimuovere explicit target_database/target_table path per IMPORT ordinario;
+- mantenere Gateway amministrativo separato per CHATGPT/ops secondo policy.
+
+======================================================================
+Q. FIRST EXECUTION CASE RECOMMENDED
+======================================================================
+
+Primo CASE esecutivo raccomandato:
+
+"IMPLEMENT IMC INGESTION & PROVENANCE V1 SKELETON + RESULTS ADAPTER PILOT"
+
+Scope consigliato:
+1. creare solo le 4 tabelle audit V1;
+2. definire V1 envelope e registry in codice;
+3. nessun DDL runtime;
+4. implementare un solo adapter: Results;
+5. integrare un solo importer Results inizialmente;
+6. mantenere payload Results esistente il più possibile;
+7. eseguire shadow validation/read-before-write comparison prima di togliere lo skip importer-side;
+8. verificare inserted/skipped/conflict counters;
+9. verificare run/batch/issues;
+10. nessuna migrazione contemporanea di Schedule/Match Report/etc.
+
+Motivazione:
+Results possiede già fixture identity + fingerprint e rappresenta il test migliore per idempotency/duplicate semantics senza la complessità JSON del Match Report o la semantica multi-entity del Player Codex.
+
+======================================================================
+R. WHAT NOT TO BUILD
+======================================================================
+
+NON costruire:
+
+1. un nuovo `CREATE TABLE IF NOT EXISTS` dinamico;
+2. una tabella source/raw per ogni importer;
+3. una copia V1 di `source_snapshots`;
+4. una copia V1 separata di `import_errors` e `ingestion_errors`;
+5. un GenericAdapter che accetta qualsiasi table name;
+6. target_database / target_table controllati dall'importer;
+7. SQL arbitrario dall'importer;
+8. una provenance completa con copia JSON di ogni row successful;
+9. un mega-schema che conosce tutti i campi Results/Schedule/etc. in una sola tabella ingestion;
+10. una registry DB modificabile dall'input runtime;
+11. un secondo normalizer concorrente con gli adapter;
+12. un sistema di retry che reinserisce alla cieca i batch;
+13. una transaction globale di migliaia di righe per import massivi se basta atomicità batch;
+14. una UI amministrativa prima che run/batch/issues siano stabili;
+15. la riattivazione di `__imc-sm-master` legacy ingestion;
+16. dipendenze FK dalle tabelle business verso i log ingestion che impediscano retention;
+17. una nuova versione chiamata V2.
+
+======================================================================
+S. V1 ENVELOPE LOGICO PROPOSTO
+======================================================================
+
+REQUEST ENVELOPE, concettualmente:
+
+- channel = IMPORT
+- ingestion_version = 1
+- repository_key
+- game_world_id nullable per global
+- source:
+    type
+    name
+    version
+    locator nullable
+    fingerprint nullable
+- importer:
+    name
+    version
+- idempotency_key
+- run_uuid nullable su resume, altrimenti generato server-side
+- batch_number
+- batch_idempotency_key
+- atomic / transaction preference, se adapter permette scelta
+- rows
+- trace_id nullable
+
+CAMPI ESPRESSAMENTE NON PREVISTI NEL V1 IMPORT ENVELOPE:
+- target_database
+- target_table
+- sql
+- ddl
+- arbitrary action
+
+RESPONSE ENVELOPE:
+- ok
+- run_uuid
+- batch_id
+- repository_key
+- game_world_id
+- adapter_name/version
+- status
+- received
+- validated
+- inserted
+- updated
+- skipped
+- rejected
+- warnings
+- errors
+- retryable
+- trace_id
+
+======================================================================
+T. TRANSACTION / PARTIAL FAILURE POLICY
+======================================================================
+
+Default raccomandato:
+ATOMIC_BATCH.
+
+Perché:
+- limita rollback size;
+- permette resume;
+- scala meglio;
+- mantiene consistenza locale.
+
+ATOMIC_RUN:
+solo dataset piccoli/identity-critical quando adapter lo dichiara.
+Esempio plausibile: mapping piccoli.
+
+PARTIAL_ALLOWED:
+solo repository dove record indipendenti possono essere accettati senza compromettere coerenza.
+
+Regole retry:
+- non reinserire batch già COMPLETED;
+- batch idempotency impedisce doppio commit;
+- retry solo failure retryable;
+- record reject non retryable resta reject finché source/contract cambia;
+- retry genera attempt increment o run collegata secondo failure stage.
+
+Logical compensation:
+NON automatica in V1 base.
+Un batch già committato non viene cancellato genericamente se un batch successivo fallisce.
+Compensation è adapter-specific e deve essere esplicitamente autorizzata.
+
+======================================================================
+U. FINAL RECOMMENDATION
+======================================================================
+
+VERDICT ARCHITETTURALE:
+APPROVE V1 DESIGN DIRECTION.
+
+Il sistema minimo corretto è:
+- Universal Gateway come transport;
+- nuovo V1 orchestrator;
+- registry allowlisted in codice;
+- adapter repository-specifici;
+- 4 entità audit/provenance comuni;
+- idempotency a livello run + row policy adapter;
+- transaction batch-first;
+- sparse row provenance;
+- raw payload OFF di default;
+- Database Manager unico boundary DDL;
+- nessun runtime capace di creare schema legacy/non-IMC.
+
+La migrazione degli importer può essere progressiva e non richiede una mega-riscrittura.
+Il primo pilot deve essere Results.
+
+FINAL STATUS: COMPLETED
+DB WRITES EXECUTED: NONE
+CODE WRITES EXECUTED: NONE
+DEPLOYS EXECUTED: NONE
