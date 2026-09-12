@@ -1,0 +1,148 @@
+CASE_ID: IMC-DB-001-09
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-12
+TOPIC: CREATE_GAME_WORLD_NATIONAL_TEAM_MAPPING
+
+IMC | DATABASE MANAGER
+CREATE + POPULATE `IMC Game World National Team Mapping`
+
+CONTESTO AUTORITATIVO
+IMC-DB-001-07 ha concluso in READ ONLY che il mapping National Team per Game World esiste già integralmente nelle sorgenti tecniche IMC Nexus/Supabase per GW001–GW009 ed è coerente 720/720.
+
+DECISIONE DELLA DIREZIONE
+La mappatura National Team per Game World DEVE essere materializzata nel CORE MySQL Aruba secondo lo stesso principio di `IMC Game World Club Mapping`.
+
+AUTORIZZAZIONE
+Questo CASE AUTORIZZA:
+- DDL controllato necessario a creare UNA sola nuova tabella IMC canonica;
+- popolamento iniziale della tabella con i 720 mapping GW001–GW009 già verificati;
+- FK/UNIQUE/INDEX coerenti con il modello approvato;
+- verifiche finali di parity e integrità.
+
+NON autorizza:
+- ricreazione di strutture legacy;
+- modifica distruttiva delle 11 tabelle IMC esistenti;
+- inventare dati GW010;
+- aggiungere colonne non necessarie rispetto al modello approvato;
+- modifiche applicative non strettamente necessarie alla materializzazione/verifica DB.
+
+TARGET
+CORE `Sql1956795_1`
+
+Nuova tabella:
+`IMC Game World National Team Mapping`
+
+MODELLO AUTORIZZATO
+Una riga = una National Team globale all'interno di un Game World con il relativo identificativo Soccer Manager world-scoped.
+
+COLONNE
+1. `National Team ID`
+   - BIGINT NOT NULL
+   - global identity IMC
+   - parent canonico: `IMC National Team Codex Global`.`id`
+
+2. `National Team Name`
+   - TEXT/VARCHAR compatibile con il naming CORE
+   - NOT NULL
+   - display name denormalizzato per coerenza con `IMC Game World Club Mapping`
+   - fonte canonica del nome resta `IMC National Team Codex Global`
+
+3. `Game World`
+   - VARCHAR compatibile con `IMC Game World Codex Global`.`IMC GW`
+   - NOT NULL
+   - valori GW001–GW009 nel popolamento iniziale
+   - GW010 supportato dallo schema ma NON popolato senza dato reale
+
+4. `SM National Team ID`
+   - BIGINT NOT NULL
+   - Soccer Manager National Team ID specifico del Game World
+
+NON includere:
+- active
+- managed
+- JSON worlds
+- campi legacy/tecnici non necessari
+
+CHIAVI / CONSTRAINT
+PRIMARY KEY raccomandata:
+(`Game World`, `SM National Team ID`)
+
+UNIQUE:
+(`Game World`, `National Team ID`)
+
+FK:
+1. `Game World` -> `IMC Game World Codex Global`.`IMC GW`
+2. `National Team ID` -> `IMC National Team Codex Global`.`id`
+
+INDEX aggiuntivo:
+- `National Team ID`
+
+Prima dell'esecuzione verifica tipo/charset/collation esatti delle colonne parent e adegua i tipi in modo compatibile.
+
+SORGENTE DI POPOLAMENTO
+SOURCE primaria:
+Supabase / IMC Nexus
+project ref: `toanuzojdkfjgucztpze`
+`public.national_team_codex_global`
+
+Usare:
+- `id` -> National Team ID
+- `n` -> National Team Name
+- chiavi `worlds.GW001` ... `worlds.GW009`
+- `worlds[GW].sm_nation_id` -> SM National Team ID
+
+SOURCE di verifica indipendente:
+`gw001_gw_national_teams` ... `gw009_gw_national_teams`
+
+Il risultato atteso già certificato da IMC-DB-001-07 è:
+- 80 National Team per GW
+- 9 GW
+- 720 righe totali
+- 0 null
+- 0 duplicate global nation within GW
+- 0 duplicate SM nation ID within GW
+- 720/720 parity con le tabelle per-GW
+
+PROCEDURA OBBLIGATORIA
+1. Leggi stato corrente di `Sql1956795_1` e struttura delle tabelle parent.
+2. Pianifica migration con Database Manager `plan_migration`.
+3. Verifica che la migration crei esclusivamente la nuova tabella IMC e relativi constraint/index.
+4. Esegui migration controllata con `execute_migration`.
+5. Popola 720 righe da Supabase/IMC Nexus senza matching per nome quando la global identity `id` è già disponibile.
+6. Non inserire alcuna riga GW010.
+7. Verifica row count per GW.
+8. Verifica FK integrity.
+9. Verifica UNIQUE/PK.
+10. Verifica parity contro `national_team_codex_global.worlds` e contro le nove tabelle per-GW.
+11. Verifica che nessuna tabella non-IMC sia stata creata.
+12. Verifica stato finale del CORE.
+
+CRITERI DI ACCEPTANCE
+Il CASE è completato solo se:
+- `IMC Game World National Team Mapping` esiste nel CORE;
+- row count = 720;
+- GW001–GW009 = 80 righe ciascuno;
+- GW010 = 0 righe;
+- 0 null sui 4 campi principali;
+- 0 duplicati su (`Game World`,`SM National Team ID`);
+- 0 duplicati su (`Game World`,`National Team ID`);
+- 720/720 global IDs trovano parent nel National Team Codex;
+- 720/720 Game World trovano parent nel Game World Codex;
+- 720/720 parity con la source primaria;
+- 720/720 parity con le fonti per-GW;
+- CORE contiene esclusivamente tabelle IMC.
+
+OUTPUT AUTORITATIVO
+`tickets/DB/2026/IMC-DB-001-09/RESPONSE.txt`
+
+La RESPONSE deve riportare:
+- migration name/id;
+- SQL schema finale;
+- conteggi per GW;
+- esito constraint/FK;
+- esito parity source primaria;
+- esito parity fonti per-GW;
+- prova GW010=0;
+- SHOW TABLES finale;
+- certificazione finale COMPLETED/NOT COMPLETED.
