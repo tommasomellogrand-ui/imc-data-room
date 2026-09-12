@@ -1,0 +1,218 @@
+CASE_ID: IMC-ENG-009-03
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-12
+TOPIC: MINISITE_CORE_IMPLEMENTATION_BLUEPRINT
+
+IMC | LEAD FRONTEND & PLATFORM ENGINEER
+MINISITE CORE · FINAL IMPLEMENTATION BLUEPRINT
+
+CONTESTO AUTORITATIVO
+IMC-ENG-009-02 è stato approvato dalla Direzione e ha ricevuto FINAL CREATIVE SIGN-OFF in IMC-CREATIVE-001-02.
+
+Architettura definitiva approvata:
+ONE IMC MINISITE CORE
+→ TWO UX FAMILY CONTRACTS
+   → SINGLE FAMILY · GOLDEN MASTER GW001
+   → MULTI/GOLD FAMILY · GOLDEN MASTER GW007
+→ GW CREATIVE PACKAGE
+→ OPTIONAL FEATURES / SIGNATURE COMPONENTS
+
+Principio definitivo:
+CORE OWNS UNIVERSAL BEHAVIOR
+UX FAMILY OWNS CROSS-GW PREDICTABILITY
+GW PACKAGE OWNS CREATIVE IDENTITY
+FEATURES OWN OPTIONAL CAPABILITIES
+
+PREDICTABILITY LIVES IN BEHAVIOR.
+IDENTITY LIVES IN COMPOSITION.
+
+Questo CASE NON autorizza ancora l'implementazione generale.
+Devi trasformare l'architettura approvata in un BLUEPRINT ESECUTIVO concreto e verificabile, leggendo prima lo stato reale del repository `tommasomellogrand-ui/imc-website`.
+
+OBIETTIVO
+Produrre il piano definitivo con cui l'architettura verrà implementata per fasi, senza degradare GW001 o GW007 e senza introdurre template creep.
+
+1 · REPOSITORY TARGET ARCHITECTURE
+Proponi la struttura concreta di directory/file per:
+- Universal Minisite Core;
+- SINGLE Family Contract;
+- MULTI/GOLD Family Contract;
+- GW Creative Packages;
+- optional feature modules;
+- signature components;
+- semantic contracts;
+- shared data selectors/view models;
+- test/golden-master infrastructure.
+
+Per ogni directory/file principale indica responsabilità e ownership.
+
+2 · CURRENT → TARGET MAP
+Leggi l'implementazione attuale e indica, file/directory per file/directory:
+- KEEP AS IS;
+- ADAPT;
+- MOVE/EXTRACT;
+- REPLACE;
+- NEW;
+- RETIRE LATER.
+
+Evitare riscritture totali non necessarie. Privilegiare estrazione/adattamento progressivo e modifiche reversibili.
+
+3 · GW001 GOLDEN MASTER SINGLE
+Definisci esattamente come:
+- congelare baseline route/navigation/behavior;
+- congelare baseline visuale/editoriale;
+- estrarre contratti SINGLE dall'esistente;
+- introdurre Core/adapter dietro il rendering attuale;
+- preservare Home, Competition, Match, Archive e signature components;
+- dimostrare prima/dopo che non esiste regressione percettibile o funzionale.
+
+GW001 NON deve essere riscritto dentro un template SINGLE.
+Il Core deve essere validato contro GW001.
+
+4 · GW007 GOLDEN MASTER MULTI/GOLD
+Definisci come:
+- congelare baseline attuale;
+- estrarre context-first behavior;
+- mantenere Four Kingdoms come identità esclusiva;
+- implementare FIXED_CONTEXT_SET / TERRITORY / KINGDOM senza branching if(GW007);
+- generalizzare soltanto il comportamento family-level;
+- preservare integralmente map, territorial storytelling, visual language e composition.
+
+5 · SINGLE FAMILY CONTRACT
+Specifica il contratto implementabile per:
+- route semantics;
+- primary destinations;
+- navigation behavior;
+- Competition-first context;
+- Results/Schedule/Standings;
+- Match as first-class object;
+- Hub→Detail semantics;
+- mobile behavior;
+- deep-link/back;
+- context persistence quando pertinente.
+
+6 · MULTI/GOLD FAMILY CONTRACT
+Specifica il contratto implementabile per:
+- context hierarchy;
+- four primary context entries;
+- complete context access;
+- persistent Country/Territory/Division context;
+- family navigation;
+- mobile behavior;
+- deep-link/back;
+- context switching.
+
+7 · DYNAMIC TOP-4 COUNTRY
+Definisci concretamente:
+- authoritative data inputs;
+- active-manager definition;
+- Country resolution;
+- distinct manager counting;
+- deterministic ranking;
+- tie-break;
+- fallback <4 Country attivi;
+- stale/missing data behavior;
+- selector/domain function;
+- view-model contract;
+- API/data boundary;
+- test cases.
+
+Nessun hardcoding per GW002/GW003/GW008 o Country specifici.
+GW007 usa FIXED_CONTEXT_SET come provider dichiarativo generale.
+
+8 · ONE CREATIVE FREEDOM CONTRACT
+I 12 Mandatory Creative Guardrails di IMC-CREATIVE-001-02 NON devono diventare 12 sistemi separati.
+Devono essere consolidati in UN SOLO `Creative Freedom Contract` implementabile e testabile.
+
+Il Blueprint deve tradurre i guardrail in requisiti tecnici concreti che proteggano almeno:
+- Golden Master non-degradation;
+- semantic contract ≠ visual template;
+- composition sovereignty;
+- signature components first-class;
+- theme oltre palette/font;
+- motion ownership;
+- responsive composition freedom;
+- editorial storytelling;
+- asset sovereignty;
+- Top-4 come information logic, non visual component;
+- minimum information hierarchy come floor;
+- new-world stress test.
+
+Indica cosa viene verificato automaticamente e cosa richiede review percettiva/Creative Direction.
+
+9 · CONTRACT SET
+Proponi forma, responsabilità e relazione dei contratti da congelare prima dell'esecuzione:
+- Core Behavior Contract;
+- SINGLE Family Contract;
+- MULTI/GOLD Family Contract;
+- Creative Freedom Contract;
+- Component Semantic Contracts.
+
+Evita over-specification visuale.
+
+10 · TEST & NON-REGRESSION STRATEGY
+Definisci:
+- functional regression;
+- route/deep-link/back tests;
+- responsive/mobile tests;
+- accessibility tests;
+- visual regression;
+- Golden Master screenshots/baselines;
+- data-state tests;
+- Top-4 ranking tests;
+- new-world stress test;
+- rollback criteria.
+
+GW001 e GW007 sono test di accettazione del sistema.
+
+11 · PHASED EXECUTION PLAN
+Proponi una sequenza di implementation CASE piccoli, reversibili e verificabili.
+
+Per ogni fase indica:
+- obiettivo;
+- file/directory toccati;
+- cosa NON viene toccato;
+- dipendenze;
+- test;
+- rollback;
+- acceptance criteria;
+- rischio LOW/MEDIUM/HIGH.
+
+La sequenza deve evitare un mega-refactor atomico.
+
+Come riferimento, valuta ma NON assumere automaticamente questa possibile progressione:
+Phase 1 · contracts/scaffolding
+Phase 2 · GW001 adapter/golden master
+Phase 3 · GW007 adapter/golden master
+Phase 4 · family contracts/shared selectors
+Phase 5 · primo GW reale aggiuntivo
+Phase 6 · rollout progressivo
+
+Se proponi un ordine migliore, motivarlo.
+
+12 · FIRST EXECUTION CASE
+Alla fine indica quale deve essere il PRIMO CASE operativo successivo:
+- scope esatto;
+- file esatti previsti;
+- verifiche;
+- acceptance criteria;
+- rollback.
+
+NON eseguirlo in questo CASE.
+
+VINCOLI
+- READ ONLY / DESIGN ONLY.
+- Nessuna modifica al repository.
+- Nessun commit.
+- Nessun deploy.
+- Nessuna modifica DB.
+- Nessuna modifica live.
+- Nessuna normalizzazione grafica di GW001/GW007.
+- Nessun if(GW...) nel Core come strategia architetturale.
+- Nessuna nuova decisione creativa che contraddica il FINAL CREATIVE SIGN-OFF.
+
+OUTPUT AUTORITATIVO
+`tickets/ENG/2026/IMC-ENG-009-03/RESPONSE.txt`
+
+La RESPONSE deve essere sufficientemente concreta da permettere alla Direzione di autorizzare i successivi CASE di implementazione uno per volta senza dover ridiscutere l'architettura generale.
