@@ -1,0 +1,9 @@
+CASE_ID: IMC-ENG-009-03
+AREA: ENG
+DOMAIN: MINISITE_PLATFORM
+GW: GLOBAL
+TOPIC: MINISITE_CORE_IMPLEMENTATION_BLUEPRINT
+TAGS: minisite-core, ux-family, single, multi-gold, gw001, gw007, golden-master, creative-freedom-contract, implementation-blueprint
+CASE_KIND: ITERATION
+ROOT_CASE_ID: IMC-ENG-009
+MODE: READ_ONLY_DESIGN
