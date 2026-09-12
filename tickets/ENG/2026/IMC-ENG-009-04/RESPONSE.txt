@@ -1,0 +1,249 @@
+CASE_ID: IMC-ENG-009-04
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-12
+TOPIC: MINISITE_PLATFORM_PHASE_1_GW001_GW007
+STATUS: COMPLETED_WITH_DOCUMENTED_LIMITS
+
+1. CONSEGNA
+Foundation reale creata in minisite/platform/, separata dal runtime live.
+Scope: GW001, GW007 e foundation/test condivisi necessari ai due Golden Master.
+Nessun renderer migrato. Nessuna modifica a DB, Gateway, asset, CSS, HTML o JavaScript live dei due GW. Nessun altro mondo migrato.
+Phase 2 NON eseguita.
+
+2. FONTI E PRE-FLIGHT
+REQUEST 009-04 letto integralmente, blob 633b4b1dbfd3cd5f80850cf9fecd1a682dc392ea.
+ENG-009-02 RESPONSE letto, blob c1c22e1e801b1cca199c7322659a68dcff19d5a9.
+CREATIVE-001-02 RESPONSE letto integralmente, FINAL CREATIVE SIGN-OFF APPROVED, blob 257b5b0eba22d0cde6ffdb9b902393669845185e.
+ENG-009-03 RESPONSE letto per intero come effettivamente registrato, blob 4893323fb7d73b028523348a471c815d9663ffaf.
+LIMITAZIONE DELLA FONTE: il file 009-03 termina materialmente alla sezione 8.2, dopo "assignment.game_world_id == current GW". Confermato tramite fetch_file, lettura delle righe finali e fetch_blob. Non è stata inventata la continuazione. Il perimetro implementato segue i requisiti espliciti di 009-04 e i contratti completi precedenti. Ranking dinamico non implementato.
+
+Repository autoritativo: tommasomellogrand-ui/imc-website.
+Branch: main.
+Baseline commit: 6295bec41fceec7dc9a410016c2ea0dd9d1d909d.
+Stato iniziale checkout: nessuna modifica preesistente.
+Nessun AGENTS.md trovato nell'albero completo del repository.
+Stato corrente dei file di workflow letto prima della modifica.
+Nuove directory platform/tests assenti alla baseline.
+
+GW001:
+- Dieci destinazioni attuali: index, competitions, results, schedule, standings, match, manager, player, club, archive.
+- Entrypoint: exploration-data.js seguito da exploration.js; exploration-fonts.css ed exploration.css.
+- visual-review.html: superficie di revisione separata, larghezze 390/360/1440.
+- app.js, home-app.js e stili precedenti restano legacy non modificati.
+- legacy.html è l'unico riferimento nel package a /minisite/shared/app-core.js, con query GW001_MASTER_HOME_1; non è nel manifest di deploy.
+- Il path minisite/shared/app-core.js non esiste nell'albero autoritativo.
+
+GW007:
+- Quattordici destinazioni: index, world, kingdom, map, competitions, results, schedule, standings, match, manager, player, club, transfers, rivalries.
+- Entrypoint: data.js seguito da app.js; style.css.
+- review.html: superficie separata con iframe 390/1440.
+- Nessun riferimento ai due app-core condivisi nel package corrente o nel relativo deploy.
+
+Riferimenti storici pertinenti:
+- gameworld001/index.html e gameworld007/index.html caricano /site-assets/gameworld/app-core.js?v=BUILD_ID.
+- site-assets/gameworld/app-core.js conserva mapping, demo IDs e shell per GW; resta immutato e non è usato come nuovo Core.
+- Nessun mass replacement eseguito.
+
+Workflow pertinenti:
+- deploy-minisite-gw001.yml: manifest exploration, verifica FTPS/HTTP; invariato.
+- deploy-minisite-gw007.yml: package corrente, decodifica asset base64, verifica FTPS/HTTP; invariato.
+- deploy-website-aruba.yml: broad upload storico. Modifica minima: aggiunti tre paths-ignore per platform, tests e nuovo workflow foundation. Necessario a impedire upload estranei alla Phase 1.
+- minisite-platform-foundation.yml: nuovo workflow senza deploy e senza secrets.
+Controllati i trigger push degli altri workflow: questo changeset attiva solo foundation.
+
+3. ARCHITETTURA IMPLEMENTATA
+core/bootstrap.js assembla esplicitamente famiglia registrata, URL map del package, read adapter e registri locali all'istanza. Nessun listener, fetch, DOM o history write durante bootstrap.
+core/router.js: codec puro di route e query, round-trip Unicode, hash, unknown route, nessun URL live modificato.
+core/context.js: dimensioni dichiarative, validazione anche dipendente dal parent, reset valori incompatibili, fallback dichiarato dalla famiglia.
+core/declaration.js: validazione versioni, context type, capabilities minime e provider.
+core/registry.js e registries.js: capability/renderer/extension registries, rifiuto duplicati, semantic validation per renderer, cleanup inverso e idempotente.
+features/catalog.js: dichiarazioni Archive, Territory Map, Rivalries; nessun renderer estratto.
+data/client.js: adapter READ iniettato, AbortSignal, cursor, copia dei dati, nessun endpoint/DB/cache implicito.
+data/source-state.js: loading, ready, empty, error, not-found, stale, degraded con provenance.
+data/selectors/context-entries.js: selezione FIXED_CONTEXT_SET indipendente dal rendering; ordine del package, quattro primari quando disponibili, complete set conservato.
+data/view-models/context-entry.js: primo boundary semantico selector → view model → renderer.
+utilities/contract.js: immutabilità e validazione minime.
+Nessun if(GW001)/if(GW007), identificatore di mondo, DOM template o endpoint di produzione nei moduli JS platform.
+
+4. CONTRACT SET
+- Core Behavior Contract v1.
+- SINGLE Family Contract v1.
+- MULTI_GOLD Family Contract v1.
+- UNICO Creative Freedom Contract v1 con tutti i dodici guardrail approvati.
+- Component contracts minimi: Match, Competition, Standings, Context Entry.
+
+I contract definiscono semantica, stati, azioni, accessibilità e minimum information floor; non impongono markup/skin/layout.
+Ownership del package: compositions, renderers, signatures, theme, motion, assets, responsive, editorial.
+Il synthetic new-world stress test registra una composition differente senza cambiare il Core.
+La non-degradazione percettiva resta anche un gate umano: validare un oggetto non certifica la qualità creativa.
+
+Dichiarazioni offline, sotto tests/golden-master:
+GW001: family=SINGLE, context.type=COMPETITION.
+GW007: family=MULTI_GOLD, context.type=TERRITORY, model=KINGDOM, provider=FIXED_CONTEXT_SET, entry ENG/ESP/GER/ITA.
+Nessuna dichiarazione è stata collegata ai runtime live.
+RANKED_ACTIVE_MANAGER_COUNTRIES è soltanto un provider futuro dichiarato, subordinato al data contract autoritativo.
+
+5. BASELINE GOLDEN MASTER
+source-baseline.json registra hash Git di tutti gli 83 file legacy dei due package e del vecchio core, compresi asset e configurazioni.
+Inventario completo HTML/data-page/script e route map reali versionati.
+30 stati browser verificati con heading atteso prima dell'archiviazione:
+- GW001: Home, Competition, Results, Schedule, Standings, Match, Archive × 390/1440.
+- GW007: Home, four-context/world, Kingdom, Territory Map, Results, Schedule, Standings/Power Ranking, Match × 390/1440.
+Snapshot semantici browser conservati in browser-evidence; alcune liste lunghe sono estratti esplicitamente marcati.
+Le larghezze sono quelle degli iframe di revisione esistenti, non emulazione iOS.
+
+GW001 signature inventory:
+cinema, titanium score plate, ranking spine, ivory chapter, historical annotation, archive narrative, dossier imagery, chart rhythm.
+
+GW007 signature inventory:
+Kingdom identities/colors, border scores, territory map/regions/nodes, balance bars, manifesto paper, converging paths, territorial motion.
+
+Comportamento corrente documentato senza correggerlo:
+- GW001 division/date inizializzano Results da URL; i filtri successivi non aggiornano URL.
+- GW001 Schedule non contiene link Match; Standings è demo; unknown Match ID produce not-found.
+- GW007 k inizializza Results/Schedule; cambio filtro non aggiorna URL.
+- GW007 navigazione primaria generalmente perde k; Kingdom links mantengono il territorio.
+- GW007 Power Ranking è derivato dal singolo turno, non classifica campionato; k non filtra questa pagina.
+- GW007 Match sconosciuto/mancante usa la fixture Real Madrid predefinita.
+- Back/Forward sono history nativa, non router SPA.
+- Nessuna normalizzazione dell'esperienza per forzarla nel contratto futuro.
+
+Prove interattive:
+GW001 Results?division=1 → Match id=367418670 → Back ripristina URL division=1 e Platinum premuto → Forward ripristina fixture.
+GW007 Kingdom?k=ITA → Results?k=ITA con Italia selezionata → filtro ENG lascia URL k=ITA → Back torna Kingdom?k=ITA.
+Evidenze in interactions.json e verifica browser della navigazione.
+Focus/keyboard/mobile e data-state walkthrough ripetibile documentato nel README test; non dichiarato come audit completo di conformità.
+
+6. TEST ED ESITI
+Locale:
+- node --test minisite/tests/contracts.test.mjs: 10 PASS, 0 FAIL.
+- verify-isolation.mjs: 83 file PASS.
+- verifica con platform temporaneamente rimossa: 83 file PASS, platformPresent=false.
+- live-check.py: 64 file pubblici PASS, 0 differenze.
+- parsing YAML e controllo trigger: PASS; attivo soltanto foundation.
+- git diff check: PASS.
+
+CI sul commit finale:
+Workflow: Minisite Phase 1 foundation.
+Run ID: 34688449923.
+Job ID: 103539446636.
+STATUS: COMPLETED.
+CONCLUSION: SUCCESS.
+https://github.com/tommasomellogrand-ui/imc-website/actions/runs/34688449923
+Log verificati:
+- tests 10 / pass 10 / fail 0;
+- verifiedLegacyFiles 83, platformPresent true;
+- verifiedLegacyFiles 83, platformPresent false;
+- live pass true, files 64, failures [].
+Artifact: minisite-phase1-evidence / live-check.json.
+Nessun deploy GW001/GW007 necessario o attivato: runtime e output non cambiano.
+
+7. VERIFICA LIVE DOPO COMMIT
+Confronto HTTP in CI positivo su 64 file pubblici: HTML, JS, CSS, font, immagini e WebP GW007 decodificato secondo il deploy esistente.
+.htaccess non è richiesto via HTTP perché protetto; rimane coperto dall'hash repository.
+Reload browser:
+- GW001 match.html?id=367418670: THE FINAL WORD.
+- GW007 kingdom.html?k=ITA: ITALIA.
+Rendering presente e coerente con la baseline.
+Nei log browser esaminati figurano errori dell'estensione del browser, non errori attribuiti ai runtime dei minisiti; non viene dichiarata una certificazione globale della console.
+La verifica dimostra nessun cambiamento dei file live e continuità delle interazioni campionate, non l'assenza di qualunque difetto legacy.
+
+8. COMMIT E FILE
+Implementation commit:
+70d0bd0be0f1ea4a40245e4132d3bd4adf8dea5a
+https://github.com/tommasomellogrand-ui/imc-website/commit/70d0bd0be0f1ea4a40245e4132d3bd4adf8dea5a
+Branch main aggiornato senza force.
+Confronto GitHub verificato: 63 file, nessun file fuori dai due percorsi foundation/tests e dai due workflow indicati.
+
+File creati/modificati:
+- .github/workflows/deploy-website-aruba.yml
+- .github/workflows/minisite-platform-foundation.yml
+- minisite/platform/README.md
+- minisite/platform/contracts/components.js
+- minisite/platform/contracts/core-behavior.contract.js
+- minisite/platform/contracts/creative-freedom.contract.js
+- minisite/platform/core/bootstrap.js
+- minisite/platform/core/context.js
+- minisite/platform/core/declaration.js
+- minisite/platform/core/registries.js
+- minisite/platform/core/registry.js
+- minisite/platform/core/router.js
+- minisite/platform/data/client.js
+- minisite/platform/data/selectors/context-entries.js
+- minisite/platform/data/source-state.js
+- minisite/platform/data/view-models/context-entry.js
+- minisite/platform/families/multi-gold/contract.js
+- minisite/platform/families/single/contract.js
+- minisite/platform/features/catalog.js
+- minisite/platform/package.json
+- minisite/platform/utilities/contract.js
+- minisite/tests/README.md
+- minisite/tests/contracts.test.mjs
+- minisite/tests/golden-master/GW001/declaration.json
+- minisite/tests/golden-master/GW001/routes.json
+- minisite/tests/golden-master/GW007/declaration.json
+- minisite/tests/golden-master/GW007/routes.json
+- minisite/tests/golden-master/browser-evidence/GW001-1440-archive.md
+- minisite/tests/golden-master/browser-evidence/GW001-1440-competitions.md
+- minisite/tests/golden-master/browser-evidence/GW001-1440-index.md
+- minisite/tests/golden-master/browser-evidence/GW001-1440-match.md
+- minisite/tests/golden-master/browser-evidence/GW001-1440-results.md
+- minisite/tests/golden-master/browser-evidence/GW001-1440-schedule.md
+- minisite/tests/golden-master/browser-evidence/GW001-1440-standings.md
+- minisite/tests/golden-master/browser-evidence/GW001-390-archive.md
+- minisite/tests/golden-master/browser-evidence/GW001-390-competitions.md
+- minisite/tests/golden-master/browser-evidence/GW001-390-index.md
+- minisite/tests/golden-master/browser-evidence/GW001-390-match.md
+- minisite/tests/golden-master/browser-evidence/GW001-390-results.md
+- minisite/tests/golden-master/browser-evidence/GW001-390-schedule.md
+- minisite/tests/golden-master/browser-evidence/GW001-390-standings.md
+- minisite/tests/golden-master/browser-evidence/GW007-1440-index.md
+- minisite/tests/golden-master/browser-evidence/GW007-1440-kingdom.md
+- minisite/tests/golden-master/browser-evidence/GW007-1440-map.md
+- minisite/tests/golden-master/browser-evidence/GW007-1440-match.md
+- minisite/tests/golden-master/browser-evidence/GW007-1440-results.md
+- minisite/tests/golden-master/browser-evidence/GW007-1440-schedule.md
+- minisite/tests/golden-master/browser-evidence/GW007-1440-standings.md
+- minisite/tests/golden-master/browser-evidence/GW007-1440-world.md
+- minisite/tests/golden-master/browser-evidence/GW007-390-index.md
+- minisite/tests/golden-master/browser-evidence/GW007-390-kingdom.md
+- minisite/tests/golden-master/browser-evidence/GW007-390-map.md
+- minisite/tests/golden-master/browser-evidence/GW007-390-match.md
+- minisite/tests/golden-master/browser-evidence/GW007-390-results.md
+- minisite/tests/golden-master/browser-evidence/GW007-390-schedule.md
+- minisite/tests/golden-master/browser-evidence/GW007-390-standings.md
+- minisite/tests/golden-master/browser-evidence/GW007-390-world.md
+- minisite/tests/golden-master/browser-evidence/interactions.json
+- minisite/tests/golden-master/browser-evidence/review.json
+- minisite/tests/golden-master/live-before.json
+- minisite/tests/golden-master/source-baseline.json
+- minisite/tests/live-check.py
+- minisite/tests/verify-isolation.mjs
+
+9. LIMITI
+- Fonte 009-03 materialmente tronca alla sezione 8.2; nessuna parte mancante inventata.
+- Nessuna pixel-regression certificata. Browser cloud senza resize esposto; review iframe utile per composizione, screenshot esterno potenzialmente ritagliato; full-page capture ha prodotto protocol timeout. Capture non verificati/scambiati per pagina precedente esclusi dalla consegna.
+- Minimo harness sostenibile: review surfaces esistenti + source/asset hash baseline + 30 snapshot semantici + test eseguibili senza npm install.
+- Pipeline screenshot con ambiente browser/font fisso e approvazione Creative da stabilire per adapter Phase 2. Nessuna dipendenza sproporzionata aggiunta alla CI.
+- Accessibility baseline non equivale a certificazione: registrati markup/navigazione e gap legacy; walkthrough documentato.
+- Runtime sincroni con snapshot: loading/error network non normalmente riproducibili. Stati nuovi verificati nel data boundary; nessun dato live inventato.
+- Nessun adapter o ranking dinamico live implementato.
+
+10. ROLLBACK
+Rimuovere minisite/platform non cambia alcun import dei minisiti.
+Rollback di non-dipendenza realmente eseguito in locale e in CI con platform assente.
+Per rimuovere tutta l'infrastruttura si può revertire il commit. Attenzione operativa documentata: ripristinare il precedente filtro broad-deploy può riattivare quel workflow; distinguere rimozione platform da ripristino del filtro.
+Nessun rollback DB/Gateway/asset o degli altri GW necessario.
+
+11. PROPOSTA PRECISA PHASE 2 — NON ESEGUITA
+CASE separato per GW001 adapter dietro exploration renderer:
+1. integrare l'eventuale continuazione autoritativa del Blueprint;
+2. fissare ambiente e baseline pixel approvata prima del cambio import;
+3. estrarre soltanto URL/context/navigation dietro output esistente;
+4. decidere esplicitamente quali gap legacy documentati siano autorizzati a cambiare;
+5. conservare URL, composition, imagery, typography, motion e firme editoriali;
+6. validare behavior/back, accessibility, responsive e Creative non-degradation;
+7. introdurre import adapter solo dopo i gate, con rollback al runtime precedente.
+GW007 resta Golden Master invariato fino al proprio CASE adapter.
+Nessun altro GW, DB, Gateway o provider ranked-country incluso automaticamente.
