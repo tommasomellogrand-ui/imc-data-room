@@ -1,0 +1,284 @@
+CASE_ID: IMC-DB-001-15
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_PATCH_UNBLOCK_AND_COMPLETE
+PARENT_CASE: IMC-DB-001-14
+STATUS: COMPLETED
+VERDICT: READY_FOR_MANUAL_TEST
+
+1. CONSEGNA
+
+Nuovo importer: tickets/DB/2026/IMC-DB-001-15/OUTPUT_RESULTS_IMPORT.js
+SHA256: 7a995320756bbf52abe1c8ea274b0ed6ca1daabb80db60c86e2eb7189719f55f
+Il sorgente originale non è stato sovrascritto.
+Nessuna distribuzione o sostituzione dello Shortcut operativo.
+La patch è validata offline; non è dichiarata validata in Soccer Manager live.
+
+2. INPUT AUTORITATIVI
+
+Letti integralmente e riutilizzati dal pre-flight 001-14 senza rifare
+l'analisi da zero:
+- IMC-DB-001-12/INPUT_RESULTS_IMPORT.js
+  SHA256 locale: 0ad2d6cbee23419c6a8512c95cecf525d29ba9b497bd5e94ae0c6efb27b201d6
+- IMC-DB-001-12/RESPONSE.txt
+- IMC-DB-001-13/RESPONSE.txt
+- IMC-DB-001-14/REQUEST.txt
+- IMC-DB-001-14/RESPONSE.txt, riletta dal repository in questo CASE.
+- IMC-DB-001-15/REQUEST.txt, letto integralmente.
+Tutti i percorsi CASE sono sotto tickets/DB/2026/ nel repository
+GitHub tommasomellogrand-ui/imc-data-room.
+
+DOM originali già recuperati dalla File Library, riutilizzati come
+JSON completi e fullHTML, senza sostituirli con altre versioni:
+- SM_DOM_20260912_130340.json, GW001 / Hertha BSC
+  2425188 byte
+  SHA256 f28081c396e0a58eade53f1dd3f4c169df0ac5afcec1dd7afa702922bf8b7c8a
+- SM_DOM_20260912_130458.json, GW007 / Real Betis
+  2538911 byte
+  SHA256 8f34253359f70ef12d61db62e7adfc2844bb3567b7d5c5a475dedcbfa36f5b8e
+
+RC-09 implementato secondo lo sblocco esplicito 001-15.
+Il typo non è presente nelle snapshot: il relativo test è SINTETICO,
+non viene presentato come osservazione del DOM originale.
+
+3. FINDING -> FIX / FUNZIONI
+
+RC-01 WORLD STRUCTURE
+Nuovi GW_STRUCTURE e worldStructure(): registry canonico esplicito.
+SINGLE: GW001, GW004, GW005, GW006, GW009.
+MULTI: GW002, GW003, GW007, GW008.
+Fonte: configurazione documentata nelle RESPONSE 001-12/13.
+GW_ROUTE e destinazioni MySQL sono rimasti invariati.
+World sconosciuto: errore, nessuna inferenza dal DOM.
+
+RC-02 RAW/CANONICAL
+pagerContext() restituisce action_raw/country_raw/division_raw/source.
+rawContext() aggiunge selected_country/selected_division dai value.
+canonicalContext() applica world structure e macro; context() restituisce
+solo il contesto canonico e il nome gruppo dal blocco Results corrente.
+CUS resta nel raw DOM e negli handler di navigazione; non entra nei
+campi persistiti SINGLE. I value MULTI sono codici (ESP), non etichette.
+
+RC-03 KEY
+competitionKey() usa rami espliciti e valida dimensioni obbligatorie e
+vietate. Nessun array.filter come grammar engine.
+INTERNATIONAL/NATIONS: country e division NULL.
+League: division obbligatoria, cifra 1-5.
+DOMESTIC MULTI: country di tre lettere mai CUS.
+Non-League DOMESTIC: division NULL secondo la specifica 001-13/14/15.
+Non sono state inventate eccezioni da select DOM residui.
+
+Grammatica implementata:
+SINGLE League: GW|DOMESTIC|league|division
+SINGLE DOMESTIC non-League: GW|DOMESTIC|action
+MULTI League: GW|country|DOMESTIC|league|division
+MULTI DOMESTIC non-League: GW|country|DOMESTIC|action
+INTERNATIONAL: GW|INTERNATIONAL|action
+NATIONS: GW|NATIONS|action
+
+RC-04 CONTROLLED CLUB
+team() conserva il parser MENU_clubOverviewDraw sul team node reale.
+Nuove currentClubIdentity() e currentClubWorldIdResolver().
+Identità: unico top-nav-title p visibile, nome normalizzato, CUSTOMERID;
+confermata durante la stabilizzazione della pagina e ricontrollata sulla
+riga. Controlled richiede nome corrispondente e team node privo di
+onclick/href, come nei due DOM reali.
+Resolver world-local intenzionalmente disabilitato, restituisce null.
+Nessuna lettura degli ID logo e nessun hardcode Hertha/Betis.
+resultRows() emette diagnostic UNRESOLVED_CONTROLLED_CLUB_ID oppure
+UNRESOLVED_TEAM_ID con GW/fixture/nome, senza nuove colonne persistite.
+La riga NEW con ID unresolved può essere inserita con null, come
+richiesto dalla policy transitoria 001-13.
+
+RC-05 CURRENT MANAGER
+managerId() mantiene priorità al PROFILE_viewFriendsProfileNew della
+riga, anche su anchor hidden. Solo se l'anchor esiste, non ha onclick e
+team() conferma controlled stabile, usa CUSTOMERID numerico valido.
+Altri club senza manager restano null; handler non riconosciuti non
+innescano un fallback generico.
+
+RC-06 SCOPING
+Nuovi screenRoot(), resultsRoot(), liveAll().
+Modificate divisionSelect(), countrySelect(), pagerContext(), context(),
+dateInfo(), resultButtons(), prevButton(), switchTo(), main().
+Competition lookup limitate a currentScreenA/Results; workingCopy escluso.
+Rimosso completamente il fallback action document-global. Se il pager
+Results visibile non offre un'action verificabile, la pagina fallisce
+in modo conservativo invece di usare altri blocchi/copie.
+Top-nav/CUSTOMERID restano fonti di identità globali esplicitamente
+necessarie, non fallback competition.
+
+RC-07 READINESS
+Nuove stateSnapshot(), waitForStableResultState().
+Modificate switchTo(), goPrevious(), processPage(), run(), plan().
+Poll ogni 500 ms, timeout 25 secondi. Sono richieste due snapshot
+consecutive uguali: raw/select/canonical context, data/stage/round,
+identità corrente e HTML dei blocchi delle righe (team, manager,
+punteggi e testo decisioni inclusi). Controllata concordanza pager/select.
+Cambio country/division: target richiesto e fixture set diverso dal
+precedente; lo switch riapre Results anche se AJAX torna su Tables.
+Precedenti: stesso raw context, fixture set cambiato e poi stabile.
+Nessun retry cieco del click precedente e nessuna scrittura dopo timeout.
+processPage() ristabilizza prima del parsing; STOP interrompe l'attesa.
+SINGLE: plan country disabilitato.
+MULTI DOMESTIC: country loop conservato; division plan ricalcolato
+all'interno del loop per ogni country. Division loop solo League.
+
+RC-08 IDEMPOTENZA
+Modificate preloadExisting(), splitExisting(), insertRows(), processPage().
+Nuove indexExisting(), classifyExisting().
+Map fixture -> Set fingerprint; conservato anche indice fingerprint.
+NEW: ID e fingerprint assenti -> insert.
+IDENTICAL: ID presente con unica versione fingerprint uguale -> skip.
+CHANGED_EXISTING: ID presente con fingerprint diverso, mancante oppure
+più versioni discordanti -> log/conteggio, nessun update.
+DUPLICATE_CONTENT: nuovo ID, fingerprint già indicizzato -> warning,
+nessuna scrittura.
+Rilevati duplicati/confitti anche entro lo stesso batch. Versioni
+confliggenti di uno stesso ID nuovo sono entrambe trattenute.
+Preload senza rows array o ID valido: errore, non DB vuoto presunto.
+Insert con written_rows diverso dal batch: interruzione senza retry
+automatico; aggiornamento indici solo dopo conferma completa.
+updateUI()/main() mostrano contatori CHANGED e DUPLICATE oltre agli
+skip identici. I log nominano le fixture confliggenti.
+
+RC-09 NORMALIZZAZIONE ESATTA
+STAGE_DICTIONARY e normalizeStageRound() usata da dateInfo().
+Unica voce: "Quarti di Finalee" -> "Quarti di Finale".
+Lookup esatto case-sensitive, nessun fuzzy matching o regex correttiva.
+Il clean preesistente del parser resta invariato. Stage e round validi
+restano invariati, incluso il leg Andata/Ritorno separato.
+
+4. TEST EFFETTUATI
+
+Metodo: Node.js + jsdom su fullHTML dei due JSON reali, script Soccer
+Manager non eseguiti. Layout/visibilità emulati per gli elementi e gli
+antenati display:none; getComputedStyle adattato al default opacity.
+Non è un browser Safari/iOS né una riproduzione della rete Soccer Manager.
+Fetch reale vietata nell'harness; nei test delle scritture fetch è un mock
+che registra i payload e restituisce risposte controllate.
+
+Syntax: node --check OUTPUT_RESULTS_IMPORT.js PASS.
+Suite DOM/context/idempotenza: 207 controlli PASS.
+Suite navigazione/scritture simulate: 12 controlli PASS.
+Il conteggio comprende la matrice delle action su tutti i nove GW.
+
+DOM GW001: 5 Results visibili, key GW001|DOMESTIC|league|4;
+sm_country NULL, raw CUS, 4 division option, country plan nullo.
+Fixture 367418946 AS Roma-Hertha: Roma 94078890, Hertha null,
+manager Hertha 13051324; punteggio 1-2 e data 2026-09-10.
+
+DOM GW007: 10 Results visibili, key GW007|ESP|DOMESTIC|league|1;
+sm_country ESP, 19 country option, 2 division option nello stato ESP.
+Fixture 380652387 Valencia-Betis: Valencia 34608397, Betis null,
+manager Betis 13051324; punteggio 0-5 e data 2026-09-09.
+Fixture FUTURA 380652396 usata solo come test parser row-scoped:
+Betis riconosciuto anche home, Elche ID 34608372; non importata nei Results.
+
+Confronto col parser originale sulle 15 fixture visibili:
+conservati ID fixture, nomi/ID club, score, date, stage/round, group/name,
+penalty/aggregate e status. Esclusi dal confronto invariato i soli campi
+intenzionalmente modificabili: country, key, fingerprint e manager.
+Manager controlled verificato separatamente; altri club senza ID non
+ricevono CUSTOMERID.
+
+Altri test PASS:
+- workingCopy spostato prima del current screen e action copia alterata:
+  contesto Results corretto preservato.
+- rimozione action live: nessun recupero da hidden/global fallback.
+- heading Fixtures Playoff non contamina dateInfo Results.
+- grammar matrix: nove GW, dieci action macro già supportate.
+- dimensioni non valide rifiutate.
+- quattro classi idempotenza e conflitti intra-batch.
+- più fingerprint storici per stesso ID -> CHANGED_EXISTING.
+- switch ESP->ENG, poi division 2, con mutazioni DOM asincrone.
+- manager modificato dopo il cambio fixture: attesa della stabilità.
+- goPrevious con fixture set cambiato (solo dispatch click simulato).
+- target errato -> timeout; STOP -> interruzione.
+- processPage mock: una chiamata insert_many soltanto per NEW;
+  IDENTICAL/CHANGED_EXISTING/DUPLICATE_CONTENT esclusi dal payload.
+- seconda passata: zero nuove chiamate insert.
+- preload malformato: errore fail-safe.
+- run MULTI con division options sostituite a cambio country:
+  sequenza ESP/1, ESP/2, ENG/1, ENG/2, ENG/3; replan verificato.
+
+RC-09 sintetico:
+normalizeStageRound("Quarti di Finalee") = "Quarti di Finale".
+null, "Quarti di Finale", "quarti di finalee", "Quarti di Finaleee",
+"Semifinale" restano invariati.
+Heading sintetica "Quarti di Finalee : gio 10 settembre 2026" attraverso
+DATEINFO produce stage corretto. Stage valido con Andata rimane corretto.
+
+5. LIMITI RESIDUI
+
+- Nessuna validazione live del Gateway, MySQL o Safari/iOS in questo CASE.
+- Due poll stabili riducono le race, non dimostrano che AJAX non possa
+  mutare nuovamente dopo la finestra osservata. Test manuale necessario.
+- Pagina vuota, date non parseabili, action non disponibile nel pager
+  visibile: timeout/errore conservativo. Non viene dichiarato completato
+  un contesto che non può essere verificato.
+- La riapertura Results dipende dagli handler originali e dalle policy
+  della pagina; un blocco CSP può richiedere verifica manuale.
+- Nessuna certificazione world-local del controlled club: null esplicito.
+- Registry locale copre soltanto i nove GW originali; eventuali future
+  eccezioni canoniche (es. playoff division-scoped) richiedono una regola
+  esplicita e una validazione dedicata, mai inferenze dal DOM.
+- Fingerprint hash originale conservato per compatibilità con lo storico:
+  è un FNV32 ripetuto, non un hash crittografico; collisioni teoriche
+  restano possibili. DUPLICATE_CONTENT segue l'indice fingerprint richiesto.
+- Nessuna protezione server-side nuova contro importer concorrenti;
+  eseguire il test con una sola istanza.
+- I conteggi segnalazioni sono occorrenze di scansione, non un audit unico
+  di tutte le fixture storiche del database.
+
+6. TEST MANUALE PER LA DIREZIONE
+
+Questo CASE non esegue test live né autorizza scritture DB della Work.
+L'esecuzione manuale dell'importer, quando autorizzata dalla Direzione,
+può inserire righe NEW. Non è una modalità dry-run.
+
+1. Scaricare OUTPUT_RESULTS_IMPORT.js dal CASE 001-15 e verificarne SHA256.
+2. Usare una copia di test dello Shortcut, conservando quello operativo;
+   incollare il file completo nell'azione JavaScript su pagina Safari.
+3. Aprire Soccer Manager autenticato, GW001, club Hertha, Results League.
+   Selezionare GW001 nell'interfaccia della copia di test.
+4. Verificare COUNTRY vuoto/—, division corretta e log unresolved Hertha.
+   Sulla snapshot equivalente D4 la key attesa è
+   GW001|DOMESTIC|league|4. La key non è un campo UI: verificarla sul
+   payload tramite inspector disponibile o con una successiva READ
+   autorizzata, senza modificare righe per il solo test.
+5. Seguire un cambio division e Precedenti: nessun salvataggio durante
+   transizione; controllare data, squadre e manager della pagina target.
+6. Se lo storico contiene già fixture con CUS/key precedente, aspettarsi
+   CHANGED_EXISTING e nessun update. IDENTICAL incrementa soltanto SKIP.
+7. Ripetere su GW007 / Betis / Results League ESP: COUNTRY ESP, key
+   GW007|ESP|DOMESTIC|league|1, Betis ID null e manager condizionale.
+8. Verificare almeno un cambio country e le division di quel country;
+   nessun riutilizzo del piano division del precedente country.
+9. Ripetere la stessa scansione: righe appena inserite e invariate devono
+   risultare IDENTICAL, con zero nuovi insert per quelle fixture.
+10. Provare STOP e un timeout osservabile: verificare arresto senza
+    scritture della pagina non verificata. Conservare log/fixture/context
+    in caso di anomalia e non rilanciare istanze concorrenti.
+11. DUPLICATE_CONTENT è già verificato col mock offline: non fabbricare
+    duplicati nel DB per riprodurlo. Non alterare dati storici per testare
+    RC-09; il test sintetico autorizzato ne costituisce l'evidenza.
+12. Solo dopo esito manuale positivo la Direzione potrà valutare la
+    sostituzione dello Shortcut; non avviene automaticamente in questo CASE.
+
+7. DATI STORICI E PERIMETRO
+
+CHANGED_EXISTING viene rilevato/loggato/conteggiato; la versione storica
+non viene aggiornata né cancellata. Nuove scansioni possono segnalarla
+nuovamente. Eventuale bonifica richiede un CASE distinto autorizzato.
+
+DB READ/WRITE eseguite dalla Work: NONE
+UPDATE/DELETE eseguiti o introdotti: NONE
+Gateway/schema/minisiti/altre famiglie importer modificati: NONE
+Production deploy: NONE
+Shortcut operativo distribuito/sostituito: NO
+Write GitHub: esclusivamente OUTPUT_RESULTS_IMPORT.js e RESPONSE.txt
+nel CASE IMC-DB-001-15.
+
+VERDICT: READY_FOR_MANUAL_TEST
