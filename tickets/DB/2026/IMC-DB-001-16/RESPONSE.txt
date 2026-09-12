@@ -7,355 +7,192 @@ STATUS: COMPLETED
 MODE: DESIGN_ONLY
 PARENT_CASES: IMC-DB-001-12, IMC-DB-001-13, IMC-DB-001-14
 
-IMC | DATABASE MANAGER
-RESULTS IMPORTER V2 · TECHNICAL DESIGN
+IMC | DATABASE MANAGER · RESULTS IMPORTER V2
 
-0. EXECUTIVE RESULT
-
-Solo DESIGN. Nessuna modifica DB/schema/importer/Gateway/GitHub/dati.
-Input: INPUT_RESULTS_IMPORT.js; RESPONSE 001-12/13/14; DOM reali GW001 SM_DOM_20260912_130340 e GW007 SM_DOM_20260912_130458.
-
-VERDICT: READY_FOR_IMPLEMENTATION.
-
-V2 mantiene: 26 campi Results, GW_ROUTE GW001-GW009, Gateway/write path insert_many, fingerprint 64 char, navigation generale e comportamento MULTI corretto.
-Cambia: world structure esplicita; raw context separato da canonical; scoping currentScreenA; controlled-club/manager handling; stable navigation; idempotenza 4-state.
+0. VERDICT
+READY_FOR_IMPLEMENTATION.
+Nessuna modifica DB/schema/importer/Gateway/GitHub/dati eseguita.
+Input letti: INPUT_RESULTS_IMPORT.js, RESPONSE 001-12/13/14, DOM reali GW001 SM_DOM_20260912_130340 e GW007 SM_DOM_20260912_130458.
+V2 mantiene 26 campi Results, GW_ROUTE, Gateway/insert_many e fingerprint 64 char. Cambia solo parsing/canonicalizzazione/readiness/idempotenza.
 
 1. WORLD STRUCTURE
+Unico registry accanto a GW_ROUTE:
+SINGLE = GW001,GW004,GW005,GW006,GW009.
+MULTI = GW002,GW003,GW007,GW008.
+worldStructure(gw) deve fail-closed se sconosciuto. Non inferire SINGLE/MULTI dal DOM. Futuro registry server-side possibile, non richiesto ora.
 
-Authority locale unica accanto a GW_ROUTE:
-GW001 SINGLE; GW002 MULTI; GW003 MULTI; GW004 SINGLE; GW005 SINGLE; GW006 SINGLE; GW007 MULTI; GW008 MULTI; GW009 SINGLE.
-Funzione worldStructure(gw). GW sconosciuto => fail prima della scansione.
-Non inferire SINGLE/MULTI dal DOM. Futuro target: registry server-side; non richiesto per V2.
-
-2. DOM ROOTS
-
-screenRoot() = #currentScreenA.current-screen-shown, fallback #currentScreenA.
-resultsRoot() = screenRoot().querySelector('#leagueResultsContainer').
-Selector country/division scoped a screenRoot; pager/date/result rows scoped a resultsRoot; team/manager scoped alla row.
-Mai usare document globale per fallback action/context.
-#workingCopy non è source. visible() resta guard secondario, scoping strutturale è il guard primario.
+2. DOM SCOPING
+screenRoot() => #currentScreenA.current-screen-shown, fallback #currentScreenA.
+resultsRoot() => screenRoot().querySelector('#leagueResultsContainer').
+Country/division selector dentro screenRoot; pager/date/result dentro resultsRoot; team/manager relativi alla row.
+Mai fallback action/context su document globale. #workingCopy non è source; visible() resta guard secondario.
 
 3. RAW CONTEXT
-
-rawContext runtime-only:
-{action_raw,country_raw,division_raw,country_selected_value,country_selected_text,division_selected_value,division_selected_text}.
-
-pagerContextRaw(): legge solo pager Results dentro resultsRoot.
-GW001 osservato: league / CUS / 4.
-GW007 osservato: league / ESP / 1.
-
-countrySelect(): #currentScreenA #country-selector select, solo visible.
-GW001: hidden/vuoto => null.
-GW007: visible, value ESP, text Spagna.
-
+Separare raw DOM da canonical IMC.
+rawContext runtime-only: action_raw,country_raw,division_raw,country_selected_value/text,division_selected_value/text.
+pagerContextRaw() legge solo pager Results.
+DOM GW001: league/CUS/4; country selector hidden/vuoto.
+DOM GW007: league/ESP/1; country selector visible value ESP text Spagna.
+countrySelect(): #currentScreenA #country-selector select solo visible.
 divisionSelect(): prefer #currentScreenA #div-selector select[name=division].
-GW001 value 4, onchange contiene CUS come token tecnico DOM.
-GW007 value 1, onchange contiene ESP.
 
 4. CANONICAL CONTEXT
-
-Pipeline obbligatoria:
-DOM raw -> rawContext -> canonicalContext -> validateCanonicalContext -> competitionKey -> resultRows -> fingerprint.
-
-macro() invariata:
-DOMESTIC league/leaguecup/leagueshield/charityshield/playoff;
-INTERNATIONAL smfacup/smfashield/supercup;
-NATIONS interqualifier/worldcup.
-Unknown => validation error.
-
-canonicalContext(raw):
+Pipeline: rawContext -> canonicalContext -> validate -> competitionKey -> resultRows -> fingerprint.
+macro invariata: DOMESTIC league/leaguecup/leagueshield/charityshield/playoff; INTERNATIONAL smfacup/smfashield/supercup; NATIONS interqualifier/worldcup.
+Regole:
 - INTERNATIONAL/NATIONS: country=NULL, division=NULL.
-- SINGLE DOMESTIC: country=NULL sempre; division solo se action=league.
-- MULTI DOMESTIC: country obbligatoria; division solo se action=league.
+- SINGLE DOMESTIC: country=NULL sempre; division solo League.
+- MULTI DOMESTIC: country obbligatoria; division solo League.
+canonicalCountry MULTI: pager code se valido e !=CUS, poi selected VALUE, altrimenti fail. Mai salvare label country.
+CUS non è country IMC: SINGLE la ignora; MULTI la rifiuta.
+canonicalDivision League: pager division, selected value, parse Division/Divisione N; altrimenti fail.
+competition_group_name solo da group header visibile scoped Results; League standard NULL.
 
-canonicalCountry MULTI priority: pager country se non vuota e !=CUS; selected country VALUE; altrimenti fail. Non salvare selected text.
-CUS non è mai country IMC. In SINGLE viene ignorata; in MULTI è invalid context.
-
-canonicalDivision League priority: pager division; selected value; parse selected text Division/Divisione N; altrimenti fail.
-
-competition_group_name: solo group header visibile dentro resultsRoot; League standard NULL.
-
-5. COMPETITION KEY GRAMMAR
-
-Sostituire array.filter().join() con grammar esplicita:
+5. COMPETITION KEY
+Eliminare `.filter(x=>clean(x))` come grammar.
 SINGLE League: GW|DOMESTIC|league|DIV
-SINGLE DOMESTIC non-League: GW|DOMESTIC|ACTION
+SINGLE domestic non-League: GW|DOMESTIC|ACTION
 MULTI League: GW|COUNTRY|DOMESTIC|league|DIV
-MULTI DOMESTIC non-League: GW|COUNTRY|DOMESTIC|ACTION
+MULTI domestic non-League: GW|COUNTRY|DOMESTIC|ACTION
 INTERNATIONAL: GW|INTERNATIONAL|ACTION
 NATIONS: GW|NATIONS|ACTION
-CUS vietata.
-Segmenti obbligatori mancanti => errore, non key accorciata.
+Segmento obbligatorio assente => error. CUS vietata.
 
-6. DATE / STAGE / ROUND
+6. DATE/STAGE/ROUND
+`dateInfo()` conserva parser ma root obbligatorio currentScreenA/resultsRoot; non legge fixturesContainer.
+Separare eventuale `normalizeStageRound()` con dictionary approvato. `Quarti di Finalee` è source typo, non generato dal parser; senza dictionary approvato conservare raw + warning, niente correzioni creative.
 
-dateInfo() mantiene parser corrente ma root obbligatorio #currentScreenA #leagueResultsContainer e heading visible.
-Non leggere fixturesContainer.
-Separare normalizeStageRound(). Nessuna correzione ad hoc dentro date parser.
-Il typo storico `Quarti di Finalee` è source text, non generato dall'importer. Se dictionary canonico non è approvato, conservare raw + warning runtime.
-
-7. FIXTURE / SCORE
-
-resultButtons(): resultsRoot only; visible #matchResult; fixture onclick MATCHREPORT_*; fixture ID numerico positivo; dedupe per ID nella pagina.
-fixtureId regex corrente può restare.
-Score regex N-N può restare. result_status=COMPLETED solo con score. Orario senza score non deve diventare COMPLETED.
+7. FIXTURE/SCORE
+resultButtons scoped resultsRoot; visible #matchResult; handler MATCHREPORT_*; fixture ID positivo; dedupe page.
+fixtureId regex corrente compatibile ScoreCentre/NextFixtureData.
+Score N-N invariato; COMPLETED solo con score. Fixture con solo orario non deve diventare completed result.
 
 8. TEAM / CONTROLLED CLUB
-
-DOM reale: HERTHA BSC e REAL BETIS, quando sono il club controllato, non hanno MENU_clubOverviewDraw; stesso pattern in table/form/attendance/player stats. Gli altri club hanno world-local ID nell'onclick.
-
-currentControlledClub(): nome da top-nav title visibile; mai usare ID del logo SoccerWiki.
-parseWorldClubId(node): solo handler allowlisted MENU_clubOverviewDraw su node/child/parent semanticamente collegato.
-
+Forensic DOM: HERTHA BSC e REAL BETIS, quando club controllato, non espongono MENU_clubOverviewDraw; stesso pattern in table/form/attendance/player stats. Altri club espongono world-local ID.
+currentControlledClub(): nome dal top-nav visibile. Non usare logo SoccerWiki ID.
+parseWorldClubId(): solo MENU_clubOverviewDraw numerico su node/child/parent semanticamente collegato.
 team(row,side):
-1. nome dal team node;
-2. se world-local ID DOM presente => RESOLVED_DOM;
-3. se nome == current controlled club => tentare currentClubWorldIdResolver(gw,name);
-4. se resolver non disponibile => id NULL + UNRESOLVED_CONTROLLED_CLUB;
-5. altro missing ID => UNRESOLVED_DOM_ID.
-
-currentClubWorldIdResolver è INTERFACE ONLY in V2. Non usare l'attuale Club Mapping come falso fallback: Hertha mapping 404 non è world-local 94079171; GW007 non è coperto. Prima release conserva NULL business value ma logga diagnostic esplicito. Futuro mapping certificato potrà risolvere senza cambiare schema Results.
+- name dal team node;
+- ID DOM => RESOLVED_DOM;
+- se name==controlled club => currentClubWorldIdResolver(gw,name);
+- mapping disponibile => RESOLVED_MAPPING;
+- mapping assente => id NULL + UNRESOLVED_CONTROLLED_CLUB;
+- altro missing => UNRESOLVED_DOM_ID.
+Resolver è solo interface V2. Current Club Mapping non è fallback sicuro: Hertha 404 != world-local 94079171; GW007 non coperto. Prima release conserva NULL business value ma logga diagnostic.
 
 9. MANAGER
+Conservare PROFILE_viewFriendsProfileNew(<id>) su manager image; NON richiedere visible(), perché anchor validi sono hidden.
+Fallback: se direct manager ID assente E side è certamente controlled club, usare CUSTOMERID. Nei due DOM CUSTOMERID=13051324. Mai usarlo su altra side.
+Fixture 367418923 resta remediation separata: V2 non può ricostruire DOM storico; readiness riduce timing risk ma non inventa source truth.
 
-directManagerId(): conservare PROFILE_viewFriendsProfileNew(<id>) su home/awayManagerImage. NON richiedere visible(), perché gli anchor validi sono spesso display:none.
-
-Fallback controlled club:
-se direct ID assente E team side è certamente current controlled club, usare CUSTOMERID numerico. Nei due DOM CUSTOMERID=13051324.
-Mai usare CUSTOMERID su side non controllata.
-
-managerId(row,side,teamInfo): direct ID -> return; else controlled -> CUSTOMERID; else NULL.
-
-Fixture storica 367418923: V2 non può ricostruire il DOM del 23/08. Nessuna trasformazione algoritmica 5053060->20605515 è possibile; il guard stable-state riduce il rischio timing ma la remediation resta separata.
-
-10. NAVIGATION / READINESS
-
-plan('country'):
-- SINGLE => null sempre;
-- MULTI => current visible country selector plan.
-plan('division'): scoped currentScreenA; solo option Division/Divisione N.
-
-switchTo(kind,target): applica select; poi waitForStableResultState(expectedContext), non sleep fisso.
-goPrevious(ids): fixture set deve cambiare e poi stabilizzarsi.
-
-waitForStableResultState richiede almeno 2 poll consecutivi uguali per:
-- pager action/country/division raw;
-- selected country/division;
-- visible Results heading/date;
-- fixture ID set;
-- team names.
-Dopo switch, context deve coincidere col target prima di processPage.
-
-GW001: nessun country loop, solo D1-D4.
-GW007: country loop + division loop invariati.
+10. NAVIGATION
+plan(country): SINGLE => null sempre; MULTI => visible country selector.
+plan(division): scoped currentScreenA.
+switchTo: dopo change attendere expected context e stable state.
+goPrevious: fixture set deve cambiare e poi stabilizzarsi.
+Stable state = due poll consecutivi uguali per pager action/country/division, selected country/division, visible Results heading/date, fixture IDs, team names.
+GW001: D1-D4 only, zero country loop. GW007: country+division loop preservato.
 
 11. IDEMPOTENZA
+preloadExisting V2: Map<sm_fixture_id,fingerprint> + fingerprint map/set.
+NEW: ID assente + fp assente -> insert.
+SAME: ID presente + fp uguale -> skip.
+CHANGED_EXISTING: ID presente + fp diverso -> log/segregate/count, NO auto-update V2.
+DUPLICATE_CONTENT: ID nuovo + fp già di altra fixture -> warning/segregate.
+Questo sostituisce skip booleano `existsById || existsByFingerprint` e rende futura remediation sicura.
 
-preloadExisting V2 deve costruire Map<sm_fixture_id,fingerprint> + Map/Set fingerprint.
-
-Classifier:
-NEW = ID assente e fingerprint assente.
-SAME = ID presente e fingerprint uguale.
-CHANGED_EXISTING = ID presente e fingerprint diverso.
-DUPLICATE_CONTENT = ID nuovo ma fingerprint già associato ad altra fixture.
-
-Policy V2 prima release:
-NEW -> insert.
-SAME -> skip.
-CHANGED_EXISTING -> log/segregate/count, NO auto-update.
-DUPLICATE_CONTENT -> warning/segregate, NO insert automatico.
-
-Questo mantiene idempotenza e rende possibile una remediation successiva senza write impliciti.
-
-12. resultRows() · 26 CAMPI
-
-Ordine/semantica invariati:
-1 game_world_id = S.gw
-2 sm_fixture_id = fixtureId
-3 competition_key = canonical key
-4 sm_action = canonical action
-5 sm_country = canonical country/null
-6 sm_division = canonical division/null
-7 competition_group = macro canonical
-8 competition_group_name = scoped group name/null
-9 competition_stage = dateInfo/normalized stage
-10 competition_round = dateInfo/normalized round
-11 match_date = parsed date
-12 home_sm_club_id = team resolver world-local/null unresolved
-13 home_name = DOM team name
-14 away_sm_club_id = team resolver world-local/null unresolved
-15 away_name = DOM team name
-16 home_sm_manager_id = direct profile or controlled CUSTOMERID fallback
-17 away_sm_manager_id = same
-18 home_score = score
-19 away_score = score
-20 penalty_home_score = decision parser
-21 penalty_away_score = decision parser
-22 aggregate_home_score = decision parser
-23 aggregate_away_score = decision parser
-24 result_status = COMPLETED if score
-25 fingerprint = hash dei 24 campi business precedenti escluso imported_at, dopo canonicalization
-26 imported_at = run timestamp
-
-Nessun nuovo campo persistente.
-Diagnostics restano runtime/log.
+12. I 26 CAMPI RESULTS
+1 game_world_id=S.gw
+2 sm_fixture_id=fixtureId
+3 competition_key=canonical key
+4 sm_action=canonical action
+5 sm_country=canonical country/null
+6 sm_division=canonical division/null
+7 competition_group=macro
+8 competition_group_name=scoped group/null
+9 competition_stage=dateInfo/normalized stage
+10 competition_round=dateInfo/normalized round
+11 match_date=parsed date
+12 home_sm_club_id=world-local DOM/mapping/null unresolved
+13 home_name=DOM name
+14 away_sm_club_id=same
+15 away_name=DOM name
+16 home_sm_manager_id=direct profile/controlled CUSTOMERID/null
+17 away_sm_manager_id=same
+18 home_score
+19 away_score
+20 penalty_home_score
+21 penalty_away_score
+22 aggregate_home_score
+23 aggregate_away_score
+24 result_status=COMPLETED se score
+25 fingerprint=hash business fields dopo canonicalization
+26 imported_at=run timestamp
+Nessun nuovo campo persistente; diagnostics runtime/log only.
 
 13. FINGERPRINT
+Mantenere algoritmo/output 64 char per compatibilità. Stesso set logico V1, calcolato DOPO canonicalizzazione. imported_at e diagnostics esclusi. Conseguenza voluta: stessa fixture storica errata + output V2 corretto => stesso ID, fp diverso => CHANGED_EXISTING.
 
-Algoritmo FNV-style corrente e output 64 char possono restare per compatibilità.
-Input fingerprint invariato come set logico corrente, ma DEVE essere calcolato dopo canonical context/team/manager/date parsing.
-Non includere imported_at.
-Non includere diagnostics runtime.
-Conseguenza voluta: fixture storica errata e fixture V2 corretta hanno stesso sm_fixture_id ma fingerprint diverso => CHANGED_EXISTING.
+14. NULL/ERROR POLICY
+Reject: GW/structure sconosciuto; fixture ID invalido; action/group unknown; League senza division; MULTI domestic senza country; result row senza score valido.
+Allow NULL: group_name, stage/round, penalty/aggregate, manager realmente assente, controlled club world-local finché mapping non certificata (con diagnostic esplicito).
 
-14. ERROR / NULL POLICY
+15. ESEMPI 26 CAMPI
+GW001 fixture 367418946, AS Roma 1-2 HERTHA BSC, 2026-09-10. DOM raw league/CUS/4.
+Target: GW001; 367418946; `GW001|DOMESTIC|league|4`; league; country NULL; division 4; DOMESTIC; group_name NULL; stage NULL; round NULL; 2026-09-10; home club 94078890; AS Roma; away club NULL finché resolver; HERTHA BSC; home manager 20881721; away manager 13051324 controlled fallback; score 1-2; penalties NULL; aggregate NULL; COMPLETED; fingerprint canonical 64-char; imported_at run timestamp.
 
-REJECT PAGE/ROW:
-- game_world_id/structure non configurato;
-- fixture ID invalido;
-- action/group non canonici;
-- League senza division;
-- MULTI domestic senza country;
-- score Results non parsabile quando la riga è dichiarata risultato completato.
+GW007 fixture 380652387, Valencia CF 0-5 REAL BETIS, 2026-09-09. DOM league/ESP/1.
+Target: GW007; 380652387; `GW007|ESP|DOMESTIC|league|1`; league; ESP; 1; DOMESTIC; group_name NULL; stage NULL; round NULL; 2026-09-09; home club 34608397; Valencia CF; away club NULL finché resolver; REAL BETIS; home manager NULL se DOM assente; away manager 13051324 controlled fallback; score 0-5; penalties/aggregate NULL; COMPLETED; fingerprint canonical; imported_at run timestamp.
 
-ALLOW NULL:
-- competition_group_name se non group stage;
-- stage/round quando non applicabili;
-- penalty/aggregate quando non applicabili;
-- manager ID se realmente non disponibile;
-- controlled club world-local ID finché mapping canonica non disponibile, ma solo con diagnostic esplicito.
+16. FUNZIONI
+MODIFY: divisionSelect, countrySelect, pagerContext->pagerContextRaw, context->raw+canonical+validate, competitionKey, dateInfo, resultButtons, team, managerId, resultRows, plan, switchTo, goPrevious, preloadExisting, splitExisting/classifier, processPage.
+ADD: WORLD_STRUCTURE/worldStructure, screenRoot/resultsRoot, rawContext, canonicalCountry/canonicalDivision/canonicalContext, validateCanonicalContext, currentControlledClub, parseWorldClubId, currentClubWorldIdResolver interface, readCustomerId, waitForStableResultState, classifyExisting.
+KEEP: macro, fixtureId regex, decision parser, destination/GW_ROUTE, gateway wrapper, insertRows per NEW, UI base.
 
-15. ESEMPI OUTPUT ATTESO DAI DOM
+17. TEST PLAN
+T01 GW001 raw CUS/4 => country NULL, key GW001|DOMESTIC|league|4.
+T02 GW007 ESP/1 => key GW007|ESP|DOMESTIC|league|1.
+T03 fixture 367418946 => AS Roma ID parsed; Hertha unresolved club; controlled manager CUSTOMERID.
+T04 fixture 380652387 => Valencia ID parsed; Betis unresolved club; controlled manager CUSTOMERID.
+T05 normal non-controlled team onclick unchanged.
+T06 SINGLE plan(country)=null anche con CUS pager/onchange.
+T07 MULTI switch ESP->ENG waits target context/stability.
+T08 previous waits changed+stable fixture set.
+T09 no data from workingCopy.
+T10 fixturesContainer heading cannot affect Results dateInfo.
+T11 SAME existing => skip.
+T12 CHANGED_EXISTING historical CUS => detected, no auto-update.
+T13 DUPLICATE_CONTENT => segregated.
+T14 SINGLE domestic leaguecup raw CUS/div => country NULL, division NULL, key GW|DOMESTIC|leaguecup.
+T15 INTERNATIONAL/NATIONS raw country/div noise => both NULL.
+T16 regression all GW001-GW009 world structure map.
 
-15.1 GW001 · fixture 367418946 · AS Roma 1-2 HERTHA BSC · 10/09/2026
-DOM raw: action league, country CUS, division 4. DOM mostra AS Roma world-local 94078890 e manager 20881721; HERTHA controlled senza club onclick/manager onclick.
+18. REGRESSION RISKS
+R1 scoping troppo stretto: mitigare fallback solo dentro currentScreenA, mai document.
+R2 timeout stable-state: timeout configurabile e log diagnostico; no insert su timeout.
+R3 CUSTOMERID misuse: solo side controlled-name exact normalized match.
+R4 MULTI regression: GW007 snapshot golden test; country loop invariato.
+R5 non-League division: explicit grammar test.
+R6 unresolved controlled club: preservare NULL attuale, non inventare ID.
+R7 changed historical rows: no auto-update.
 
-Output V2 atteso:
-game_world_id=GW001
-sm_fixture_id=367418946
-competition_key=GW001|DOMESTIC|league|4
-sm_action=league
-sm_country=NULL
-sm_division=4
-competition_group=DOMESTIC
-competition_group_name=NULL
-competition_stage=NULL
-competition_round=NULL
-match_date=2026-09-10
-home_sm_club_id=94078890
-home_name=AS Roma
-away_sm_club_id=NULL finché world-local resolver non certificato
-away_name=HERTHA BSC
-home_sm_manager_id=20881721
-away_sm_manager_id=13051324 tramite controlled CUSTOMERID
-home_score=1
-away_score=2
-penalty_home_score=NULL
-penalty_away_score=NULL
-aggregate_home_score=NULL
-aggregate_away_score=NULL
-result_status=COMPLETED
-fingerprint=<64-char calcolato su valori canonici>
-imported_at=<run timestamp>
+19. BACKWARD COMPATIBILITY
+GW001/004/005/006/009: country loop off, CUS ignored, League division preserved.
+GW002/003/007/008: country+division navigation preserved; MULTI League semantics unchanged.
+International/Nations: country/division NULL per tutti.
+Gateway: no change.
+Schema Results: no change.
 
-15.2 GW007 · fixture 380652387 · Valencia CF 0-5 REAL BETIS · 09/09/2026
-DOM raw/canonical: action league, country ESP, division 1. Valencia world-local 34608397. REAL BETIS controlled senza onclick.
+20. ROLLBACK STRATEGY
+Implementazione futura deve essere un singolo patch importer versionato. Prima del deploy conservare V1 esatta. Rollback = ripristino file importer V1, nessuna migration/schema rollback. V2 non auto-updata record storici, quindi rollback non richiede data undo. Se V2 produce error/timeout: stop import, nessun fallback silenzioso a context V1.
 
-Output V2 atteso:
-game_world_id=GW007
-sm_fixture_id=380652387
-competition_key=GW007|ESP|DOMESTIC|league|1
-sm_action=league
-sm_country=ESP
-sm_division=1
-competition_group=DOMESTIC
-competition_group_name=NULL
-competition_stage=NULL
-competition_round=NULL
-match_date=2026-09-09
-home_sm_club_id=34608397
-home_name=Valencia CF
-away_sm_club_id=NULL finché resolver non certificato
-away_name=REAL BETIS
-home_sm_manager_id=NULL se nessun PROFILE nel DOM
-away_sm_manager_id=13051324 tramite controlled CUSTOMERID
-home_score=0
-away_score=5
-penalty/aggregate=NULL
-result_status=COMPLETED
-fingerprint=<64-char canonical>
-imported_at=<run timestamp>
+21. HISTORICAL DATA
+Non correggere nel deploy V2. Dopo test/deploy, CASE separato per remediation field-level per sm_fixture_id. No clear totale e no reimport cieco. CHANGED_EXISTING fornirà l'elenco dei candidati.
 
-16. FUNZIONI DA MODIFICARE / AGGIUNGERE
+22. ACCEPTANCE / GO-NO-GO
+READY_FOR_IMPLEMENTATION se la futura patch passa T01-T16 e non modifica Gateway/schema. Il controlled-club world-local resolver può restare unresolved nella prima release: non blocca la correzione CUS/key/readiness/idempotenza.
+NO-GO se: SINGLE produce country; MULTI perde country; key usa filter generico; parser legge workingCopy; CHANGED_EXISTING viene skippato indistintamente; CUSTOMERID viene usato senza controlled-club proof.
 
-MODIFICARE:
-- divisionSelect: scope currentScreenA, prefer #div-selector.
-- countrySelect: scope currentScreenA, visible only.
-- pagerContext -> pagerContextRaw scoped resultsRoot.
-- context -> split rawContext + canonicalContext + validation.
-- competitionKey -> explicit grammar.
-- dateInfo -> scoped currentScreenA/resultsRoot; optional normalizeStageRound.
-- resultButtons -> scoped resultsRoot.
-- team -> controlled-club state + safe resolver interface.
-- managerId -> team-aware CUSTOMERID fallback.
-- resultRows -> consume canonical context; fingerprint after canonicalization.
-- plan -> SINGLE country disabled; scoped selectors.
-- switchTo -> stable-state wait.
-- goPrevious -> stable-state wait.
-- preloadExisting -> fixture->fingerprint map.
-- splitExisting -> 4-state classifier.
-- processPage -> insert only NEW; log SAME/CHANGED/DUPLICATE.
-
-AGGIUNGERE:
-- WORLD_STRUCTURE / worldStructure
-- screenRoot / resultsRoot
-- rawContext
-- canonicalCountry / canonicalDivision / canonicalContext
-- validateCanonicalContext
-- currentControlledClub
-- parseWorldClubId
-- currentClubWorldIdResolver interface
-- readCustomerId
-- waitForStableResultState
-- classifyExisting
-
-INVARIATE O QUASI:
-- macro
-- fixtureId regex
-- decision penalty/aggregate parser
-- destination/GW_ROUTE
-- gateway wrapper
-- insertRows per sole NEW
-- UI base
-
-17. BACKWARD COMPATIBILITY GW001-GW009
-
-GW001/004/005/006/009 SINGLE:
-- country loop disabilitato;
-- raw CUS ignorata come technical token;
-- League conserva division;
-- domestic non-League non conserva division.
-
-GW002/003/007/008 MULTI:
-- country+division navigation preservata;
-- League key mantiene country+division;
-- GW007 snapshot è regression reference primaria.
-
-INTERNATIONAL/NATIONS:
-country/division sempre NULL indipendentemente dal rumore DOM.
-
-Gateway:
-nessuna modifica richiesta.
-
-18. TEST PLAN PRE-WRITE
-
-T01 GW001 D4 current snapshot: raw CUS -> canonical country NULL; key GW001|DOMESTIC|league|4.
-T02 GW007 ESP D1: raw ESP/1 -> key GW007|ESP|DOMESTIC|league|1.
-T03 GW001 fixture 367418946: AS Roma ID 94078890; Hertha unresolved controlled club; manager Hertha CUSTOMERID 13051324.
-T04 GW007 fixture 380652387: Valencia ID 34608397; Betis unresolved controlled club; controlled manager CUSTOMERID.
-T05 Non-controlled club: onclick MENU_clubOverviewDraw parsed unchanged.
-T06 SINGLE country plan: plan(country)=null anche se DOM contiene CUS in pager/onchange.
-T07 MULTI country plan: ESP->ENG switch attende pager/select/fixture stable.
-T08 Previous: fixture IDs cambiano e stato deve essere stabile due poll.
-T09 workingCopy: nessun selector/context/result proviene da workingCopy.
-T10 Fixtures coexistence: dateInfo
+FINAL VERDICT: READY_FOR_IMPLEMENTATION.
+NO WRITES/DEPLOYS EXECUTED.
+IMC-DB-001-16: COMPLETED
