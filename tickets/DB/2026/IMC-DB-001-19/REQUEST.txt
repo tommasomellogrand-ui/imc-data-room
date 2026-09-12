@@ -1,0 +1,136 @@
+CASE_ID: IMC-DB-001-19
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-12
+TOPIC: RESULTS_IMPORTER_NATIONAL_TEAM_ID_RESOLUTION
+
+IMC | RESULTS IMPORTER · NATIONAL TEAM ID RESOLUTION
+
+OBIETTIVO
+Correggere il Results Importer affinché le competizioni NATIONS (`interqualifier`, `worldcup`) risolvano correttamente gli identificativi delle nazionali dal DOM Soccer Manager, senza rompere club, manager, navigazione, competition_key o idempotenza.
+
+BASE AUTORITATIVA
+La base da usare è l'ultima versione prodotta dal CASE precedente:
+- tickets/DB/2026/IMC-DB-001-18/OUTPUT_RESULTS_IMPORT.js
+- tickets/DB/2026/IMC-DB-001-18/RESPONSE.txt
+
+Leggere inoltre, se necessario per comprendere la provenance del parser:
+- tickets/DB/2026/IMC-DB-001-15/OUTPUT_RESULTS_IMPORT.js
+- tickets/DB/2026/IMC-DB-001-15/RESPONSE.txt
+
+NON ripartire da versioni precedenti e NON perdere il fix END_OF_SECTION di 001-18.
+
+INPUT LIVE AUTORITATIVO
+Recuperare dalla File Library e leggere integralmente:
+- SM_DOM_20260912_152317.json
+
+È un DOM reale Soccer Manager acquisito da GW007 nella pagina Results delle qualificazioni nazionali (`sm_action = interqualifier`), data visibile 2026-09-11.
+
+Il DOM deve essere analizzato integralmente. Non dedurre la struttura delle nazionali dal parser club e non usare valori inventati.
+
+PROBLEMA OSSERVATO LIVE
+Durante il retest GW007 / interqualifier l'importer ha mostrato numerosi warning:
+`UNRESOLVED_TEAM_ID`
+
+Esempi osservati nel log:
+- Russia
+- Czech Republic
+- Trinidad & Tobago
+- Sweden
+- Hungary
+- Morocco
+- Ecuador
+- Costa Rica
+- Canada
+
+Le 32 fixture della pagina risultavano già presenti e venivano SKIP, ma la risoluzione degli ID delle nazionali falliva.
+
+EVIDENZA DA VERIFICARE NEL DOM
+Nel DOM live le nazionali non usano il normale handler club del parser storico. Nei Results sono presenti elementi `#homeTeam` / `#awayTeam` con handler del tipo:
+`MENU_association_draw('646525')` -> Jamaica
+`MENU_association_draw('646512')` -> France
+`MENU_association_draw('646548')` -> Russia
+`MENU_association_draw('646504')` -> Czech Republic
+`MENU_association_draw('646556')` -> Trinidad & Tobago
+`MENU_association_draw('646555')` -> Sweden
+`MENU_association_draw('646518')` -> Hungary
+`MENU_association_draw('646537')` -> Morocco
+`MENU_association_draw('646506')` -> Ecuador
+`MENU_association_draw('646501')` -> Costa Rica
+`MENU_association_draw('646495')` -> Canada
+
+Le fixture hanno invece handler Match Report separati, per esempio:
+`MATCHREPORT_downloadScoreCentre('380661095', 1)` per Iraq-Russia.
+
+Questa distinzione è fondamentale: verificare che il codice non stia confondendo fixture ID (`380...`) con association/national-team ID (`646...`).
+
+INCARICO
+1. Analizzare il DOM live e la versione 001-18 dell'importer.
+2. Determinare la root cause esatta di `UNRESOLVED_TEAM_ID`.
+3. Identificare in modo DOM-grounded la semantica degli ID delle nazionali esposti da `MENU_association_draw(...)`.
+4. Correggere il parser affinché:
+   - DOMESTIC/INTERNATIONAL club continuino a usare il percorso club già valido;
+   - NATIONS riconosca correttamente le squadre nazionali tramite il markup/handler reale del DOM;
+   - home/away team ID siano estratti dal nodo squadra, mai dal fixture/matchResult;
+   - nome squadra e ID restino associati alla stessa side home/away;
+   - non vengano introdotti fallback pericolosi basati solo sul nome quando l'ID è disponibile nel DOM.
+5. Verificare anche i manager delle nazionali: se il DOM espone manager ID reali tramite `PROFILE_viewFriendsProfileNew(...)`, conservarne il parsing corretto; se assenti, NULL deve restare legittimo.
+6. Mantenere integralmente il fix END_OF_SECTION di 001-18.
+7. Produrre il file completo aggiornato, pronto per Comandi Rapidi.
+
+IMPORTANTE SULLA MAPPATURA
+Questo CASE riguarda anzitutto il corretto parsing dell'identità nazionale dal DOM.
+Se il codice applica una validazione/mappatura controllata successiva, verificare quale namespace richiede e perché l'ID DOM non viene riconosciuto.
+Non creare nuove tabelle, non modificare DB e non inventare mapping.
+Se emerge che il parser estrae correttamente `646xxx` ma una validazione successiva li rifiuta, documentare esattamente il punto e correggere solo ciò che è possibile nel codice autorizzato. Se per una soluzione completa servisse una modifica DB non autorizzata, fermarsi con BLOCKED indicando precisamente il requisito, senza eseguire WRITE DB.
+
+REGRESSIONI DA EVITARE
+Il fix NON deve:
+- rompere GW001 SINGLE;
+- rompere GW007 club League/coppe;
+- rompere il fix END_OF_SECTION di 001-18;
+- cambiare grammar competition_key;
+- cambiare fingerprint/idempotenza;
+- leggere `workingCopy`;
+- usare fixture ID come team ID;
+- modificare Gateway, DB, Schedule, Match Report o minisiti.
+
+TEST OBBLIGATORI
+Almeno:
+1. Jamaica -> association ID 646525 dal DOM.
+2. France -> association ID 646512 dal DOM.
+3. Russia -> association ID 646548 dal DOM.
+4. Czech Republic -> association ID 646504 dal DOM.
+5. Trinidad & Tobago -> association ID 646556 dal DOM.
+6. Canada -> association ID 646495 dal DOM.
+7. Iraq-Russia fixture 380661095: fixture ID resta 380661095; away national-team ID deve derivare da `MENU_association_draw('646548')`, non dal fixture ID.
+8. home/away association IDs corretti su almeno 10 fixture NATIONS.
+9. manager nazionale presente: parsing `PROFILE_viewFriendsProfileNew(...)` corretto.
+10. manager assente: NULL senza errore.
+11. regressione club parser su GW001/GW007.
+12. regressione completa degli stati NEW / IDENTICAL / CHANGED_EXISTING / DUPLICATE_CONTENT.
+13. regressione END_OF_SECTION del CASE 001-18.
+14. nessuna lettura workingCopy.
+15. node --check PASS.
+
+OUTPUT AUTORIZZATI
+Creare esclusivamente:
+- tickets/DB/2026/IMC-DB-001-19/OUTPUT_RESULTS_IMPORT.js
+- tickets/DB/2026/IMC-DB-001-19/RESPONSE.txt
+
+La RESPONSE deve contenere:
+- root cause esatta;
+- struttura DOM rilevata per club vs national team;
+- namespace/semantica degli ID osservati;
+- funzioni modificate;
+- test eseguiti e risultati;
+- conferma che 001-18 END_OF_SECTION è preservato;
+- indicazione se il retest può continuare sulle righe già presenti o richiede reset;
+- verdict finale `READY_FOR_MANUAL_RETEST` oppure `BLOCKED`.
+
+VINCOLI
+DB WRITE: NO.
+PRODUCTION DEPLOY: NO.
+GATEWAY CHANGE: NO.
+SCHEDULE/MATCH REPORT: NO.
+WRITE AUTHORIZED: solo deliverable Data Room del CASE.
