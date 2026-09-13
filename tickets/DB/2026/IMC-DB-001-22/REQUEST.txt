@@ -11,7 +11,7 @@ CONTESTO
 L'audit IMC-ENG-009-05 ha rilevato che alcuni Results appartenenti ai playoff possono risultare registrati nella competition_key della League.
 
 Questo incarico non è limitato al GW001.
-La gestione richiesta deve valere per tutti tutti i Game World interessati dai playoff e deve diventare una regola unica per i playoff presenti e futuri.
+La gestione richiesta deve valere per tutti i Game World interessati dai playoff e deve diventare una regola unica per i playoff presenti e futuri.
 
 OBIETTIVO AUTORITATIVO
 I Results devono continuare ad arrivare nei repository raw esattamente attraverso l'importazione attuale.
