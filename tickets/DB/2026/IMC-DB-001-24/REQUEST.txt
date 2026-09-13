@@ -1,0 +1,185 @@
+CASE_ID: IMC-DB-001-24
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-13
+TOPIC: CORE_IMC_TABLES_FILE_IMPORT_ANALYSIS_GW001_BENCHMARK
+
+IMC | DATABASE MANAGER
+ANALISI INTEGRAZIONE CORE NEI MINISITI TRAMITE FILE
+BENCHMARK: GW001
+
+OBIETTIVO
+Analizzare integralmente tutte le tabelle presenti in Sql1956795_1 CORE il cui nome inizia con IMC e indicare, per ciascuna:
+
+- cosa integrare nei minisiti;
+- dove integrarlo;
+- come integrarlo;
+- quando integrarlo;
+- perché integrarlo.
+
+Il trasferimento dei dati verso i minisiti deve essere progettato tramite importazione di un file.
+
+I minisiti non devono leggere direttamente Sql1956795_1 CORE.
+
+BENCHMARK OBBLIGATORIO
+Utilizzare GW001 come benchmark completo dell'analisi.
+
+Il Database Manager deve verificare concretamente, sui dati reali e sulla struttura reale del CORE, come ogni tabella IMC possa essere rappresentata e utilizzata nel contesto del minisito GW001.
+
+GW001 è il caso di riferimento per:
+- identificare i dati effettivamente disponibili;
+- verificare collegamenti e mapping;
+- comprendere la destinazione dei dati nel minisito;
+- definire il contenuto del file;
+- valutare completezza, coerenza e utilizzabilità;
+- produrre esempi reali e verificabili.
+
+L'uso di GW001 come benchmark non autorizza modifiche al minisito e non limita l'analisi delle tabelle CORE al solo GW001.
+
+SCOPE DI ANALISI
+1. Individuare tutte le tabelle di Sql1956795_1 CORE con nome che inizia con IMC.
+2. Leggere integralmente la struttura di ciascuna tabella.
+3. Analizzare il contenuto reale di ciascuna tabella.
+4. Identificare chiavi, relazioni, riferimenti e dipendenze.
+5. Stabilire quali dati siano pertinenti ai minisiti.
+6. Stabilire dove tali dati debbano essere utilizzati nel minisito.
+7. Definire come trasferirli mediante un file.
+8. Definire quando il file debba essere prodotto e importato.
+9. Motivare l'inclusione o l'esclusione di ogni tabella o campo.
+10. Verificare tutto utilizzando GW001 come benchmark reale.
+
+MATRICE OBBLIGATORIA PER OGNI TABELLA
+La RESPONSE deve contenere una matrice con almeno:
+
+- nome tabella;
+- funzione reale;
+- campi;
+- chiave primaria;
+- chiavi e riferimenti utili;
+- dati effettivamente presenti;
+- relazione con Game World;
+- relazione con GW001;
+- dati utili al minisito;
+- dati non utili al minisito;
+- destinazione nel minisito;
+- modalità proposta di trasferimento tramite file;
+- momento o condizione dell'importazione;
+- motivazione;
+- dipendenze;
+- rischi;
+- stato: INTEGRARE | NON_INTEGRARE | DA_DECIDERE.
+
+ANALISI DEL FILE
+Il Database Manager deve proporre come impostare il file destinato ai minisiti, indicando:
+
+- formato;
+- struttura;
+- sezioni;
+- campi;
+- chiavi;
+- identificazione del Game World;
+- collegamenti tra le entità;
+- gestione dei dati mancanti;
+- controlli di validità;
+- versione del file;
+- data di generazione;
+- criteri di completezza;
+- modalità di importazione nel flusso del sito;
+- modalità di verifica dopo l'importazione.
+
+La proposta deve derivare dalla lettura delle tabelle reali.
+Non assumere preventivamente formato, schema o meccanismo.
+
+COLLEGAMENTO CON I DATI GIÀ PREVISTI PER I SITI
+L'analisi deve spiegare come i dati provenienti dal file CORE possano collegarsi, dove pertinente, ai dati già destinati ai minisiti:
+
+- Results;
+- Schedule;
+- Match Report.
+
+Per ciascun collegamento indicare le chiavi reali disponibili e verificare il collegamento sul benchmark GW001.
+
+Non modificare Results, Schedule o Match Report.
+Non modificare i relativi trigger o repository.
+
+ANALISI DEL MINISITO GW001
+Per stabilire dove e perché integrare i dati, leggere lo stato corrente del minisito GW001 nel repository autoritativo:
+
+tommasomellogrand-ui/imc-website
+
+Analizzare esclusivamente quanto necessario a mappare i dati CORE sulle pagine, sezioni o funzioni esistenti e previste.
+
+Non modificare codice, runtime, grafica, configurazioni, workflow o deploy.
+
+PRE-FLIGHT OBBLIGATORIO
+Prima dell'analisi:
+
+1. verificare l'accesso corretto a Sql1956795_1 CORE;
+2. acquisire l'elenco reale completo delle tabelle IMC%;
+3. registrare struttura e conteggi;
+4. leggere campioni reali sufficienti a comprendere ogni tabella;
+5. registrare timestamp e query READ;
+6. leggere lo stato corrente pertinente del minisito GW001;
+7. non utilizzare memoria o vecchi export come prova dello stato attuale.
+
+VINCOLI ASSOLUTI
+- SOLO ANALISI E PROPOSTA.
+- DB WRITE: NO.
+- DB ALTER/DROP/CREATE: NO.
+- TRIGGER WRITE: NO.
+- IMPORTER WRITE: NO.
+- GATEWAY WRITE: NO.
+- WEBSITE CODE WRITE: NO.
+- DEPLOY: NO.
+- Nessuna creazione del file operativo in questo CASE.
+- Nessuna importazione nei minisiti in questo CASE.
+- Nessuna lettura diretta futura di Sql1956795_1 CORE da parte dei minisiti.
+- Non inventare tabelle, campi, relazioni, mapping o dati.
+- Non anticipare l'implementazione.
+
+OUTPUT AUTORITATIVO
+Registrare:
+
+tickets/DB/2026/IMC-DB-001-24/RESPONSE.txt
+
+La RESPONSE deve includere:
+
+- executive summary;
+- pre-flight;
+- inventario completo delle tabelle IMC%;
+- struttura e funzione di ciascuna tabella;
+- matrice obbligatoria;
+- analisi dettagliata sul benchmark GW001;
+- mapping verso pagine/sezioni/funzioni del minisito;
+- collegamenti con Results, Schedule e Match Report;
+- proposta completa del file;
+- flusso proposto di produzione e importazione;
+- cosa integrare, dove, come, quando e perché;
+- esclusioni motivate;
+- dipendenze;
+- rischi;
+- limiti;
+- ordine consigliato delle eventuali fasi successive;
+- elenco completo delle query READ;
+- verdict finale.
+
+VERDICT FINALE OBBLIGATORIO
+Restituire uno solo tra:
+
+- ANALYSIS_COMPLETED;
+- ANALYSIS_COMPLETED_WITH_DOCUMENTED_LIMITS;
+- BLOCKED.
+
+Al termine tornare nella chat con Tom indicando:
+
+- verdict;
+- numero di tabelle IMC analizzate;
+- sintesi di cosa deve essere integrato;
+- struttura proposta del file;
+- risultato del benchmark GW001;
+- eventuali decisioni richieste prima dell'implementazione.
+
+WRITE AUTHORIZED: YES, esclusivamente RESPONSE.txt e artefatti documentali di analisi nel CASE.
+DB WRITE: NO.
+CODE WRITE: NO.
+LIVE CHANGE: NO.
