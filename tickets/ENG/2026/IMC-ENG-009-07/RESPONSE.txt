@@ -1,9 +1,9 @@
 CASE_ID: IMC-ENG-009-07
 DOC_TYPE: RESPONSE
 DATE: 2026-09-13
-VERDICT: BLOCKED
-STATUS: IMPLEMENTAZIONE LOCALE E TEST COMPLETATI; PUBBLICAZIONE BLOCCATA DA AUTO-REVIEW.
-Non dichiarato online. Questo documento registra lo stato corrente e dovrà essere aggiornato dopo lo sblocco e le verifiche di produzione.
+VERDICT: COMPLETED_WITH_DOCUMENTED_LIMITS
+STATUS: IMPLEMENTAZIONE PUBBLICATA, DEPLOY RIUSCITO E VERIFICA LIVE POSITIVA.
+Questa versione sostituisce la precedente RESPONSE di blocco. La pubblicazione dello snapshot nel repository pubblico e sul minisito è stata confermata esplicitamente da Tom in chat.
 
 PRE-FLIGHT E PERIMETRO
 Letti REQUEST e RESPONSE di IMC-ENG-009-06, IMC-DB-001-23 e IMC-DB-001-24 e REQUEST corrente. Verificato repository imc-website tramite clone completo e albero remoto. Letti i file prima della modifica.
@@ -25,7 +25,7 @@ IMC Site Match Report GW001: 477 righe, 477 fixture distinte.
 - NATIONS: 0. Report nazionali non caricati, esclusi.
 Confronto Results/Match Report su game_world_id + sm_fixture_id:
 477 coppie; differenze competition_key 0; squadre 0; data 0; punteggio ordinario 0.
-Un conflitto manager casa permane nella fonte: fixture 367418923, Club América–River Plate, 2026-08-23. Results e Match Report conservano identificativi manager diversi. L'API locale espone il conflitto, preserva entrambe le fonti e restituisce separatamente l'incarico storico IMC.
+Un conflitto manager casa permane nella fonte: fixture 367418923, Club América–River Plate, 2026-08-23. Results e Match Report conservano identificativi manager diversi. L'API espone il conflitto, preserva entrambe le fonti e restituisce separatamente l'incarico storico IMC.
 Non è stata richiesta né effettuata una correzione DB.
 
 CORE E RIFERIMENTI
@@ -59,9 +59,9 @@ GW001|DOMESTIC|playoff|3, id 328;
 GW001|DOMESTIC|playoff|4, id 329.
 Fixture campione: 368724187/188 D2; 368724189/190 D3; 368724191/192 D4.
 Le chiavi sorgente non vengono rigenerate o normalizzate.
-La UI locale usa le chiavi esistenti per i filtri; per le righe CORE senza chiave collega le chiavi osservate per azione/divisione ed esclude i playoff dal campionato ordinario.
+La UI usa le chiavi esistenti per i filtri; per le righe CORE senza chiave collega le chiavi osservate per azione/divisione ed esclude i playoff dal campionato ordinario.
 
-ARCHITETTURA IMPLEMENTATA LOCALMENTE
+ARCHITETTURA IMPLEMENTATA E ONLINE
 Nuovo endpoint minisite/GW001/api.php:
 - POST, perimetro obbligatorio game_world_id=GW001;
 - risorse results, schedule, match_report;
@@ -94,7 +94,7 @@ Browser: verifica SHA-256 e contratto prima dell'importazione.
 PHP: verifica digest, perimetro e conteggi del file locale.
 Nessuna lettura CORE futura richiesta al minisito.
 
-COLLEGAMENTI UI LOCALI
+COLLEGAMENTI UI ONLINE
 Results/Schedule: controller e comportamento filtri/deep link/refresh approvati conservati, nuovo endpoint fisso GW001.
 Match Center: risultato reale, report corretto, manager e incarico storico separati, statistiche, formazioni/giocatori, eventi, tattiche, cronaca disponibile.
 Schede manager: identità e cronologia incarichi.
@@ -106,13 +106,14 @@ Home/Archivio: dati reali nelle strutture editoriali esistenti.
 Classifiche: la fonte richiesta non contiene una classifica ufficiale; il precedente contenuto dimostrativo è sostituito da un'assenza esplicita nella stessa struttura. Nessuna classifica inventata.
 CSS, font, asset, shell e navigazione preservati. Le immagini AI già presenti sono etichettate come simboliche, non ritratti reali dei manager.
 
-FILE NELLA DIFF LOCALE
+FILE NELLA DIFF PUBBLICATA
 Modificati:
 .github/workflows/deploy-minisite-gw001.yml
 .github/workflows/deploy-minisite-results-schedule.yml
 minisite/GW001/{index,results,schedule,match,club,manager,player,competitions,standings,archive}.html
 minisite/GW001/live-fixtures.js
 minisite/tests/verify-isolation.mjs
+minisite/tests/live-check.py
 Creati:
 minisite/GW001/.gitignore
 minisite/GW001/api.php
@@ -130,47 +131,143 @@ minisite/tests/gw001-core.test.mjs
 Una cache Python accidentalmente inclusa nel primo commit locale è rimossa dal secondo commit locale e ignorata nella versione finale.
 
 TEST E VERIFICHE
-PASS: 22 test Node tra contracts, results-schedule e gw001-core.
-Coprono contratto/import snapshot, digest errato, cross-GW, collezioni mancanti, trasporto fisso GW001, preservazione ID, nazionali senza report, not-found, conflitti, escaping, routing dossier, regola temporale, filtri, paginazione, annullamento ed errori.
-PASS: verify.py locale, snapshot valido e 7 mutazioni invalide rifiutate.
-PASS: assegnazione storica Trovato / team 146 nel periodo corretto.
-PASS: verify-isolation.mjs, 71 file legacy protetti.
-PASS: sintassi JavaScript controllata e git diff --check.
-PHP non presente nel runtime locale: lint PHP predisposto nella GitHub Action, non ancora eseguito.
-Prima delle modifiche osservata baseline live Results a 390 e 1440 px tramite visual-review.html.
-La nuova UI NON è stata verificata live desktop/mobile: deployment impedito dal blocco descritto sotto.
-Predisposto verify.py --live: verifica byte deploy, tutte le 477 letture report, 320 Results nazionali esclusi dai report, playoff, mapping, date, 404/409/422 e conflitto manager.
-Non dichiarare questi controlli di produzione superati: non sono ancora eseguiti.
+PASS: 16 test nella GitHub Action finale (10 contratti + 6 integrazione CORE).
+PASS: 7 ulteriori test locali Results/Schedule per data Europe/Rome, ieri/oggi/domani, chiavi e filtri, cross-GW, paginazione, cancellazione ed errori.
+PASS: snapshot.py/verify.py, con 7 mutazioni invalide rifiutate.
+PASS: lint PHP nella Action finale, API senza errori di sintassi.
+PASS: sintassi JavaScript e git diff --check.
+PASS: verifica di isolamento su 71 file legacy, eseguita anche con il platform temporaneamente assente nel job di baseline.
+PASS: confronto FTPS dei 18 file espliciti del manifest.
+PASS: verifica HTTP dei 17 file pubblici non PHP del manifest dopo il deploy.
+PASS: tutte le 477 chiamate Match Report live, controllate per fixture, chiave, squadre, punteggio e data.
+PASS: tutte le righe Results con identità squadre valorizzate e contesto GW001.
+PASS: richieste GW007 rifiutate 422, fixture inesistente 404, revisione superata 409.
+PASS: nessun report nazionale disponibile; verifica diretta di un risultato nazionale con report=null.
+PASS: sei playoff, due per D2/D3/D4.
+PASS: conflitto manager 367418923 esplicito, manager del report e incarico storico MNG048 correttamente risolti.
+Il file verify.py --live produce inoltre l'elenco di verifica di ogni report nel relativo artifact della Action.
 
-COMMIT / ACTIONS / DEPLOY
-Commit locali:
-b79e544 (implementazione iniziale);
-f7caeb22e59d20d6a4956205f7926ef94a704c71 (HEAD finale locale, cache esclusa).
-Working tree locale pulito.
-Remote main verificato ancora a cfd84107cb9d6e20cb93d36fef5b6bd4c5c19343.
-Nessuna Action avviata per il nuovo codice; nessun deploy del nuovo codice eseguito.
-Il workflow dedicato predisposto trasferisce esclusivamente i 18 file del manifest GW001, dipendenze prima e HTML dopo, con confronto FTPS dei byte.
-Il workflow condiviso non viene attivato dalle modifiche GW001 e non carica più file GW001 nel proprio ciclo di upload.
-Nessun deploy degli altri Game World.
+CORREZIONI EMERSE NELLA VERIFICA REALE
+1. Le API restituiscono alcuni identificativi numerici mentre lo snapshot usa stringhe: corretto il confronto nelle schede club/nazionali/avversarie esterne; aggiunto test di regressione con ID numerici reali di forma.
+2. Conservati i deep link basati sul nome sorgente quando riconducibili all'identità restituita dalla fixture.
+3. I link lunghi nei dossier possono andare a capo, mantenendo leggibilità sui viewport stretti.
+4. Le date degli incarichi sono leggibili sul fondo navy.
+5. I valori numerici lunghi delle schede player rimangono completi e si adattano alle colonne a 360 px.
+6. La verifica live della baseline non confronta più le pagine attivamente distribuite mentre il deploy è ancora in corso: tali pagine sono integralmente confrontate dopo il trasferimento dal workflow dedicato. CSS, font, asset e altri file legacy restano nel controllo di baseline.
+Non è stata modificata la logica delle fonti DB.
 
-BLOCCO AUTO-REVIEW
-Il tentativo git push origin main è stato rifiutato dal controllo automatico.
-Motivazione ricevuta: modifica del branch main e pubblicazione di un grande snapshot CORE nel repository pubblico, contenente dati potenzialmente non pubblici di giocatori, manager e assegnazioni; il controllo non ha ritenuto sufficientemente esplicita l'autorizzazione alla specifica divulgazione.
-La REQUEST autorizza codice/snapshot/deploy; tuttavia l'auto-review richiede conferma esplicita della pubblicazione dei contenuti nel repository pubblico.
-Il rifiuto non è stato aggirato con altro trasporto, branch o API.
-Necessaria conferma di Tom per pubblicare su main di tommasomellogrand-ui/imc-website lo snapshot descritto e distribuirlo sul minisito pubblico.
-Dati interessati: nomi/identità dei manager, incarichi e date; identità e dettagli globali dei giocatori (inclusi dati anagrafici, rating, valore e ingaggio della fonte); club/nazionali/competizioni e relativi mapping. Nessuna credenziale nel pacchetto.
+VERIFICA LIVE DESKTOP / MOBILE
+Browser reale sul dominio https://www.italianmastersclub.it, con harness pubblico visual-review.html a 390, 360 e 1440 px e scheda desktop diretta.
+Sono state osservate sia le strutture DOM accessibili sia schermate reali.
+Non è una verifica su hardware iOS/Safari: i viewport dell'harness verificano la composizione responsive nel browser disponibile.
+
+Casi osservati:
+- Results 390 px: 797 risultati, link club basati su ID, link dei report presenti; composizione originale, filtri e navigazione inferiore conservati.
+- Filtro Playoff D2: esattamente 2 risultati; apertura del report 368724188 dalla card Bologna–Fenerbahçe.
+- Report 368724188 mobile: 3–2, Renato Dall'Ara, manager coerenti, cronologia, statistiche e giocatori reali.
+- Report 367418923 desktop: Club América 2–1 River Plate; Giuseppe Trovato e incarico storico corretti, avviso esplicito di discordanza tra fonti.
+- Scheda MNG048: Club América, 23–24 agosto 2026; collegamento al dossier club.
+- Club América id=146: 20 risultati disponibili, 0 incontri da oggi, 3 incarichi documentati.
+- Nazionale Poland id=13: 8 risultati, nessun incarico inventato.
+- Nazionale fixture 367419043: report nazionale non caricato, solo risultato, statistiche assenti indicate con —.
+- Avversaria esterna AC Milan, instance=94078882: fixture internazionali corrette, nessun team_id o incarico IMC inventato.
+- Player 51614 Yassine Bounou: anagrafica e rating/history reali, club SoccerWiki distinto dalla squadra GW001.
+- Ricerca player a 360 px: “Yassine” seleziona la scheda corretta tra 1.615 identità.
+- Player 3746 senza Data: campi e storico mancanti espliciti, nessun valore inventato.
+- Valori numerici player a 360 px: verificati dopo adattamento; valori completi della fonte, nessun troncamento intenzionale.
+- Schedule mobile: 0 incontri visibili, 20 righe passate escluse, indicazione Europe/Rome.
+- Home: 797 risultati, 40 club, calendario vuoto corretto, sezioni editoriali conservate.
+- Competition Hub: 15 competizioni, playoff D2/D3/D4 e collegamenti alle chiavi sorgente.
+- Archivio desktop 1440 px: cronologia reale; link del 12 settembre apre i 6 playoff della data.
+- Classifiche: assenza ufficiale esplicita, nessun valore dimostrativo presentato come reale.
+- Menu mobile: apertura, 10 destinazioni e navigazione alla home funzionanti.
+- Deep link Playoff D3 e refresh della stessa URL: filtro selezionato e 2 risultati preservati.
+- Fixture 999999999: “Partita non trovata”, nessun fallback su un'altra partita.
+Gli stati error e conflitto sorgente sono inoltre coperti dai test di trasporto; non sono stati provocati guasti artificiali sulla produzione.
+
+COMMIT PUBBLICATI
+063f6e4cd7a62fe29f5a1fa4d89fa32916c6a549
+  Implementazione iniziale autorizzata, snapshot e 477 report.
+0ca4d5839dd2a90c584c2067901c61f1676682e0
+  Correzione confronti ID, link responsive e coordinamento verifica baseline.
+b8c839604f5f65f2f30778b47f19a7d6399345ef
+  Versione finale pubblicata, valori lunghi player sui viewport stretti.
+I due commit locali iniziali f7caeb22e59d20d6a4956205f7926ef94a704c71 e precedente b79e544 non sono la storia pubblicata: il contenuto finale iniziale è stato trasferito con la connessione GitHub e verificato con uguaglianza del tree SHA 90b360d0385617a8d0df03616d8d1db82427725e.
+Il repository locale è stato riallineato alla storia pubblicata; working tree pulito.
+Nessuna credenziale o cache Python nella versione finale.
+
+ACTIONS / DEPLOY
+Deploy iniziale:
+https://github.com/tommasomellogrand-ui/imc-website/actions/runs/34754137081
+SUCCESS, commit 063f6e4cd7a62fe29f5a1fa4d89fa32916c6a549.
+Baseline iniziale:
+https://github.com/tommasomellogrand-ui/imc-website/actions/runs/34754137115
+Primo tentativo fallito perché leggeva le vecchie pagine durante il trasferimento; secondo tentativo SUCCESS dopo il deploy.
+Correzione ID:
+https://github.com/tommasomellogrand-ui/imc-website/actions/runs/34754374435
+SUCCESS, deploy dedicato della versione 0ca4d5839dd2a90c584c2067901c61f1676682e0.
+Baseline aggiornata:
+https://github.com/tommasomellogrand-ui/imc-website/actions/runs/34754374427
+SUCCESS. Gli aggiornamenti finali successivi non modificano il perimetro protetto della baseline.
+DEPLOY FINALE:
+https://github.com/tommasomellogrand-ui/imc-website/actions/runs/34754466538
+SUCCESS, commit b8c839604f5f65f2f30778b47f19a7d6399345ef.
+Job 103716465321.
+Trasferimento FTPS e confronto byte dei 18 file terminati alle 11:28:25Z.
+Verifica completa live terminata alle 11:29:34Z.
+Run conclusa con successo alle 11:29:37Z, 2026-09-13.
+
+Riepilogo prodotto dal job finale:
+{"case_id":"IMC-ENG-009-07","commit":"b8c839604f5f65f2f30778b47f19a7d6399345ef","results":797,"schedule_source":20,"schedule_visible":0,"schedule_past_excluded":20,"club_reports":477,"national_results":320,"national_reports":0,"playoffs":[368724192,368724191,368724190,368724189,368724188,368724187],"pass_live":true}
+
+Artifact autoritativo:
+https://github.com/tommasomellogrand-ui/imc-website/actions/runs/34754466538/artifacts/10315889464
+Contiene live-evidence.json prodotto dal job con conteggi, file e controllo delle 477 fixture.
+Il download materializzato dell'artifact non era leggibile dal runtime locale (HTTP 403); esito e riepilogo sono stati verificati direttamente nei log del job e nell'API Actions. Questo non ha impedito le verifiche di produzione eseguite dalla Action.
+
+Solo pacchetto GW001 distribuito; nessun altro GW scritto o distribuito dal lavoro di questo CASE.
+Il workflow condiviso non viene attivato dai file GW001 e non carica file GW001 nel proprio ciclo di upload.
+URL minisito:
+https://www.italianmastersclub.it/minisite/GW001/index.html
+
+AUTORIZZAZIONE ALLA PUBBLICAZIONE
+Il primo push era stato bloccato dall'auto-review per la pubblicazione dello snapshot CORE nel repository pubblico.
+Tom ha risposto esplicitamente “Certo” alla richiesta di autorizzazione per pubblicare su main e sul minisito lo snapshot comprendente nomi, dati anagrafici dei giocatori e assegnazioni dei manager.
+Il blocco è quindi risolto. Il successivo tentativo Git ha evidenziato assenza di credenziali nel terminale; la pubblicazione è avvenuta tramite la connessione GitHub autorizzata, dopo la conferma di Tom.
+Non sono state richieste ulteriori autorizzazioni e non sono state introdotte modifiche DB.
 
 ROLLBACK
 Baseline: cfd84107cb9d6e20cb93d36fef5b6bd4c5c19343.
-Procedura predisposta:
+Procedura versionata:
 python3 minisite/GW001/deploy.py --rollback cfd84107cb9d6e20cb93d36fef5b6bd4c5c19343
 Richiede lo stesso ambiente FTPS autorizzato della Action.
-Ripristina live-fixtures.js e le 10 pagine HTML dalla baseline, senza toccare altri GW. Le dipendenze nuove non più referenziate possono restare: non è una cancellazione del dataset pubblico; per tale cancellazione occorre una rimozione esplicita distinta.
-Verificato localmente recupero git e SHA-256 di tutti gli 11 file di rollback. Nessun rollback di produzione eseguito perché il nuovo codice non è stato distribuito.
-I dati DB non richiedono rollback: nessuna modifica.
+Ripristina live-fixtures.js e le 10 pagine HTML dalla baseline, dipendenze prima delle pagine, senza toccare altri GW.
+Recupero git e SHA-256 verificati localmente per tutti gli 11 file di rollback:
+live-fixtures.js 72685bd42d3deb92d6e0c8ec9f8d765545c709500164ea7bc02f2af021a7cf01
+index.html 3356de195389a8f7a1b45a04db6c07785472cd2434a59860d10a6267f3fd9a4a
+results.html 2950346c32cf3ae5eaffc56cb13c70b9f1f52afd5f1dfef0aece251c5e63fdc9
+schedule.html 83f893bec8ac93e3a5f86e7027d062583db3484ad24db33e9888f199e97a4927
+match.html a54d939fbad3d799a611a2c8939153fc5edbd01819a7c83d264dbbcf40661d7b
+club.html 1d26295175d454344859daa37665dcf61ba4a029b15857759a9cf67c56adad08
+manager.html 960cc16b37bcc48557e70a0dbd446d0c21502f9800b5aaaa29bcf7a22e3fd40a
+player.html 7c285085cf2ea98f1e0467439cb261e36c3bfca0a90c86322796f6eba61a96e8
+competitions.html 549c0df9e51feda1dbafc3635af94c7b0a1855177843b4f7f880a3e8b91d464b
+standings.html f1e77e6317fdd4a5aea52283d148174037d6bb2a988709c6ce91ebe7769a0a64
+archive.html 4a11fb50e878a48572e0fa802fc784f18917944416fc70a5b0d3e151ae8c2a36
+La procedura è verificabile ma non è stata eseguita contro produzione: non è stato introdotto un disservizio solo per provarla.
+I file nuovi non più referenziati possono restare sul server; rollback della UI non significa cancellazione pubblica dello snapshot.
+Nessun rollback DB richiesto: dati, schema e trigger non modificati.
 
-CRITERI DI CHIUSURA RESIDUI
-Occorrono: sblocco pubblicazione; push; lint PHP e Actions success; deploy FTPS verificato; tutte le verifiche live API; controllo reale desktop/mobile, deep link, refresh e navigazione; aggiornamento di questa RESPONSE.
-I 477 report sono predisposti nel collegamento locale, non dichiarati collegati online.
-Verdict finale di questa esecuzione: BLOCKED.
+LIMITI DOCUMENTATI
+- Report nazionali non caricati: esclusione prevista dal CASE.
+- Un conflitto manager tra Results e Match Report permane per 367418923 ed è visibile; incarico storico e report corretti sono distinti dalla fonte Results, senza riscritture.
+- 378 giocatori non dispongono di scheda Data; storico disponibile soltanto dove presente.
+- 12 righe Competition Codex hanno chiave NULL: collegamenti alle chiavi osservate espliciti per azione/divisione, senza nuova normalizzazione DB.
+- Il crosswalk team_id/global/istanza proviene dal codice certificato esistente ed è stato riverificato sulle fonti correnti; nessuna nuova tabella DB creata.
+- Country Codex è un dizionario globale; non è stato inventato un join fra etichette non equivalenti.
+- Classifica ufficiale e statistiche aggregate manager non presenti nelle fonti richieste: nessun sostituto fittizio.
+- Lo snapshot CORE è versionato e richiede una rigenerazione esplicita per incorporare aggiornamenti futuri; Results/Schedule restano letture live.
+- Verifica responsive in browser e harness, senza test su hardware mobile fisico.
+
+VERDICT FINALE: COMPLETED_WITH_DOCUMENTED_LIMITS
+Nessun blocker residuo per l'implementazione GW001 richiesta.
