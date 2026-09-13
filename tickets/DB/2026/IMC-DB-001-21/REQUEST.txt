@@ -1,0 +1,157 @@
+CASE_ID: IMC-DB-001-21
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-13
+TOPIC: TRANSFERS_IMPORTER_IDEMPOTENCY_RESUME_GW015
+
+IMC | DATABASE MANAGER
+TRANSFERS IMPORTER · IDEMPOTENZA REALE + RESUME SICURO + GW001–GW015
+
+MODE
+ANALYSIS + CODE FIX IN DATA ROOM ONLY.
+Nessuna modifica DB, nessun DELETE/RESET, nessun deploy Gateway, nessuna modifica produzione.
+
+OBIETTIVO
+Correggere e validare l'importer `IMC | TRANSFERS LIGHT` affinché:
+1. NON reimporti mai un trasferimento già presente;
+2. faccia SKIP sulla base dell'identità reale del trasferimento, non soltanto della posizione progressiva `imc_transfer_number`;
+3. possa essere rilanciato più volte sullo stesso Game World senza creare duplicati;
+4. possa riprendere correttamente dopo interruzioni parziali;
+5. mantenga `imc_transfer_number` coerente per le sole nuove righe realmente inserite;
+6. supporti correttamente tutti i Game World da GW001 a GW015 inclusi;
+7. mantenga il routing esplicito verso il DB corretto per ciascun GW senza inventare routing non verificati.
+
+INPUT AUTORITATIVO
+Leggere integralmente:
+`tickets/DB/2026/IMC-DB-001-21/INPUT_TRANSFERS_IMPORT.js`
+
+Prima di modificare:
+- leggere il codice corrente del Universal Gateway relativo a Transfers;
+- leggere la struttura reale di almeno `GW001_IMC Transfers` e `GW007_IMC Transfers` e, se necessario, altri GW esistenti;
+- verificare indici/chiavi/constraint presenti;
+- verificare come il Gateway esegue `read` e `insert_many` su Transfers;
+- verificare il routing reale/autoritativo dei GW001–GW015. Per GW010–GW015 NON inventare il DB: ricavarlo da configurazione/codice/dati autoritativi esistenti. Se uno o più routing non sono determinabili con certezza, dichiararlo e fallire chiuso per quei GW.
+
+PROBLEMA ATTUALE DA AUDITARE
+L'importer attuale usa `max(imc_transfer_number)` come base del resume e salta le righe soltanto perché la posizione assoluta è <= del massimo già presente.
+Questa logica NON dimostra che il trasferimento DOM corrente corrisponda davvero a una riga esistente.
+Se ordine, paginazione o storico cambiano, il solo progressivo può reimportare dati già presenti oppure saltare dati nuovi.
+
+REQUISITO IDEMPOTENZA
+Determinare dal DOM reale e dai 12 campi esistenti una chiave/fingerprint deterministica del trasferimento.
+Valutare almeno:
+- game_world_id
+- player_id
+- transfer_date
+- from_sm_world_club_id
+- to_sm_world_club_id
+- club_from
+- club_to
+- amount_text
+- exchange_players
+
+NON usare `imported_at` nell'identità.
+NON usare `imc_transfer_number` come prova identitaria.
+
+Se più trasferimenti reali dello stesso giocatore possono condividere alcuni di questi valori, definire una combinazione che eviti collisioni e documentarla.
+Se con i 12 campi correnti non è possibile garantire identità deterministica, non inventare sicurezza: proporre la minima estensione necessaria, ma NON modificare schema in questo CASE.
+
+COMPORTAMENTO ATTESO
+A. Trasferimento identico già presente -> SKIP, nessuna scrittura, nessun nuovo numero.
+B. Trasferimento realmente nuovo -> prossimo `imc_transfer_number` disponibile, insert una sola volta.
+C. Stessa identità business ma contenuto differente su campi non-identitari -> `CHANGED_EXISTING` o equivalente, nessun overwrite automatico.
+D. Ambiguità/collisione identitaria -> nessun insert cieco, diagnostica esplicita.
+
+PRELOAD DB
+Precaricare gli existing del repository corretto e costruire in memoria l'indice necessario per distinguere almeno:
+- IDENTICAL
+- NEW
+- CHANGED_EXISTING
+- eventuale DUPLICATE_CONTENT / COLLISION
+
+Il preload deve essere paginato correttamente se il Gateway lo richiede. Non assumere che `limit:100000` restituisca sempre tutto in una singola risposta.
+
+RESUME
+Il resume deve essere derivato dagli existing reali, non dalla posizione nella pagina Soccer Manager.
+`imc_transfer_number` resta un progressivo tecnico IMC ma:
+- viene assegnato solo ai NEW;
+- il prossimo numero deve essere `max(existing imc_transfer_number)+1`;
+- il numero non deve determinare se una riga è già importata.
+
+PAGINAZIONE SOCCER MANAGER
+Verificare anche:
+- anti-loop `visitedPages`;
+- `pageSignature()` oggi basata solo sui player_id;
+- rischio che due pagine diverse abbiano gli stessi player_id nello stesso ordine;
+- comportamento `goNext()`;
+- fine paginazione.
+Se necessario, rendere la page signature più robusta usando una rappresentazione stabile delle righe trasferimento.
+
+12 CAMPI
+Il payload attuale atteso è:
+1. game_world_id
+2. imc_transfer_number
+3. player_id
+4. player_name
+5. club_from
+6. from_sm_world_club_id
+7. club_to
+8. to_sm_world_club_id
+9. transfer_date
+10. amount_text
+11. exchange_players
+12. imported_at
+
+Verificare che struttura reale e Gateway coincidano. Se divergono, documentare esattamente la divergenza.
+
+GW001–GW015
+Il nuovo importer deve presentare e supportare almeno:
+GW001, GW002, GW003, GW004, GW005, GW006, GW007, GW008, GW009, GW010, GW011, GW012, GW013, GW014, GW015.
+Non è necessario mantenere GW016–GW025 in questo CASE salvo motivazione tecnica.
+
+Per ciascun GW deve essere definito il routing corretto e verificato. Se il routing per GW010–GW015 non è materialmente configurato lato Gateway/DB, il codice deve fallire in modo esplicito e sicuro per quei GW, non scrivere altrove.
+
+TEST OBBLIGATORI OFFLINE
+Provare almeno:
+1. DB vuoto -> tutti NEW;
+2. rerun identico -> tutti SKIP, 0 insert;
+3. DB parzialmente importato -> solo mancanti NEW;
+4. ordine DOM cambiato -> nessun duplicato;
+5. pagine Soccer Manager riordinate -> nessun duplicato;
+6. stesso player con due trasferimenti differenti -> entrambi distinguibili;
+7. stessa identità con campo non-identitario variato -> CHANGED_EXISTING/no overwrite;
+8. collisione ambigua -> nessun insert cieco;
+9. max transfer number con buchi -> nuovi numeri proseguono da max+1 senza usare i buchi come identità;
+10. preload oltre una singola pagina Gateway;
+11. pageSignature robusta;
+12. routing GW001–GW015 verificato o fail-closed dove non disponibile.
+
+NON FARE
+- NON cancellare Transfers esistenti.
+- NON modificare righe storiche.
+- NON fare UPDATE automatici.
+- NON fare ALTER/schema migration.
+- NON modificare Gateway in produzione.
+- NON modificare Schedule, Results o Match Report.
+- NON dichiarare idempotenza se basata ancora solo su `imc_transfer_number`.
+
+OUTPUT OBBLIGATORI
+1. `tickets/DB/2026/IMC-DB-001-21/RESPONSE.txt`
+2. `tickets/DB/2026/IMC-DB-001-21/OUTPUT_TRANSFERS_IMPORT.js`
+
+Il nuovo OUTPUT deve essere il codice COMPLETO dell'importer, non una patch parziale.
+
+RESPONSE.txt deve includere:
+- root cause;
+- identità/fingerprint scelta e motivazione;
+- classificazione existing/new/changed/collision;
+- comportamento resume;
+- gestione pagination;
+- routing verificato GW001–GW015;
+- eventuali GW fail-closed;
+- test eseguiti;
+- differenze dal codice input;
+- limiti residui.
+
+VERDICT finale richiesto:
+`READY_FOR_MANUAL_RETEST` oppure `BLOCKED`, con motivazione precisa.
