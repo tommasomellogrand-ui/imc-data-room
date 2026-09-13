@@ -1,0 +1,174 @@
+CASE_ID: IMC-DB-001-22
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-13
+TOPIC: UNIVERSAL_PLAYOFF_RESULTS_NORMALIZATION_BEFORE_SITE_TRIGGER
+
+IMC | DATABASE MANAGER
+NORMALIZZAZIONE UNIVERSALE PLAYOFF PRIMA DEL TRIGGER SITE RESULTS
+
+CONTESTO
+L'audit IMC-ENG-009-05 ha rilevato che alcuni Results appartenenti ai playoff possono risultare registrati nella competition_key della League.
+
+Questo incarico non è limitato al GW001.
+La gestione richiesta deve valere per tutti tutti i Game World interessati dai playoff e deve diventare una regola unica per i playoff presenti e futuri.
+
+OBIETTIVO AUTORITATIVO
+I Results devono continuare ad arrivare nei repository raw esattamente attraverso l'importazione attuale.
+
+Dopo che i Results sono arrivati nel database e prima che parta il trigger automatico che li trasferisce nei repository destinati ai siti, deve avvenire una fase automatica intermedia che:
+
+1. riconosca i Results appartenenti ai playoff;
+2. crei e assegni una nuova competition_key dedicata ai playoff;
+3. registri sotto tale competition_key tutti i Results playoff interessati;
+4. completi la normalizzazione prima dell'esecuzione del passaggio verso i repository Site Results;
+5. applichi la stessa regola a tutti i Game World interessati e ai futuri Results playoff.
+
+Soltanto dopo questa normalizzazione deve avvenire il passaggio automatico dei Results verso i repository destinati ai siti.
+
+RESPONSABILITÀ DEL DATABASE MANAGER
+Il Database Manager deve:
+
+- leggere lo stato reale di database, repository Results, trigger, ordine di esecuzione e dipendenze;
+- individuare tutti i Game World e tutti i Results playoff attualmente presenti;
+- determinare autonomamente la regola tecnica corretta per riconoscere i playoff;
+- determinare autonomamente struttura e formato canonico della nuova competition_key dedicata;
+- determinare autonomamente come introdurre la fase intermedia richiesta nell'ordine operativo esistente;
+- garantire che l'importazione attuale dei Results resti invariata;
+- gestire coerentemente i Results playoff già presenti e quelli futuri;
+- garantire l'allineamento dei repository Site Results e dei report pertinenti;
+- verificare che la regola sia uniforme in tutti i Game World interessati;
+- documentare integralmente soluzione, modifiche, conteggi e verifiche.
+
+Il REQUEST definisce il risultato richiesto ma non prescrive la soluzione tecnica.
+Non assumere preventivamente quale trigger debba essere modificato, sostituito, ritardato o affiancato: questa decisione appartiene al Database Manager dopo la lettura dello stato reale.
+
+PERIMETRO
+IN SCOPE:
+- IMC Results;
+- competition_key dei Results playoff;
+- fase automatica intermedia successiva all'arrivo nel database;
+- trigger/pipeline verso IMC Site Results;
+- report Results pertinenti;
+- tutti i Game World interessati dai playoff;
+- gestione coerente dei playoff già presenti e futuri.
+
+OUT OF SCOPE:
+- Schedule;
+- Match Report;
+- Transfers;
+- SM Player Stats;
+- Player Codex;
+- codice importer;
+- minisiti e frontend;
+- modifiche creative;
+- qualsiasi repository o schema non necessario all'obiettivo.
+
+PRE-FLIGHT OBBLIGATORIO
+Prima di qualsiasi modifica:
+
+1. leggere integralmente IMC-ENG-009-05 RESPONSE come contesto diagnostico, senza trattarne le proposte come soluzione obbligatoria;
+2. rilevare i database e i repository Results realmente coinvolti;
+3. leggere le definizioni complete dei trigger pertinenti da information_schema.TRIGGERS;
+4. verificare ACTION_TIMING, ACTION_ORDER, eventi e dipendenze;
+5. identificare deterministicamente tutti i Results playoff esistenti;
+6. produrre conteggi per Game World e competition_key attuale;
+7. verificare i corrispondenti record nei repository IMC Site Results e nei report;
+8. registrare lo stato iniziale e i conteggi prima dell'intervento.
+
+ESECUZIONE
+Il Database Manager è autorizzato a progettare ed eseguire esclusivamente le modifiche DB necessarie per ottenere il flusso richiesto.
+
+Per modifiche strutturali o ai trigger:
+- usare il percorso Database Manager previsto;
+- predisporre il piano di migrazione;
+- validare target e impatto;
+- eseguire la migrazione;
+- verificare immediatamente lo stato reale dopo l'esecuzione.
+
+Non modificare l'importer.
+Non modificare campi estranei.
+Non estendere lo scope.
+
+REQUISITI FUNZIONALI
+La consegna è valida soltanto se:
+
+1. i Results continuano a essere importati come oggi;
+2. la normalizzazione avviene dopo l'arrivo nel database;
+3. la normalizzazione è completata prima del passaggio verso Site Results;
+4. ogni Result playoff viene riconosciuto deterministicamente;
+5. ogni Result playoff riceve la nuova competition_key dedicata;
+6. la regola è identica per tutti i Game World interessati;
+7. i futuri Results playoff seguono automaticamente lo stesso flusso;
+8. i Results non playoff non vengono riclassificati;
+9. i repository Site Results ricevono lo stato già normalizzato;
+10. i dati già presenti vengono resi coerenti con la nuova regola;
+11. i report Results pertinenti restano allineati;
+12. nessun record viene perso o duplicato.
+
+VERIFICHE OBBLIGATORIE
+Dopo l'intervento verificare e registrare:
+
+- definizioni finali dei trigger e relativo ordine;
+- conteggio totale Results per Game World prima e dopo;
+- conteggio Results playoff per Game World prima e dopo;
+- competition_key precedente e nuova per i record interessati;
+- zero Results playoff rimasti sotto competition_key non dedicata;
+- zero Results non playoff trasferiti nella nuova competition_key;
+- zero record mancanti, extra o divergenti tra raw Results e Site Results;
+- allineamento dei report Results;
+- assenza di duplicati introdotti;
+- prova del percorso completo:
+  arrivo nel repository raw → normalizzazione → trigger → Site Results;
+- verifica di idempotenza e gestione dei futuri inserimenti;
+- elenco esatto di database, tabelle e trigger modificati.
+
+Se non è possibile dimostrare in sicurezza il percorso completo senza introdurre dati fittizi, non inventare una prova: documentare il limite e usare evidenze reali disponibili.
+
+ROLLBACK
+Prima dell'esecuzione predisporre un rollback circoscritto e verificabile.
+La RESPONSE deve descrivere come ripristinare lo stato precedente senza perdita di Results.
+
+OUTPUT AUTORITATIVI
+Registrare nel CASE:
+
+- tickets/DB/2026/IMC-DB-001-22/RESPONSE.txt
+- eventuali file SQL o artefatti tecnici prodotti dal Database Manager, con nomi espliciti.
+
+La RESPONSE deve includere:
+
+- stato iniziale;
+- inventario dei playoff per Game World;
+- root cause;
+- soluzione scelta dal Database Manager;
+- nuova regola canonica;
+- piano ed esecuzione della migrazione;
+- file/modifiche applicate;
+- conteggi prima/dopo;
+- verifiche raw → normalizzazione → Site Results;
+- verifica report;
+- verifica dati futuri;
+- rollback;
+- limiti;
+- verdict finale.
+
+VERDICT FINALE OBBLIGATORIO
+Restituire uno solo tra:
+
+- COMPLETED
+- COMPLETED_WITH_DOCUMENTED_LIMITS
+- BLOCKED
+
+Al termine tornare nella chat con Tom indicando:
+- verdict;
+- Game World interessati;
+- nuova regola creata;
+- numero di Results playoff normalizzati;
+- esito del passaggio verso Site Results;
+- eventuali blocker residui.
+
+WRITE AUTHORIZED: YES, esclusivamente entro lo scope DB sopra definito.
+DB WRITE: YES, esclusivamente dopo pre-flight e piano di migrazione.
+CODE IMPORTER WRITE: NO.
+FRONTEND WRITE: NO.
+DEPLOY WEBSITE: NO.
