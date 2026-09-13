@@ -1,0 +1,450 @@
+{
+  "before": {
+    "action": "query",
+    "database": "Sql1956795_3",
+    "ok": true,
+    "result": {
+      "duration_ms": 9,
+      "returned_rows": 18,
+      "rows": [
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "INSERT INTO `IMC Repository Report` (`game_world_id`,`repository`,`total_records`,`updated_at`) VALUES ('GW001','IMC Match Report',1,CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE `total_records`=`total_records`+1,`updated_at`=CURRENT_TIMESTAMP",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_repo_match_report_ai"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "INSERT INTO `IMC Site Match Report` (`game_world_id`,`sm_fixture_id`,`competition_key`,`sm_action`,`sm_country`,`sm_division`,`competition_group`,`competition_stage`,`competition_round`,`match_date`,`home_sm_club_id`,`home_name`,`away_sm_club_id`,`away_name`,`home_sm_manager_id`,`home_manager_name`,`away_sm_manager_id`,`away_manager_name`,`home_score`,`away_score`,`penalty_home_score`,`penalty_away_score`,`aggregate_home_score`,`aggregate_away_score`,`stadium_name`,`attendance`,`team_stats_json`,`players_json`,`events_json`,`tactics_json`,`commentary_json`,`fingerprint`,`imported_at`,`source_key`,`synced_at`) VALUES (NEW.`game_world_id`,NEW.`sm_fixture_id`,NEW.`competition_key`,NEW.`sm_action`,NEW.`sm_country`,NEW.`sm_division`,NEW.`competition_group`,NEW.`competition_stage`,NEW.`competition_round`,NEW.`match_date`,NEW.`home_sm_club_id`,NEW.`home_name`,NEW.`away_sm_club_id`,NEW.`away_name`,NEW.`home_sm_manager_id`,NEW.`home_manager_name`,NEW.`away_sm_manager_id`,NEW.`away_manager_name`,NEW.`home_score`,NEW.`away_score`,NEW.`penalty_home_score`,NEW.`penalty_away_score`,NEW.`aggregate_home_score`,NEW.`aggregate_away_score`,NEW.`stadium_name`,NEW.`attendance`,NEW.`team_stats_json`,NEW.`players_json`,NEW.`events_json`,NEW.`tactics_json`,NEW.`commentary_json`,NEW.`fingerprint`,NEW.`imported_at`,SHA2(CONCAT_WS('|','GW001',COALESCE(CAST(NEW.`sm_fixture_id` AS CHAR),'NULL'),COALESCE(CAST(NEW.`fingerprint` AS CHAR),'NULL')),256),CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE `game_world_id`=VALUES(`game_world_id`),`sm_fixture_id`=VALUES(`sm_fixture_id`),`competition_key`=VALUES(`competition_key`),`sm_action`=VALUES(`sm_action`),`sm_country`=VALUES(`sm_country`),`sm_division`=VALUES(`sm_division`),`competition_group`=VALUES(`competition_group`),`competition_stage`=VALUES(`competition_stage`),`competition_round`=VALUES(`competition_round`),`match_date`=VALUES(`match_date`),`home_sm_club_id`=VALUES(`home_sm_club_id`),`home_name`=VALUES(`home_name`),`away_sm_club_id`=VALUES(`away_sm_club_id`),`away_name`=VALUES(`away_name`),`home_sm_manager_id`=VALUES(`home_sm_manager_id`),`home_manager_name`=VALUES(`home_manager_name`),`away_sm_manager_id`=VALUES(`away_sm_manager_id`),`away_manager_name`=VALUES(`away_manager_name`),`home_score`=VALUES(`home_score`),`away_score`=VALUES(`away_score`),`penalty_home_score`=VALUES(`penalty_home_score`),`penalty_away_score`=VALUES(`penalty_away_score`),`aggregate_home_score`=VALUES(`aggregate_home_score`),`aggregate_away_score`=VALUES(`aggregate_away_score`),`stadium_name`=VALUES(`stadium_name`),`attendance`=VALUES(`attendance`),`team_stats_json`=VALUES(`team_stats_json`),`players_json`=VALUES(`players_json`),`events_json`=VALUES(`events_json`),`tactics_json`=VALUES(`tactics_json`),`commentary_json`=VALUES(`commentary_json`),`fingerprint`=VALUES(`fingerprint`),`imported_at`=VALUES(`imported_at`),`synced_at`=VALUES(`synced_at`)",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_site_match_report_ai"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "UPDATE `IMC Site Match Report` SET `game_world_id`=NEW.`game_world_id`,`sm_fixture_id`=NEW.`sm_fixture_id`,`competition_key`=NEW.`competition_key`,`sm_action`=NEW.`sm_action`,`sm_country`=NEW.`sm_country`,`sm_division`=NEW.`sm_division`,`competition_group`=NEW.`competition_group`,`competition_stage`=NEW.`competition_stage`,`competition_round`=NEW.`competition_round`,`match_date`=NEW.`match_date`,`home_sm_club_id`=NEW.`home_sm_club_id`,`home_name`=NEW.`home_name`,`away_sm_club_id`=NEW.`away_sm_club_id`,`away_name`=NEW.`away_name`,`home_sm_manager_id`=NEW.`home_sm_manager_id`,`home_manager_name`=NEW.`home_manager_name`,`away_sm_manager_id`=NEW.`away_sm_manager_id`,`away_manager_name`=NEW.`away_manager_name`,`home_score`=NEW.`home_score`,`away_score`=NEW.`away_score`,`penalty_home_score`=NEW.`penalty_home_score`,`penalty_away_score`=NEW.`penalty_away_score`,`aggregate_home_score`=NEW.`aggregate_home_score`,`aggregate_away_score`=NEW.`aggregate_away_score`,`stadium_name`=NEW.`stadium_name`,`attendance`=NEW.`attendance`,`team_stats_json`=NEW.`team_stats_json`,`players_json`=NEW.`players_json`,`events_json`=NEW.`events_json`,`tactics_json`=NEW.`tactics_json`,`commentary_json`=NEW.`commentary_json`,`fingerprint`=NEW.`fingerprint`,`imported_at`=NEW.`imported_at`,`source_key`=SHA2(CONCAT_WS('|','GW001',COALESCE(CAST(NEW.`sm_fixture_id` AS CHAR),'NULL'),COALESCE(CAST(NEW.`fingerprint` AS CHAR),'NULL')),256),`synced_at`=CURRENT_TIMESTAMP WHERE `source_key`=SHA2(CONCAT_WS('|','GW001',COALESCE(CAST(OLD.`sm_fixture_id` AS CHAR),'NULL'),COALESCE(CAST(OLD.`fingerprint` AS CHAR),'NULL')),256)",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "UPDATE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_site_match_report_au"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "UPDATE `IMC Repository Report` SET `total_records`=GREATEST(`total_records`-1,0),`updated_at`=CURRENT_TIMESTAMP WHERE `game_world_id`='GW001' AND `repository`='IMC Match Report'",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "DELETE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_repo_match_report_ad"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "DELETE FROM `IMC Site Match Report` WHERE `source_key`=SHA2(CONCAT_WS('|','GW001',COALESCE(CAST(OLD.`sm_fixture_id` AS CHAR),'NULL'),COALESCE(CAST(OLD.`fingerprint` AS CHAR),'NULL')),256) LIMIT 1",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "DELETE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_site_match_report_ad"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "SET NEW.competition_key=CASE WHEN (REGEXP_LIKE(TRIM(COALESCE(NEW.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_group_name,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')) THEN CONCAT_WS('|',NEW.game_world_id,CASE WHEN UPPER(TRIM(COALESCE(NEW.sm_country,''))) IN ('','CUS') THEN NULL ELSE UPPER(TRIM(NEW.sm_country)) END,'DOMESTIC','playoff',NULLIF(TRIM(NEW.sm_division),'')) ELSE NEW.competition_key END",
+          "ACTION_TIMING": "BEFORE",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_results_playoff_bi"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "SET NEW.competition_key=CASE WHEN (REGEXP_LIKE(TRIM(COALESCE(NEW.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_group_name,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')) THEN CONCAT_WS('|',NEW.game_world_id,CASE WHEN UPPER(TRIM(COALESCE(NEW.sm_country,''))) IN ('','CUS') THEN NULL ELSE UPPER(TRIM(NEW.sm_country)) END,'DOMESTIC','playoff',NULLIF(TRIM(NEW.sm_division),'')) ELSE NEW.competition_key END",
+          "ACTION_TIMING": "BEFORE",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "UPDATE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_results_playoff_bu"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "UPDATE `GW001_IMC Results Report` SET `total_results`=`total_results`+1, `updated_at`=CURRENT_TIMESTAMP WHERE `game_world_id`='GW001'",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_imc_results_report_ai"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "INSERT INTO `IMC Results Report` (`game_world_id`,`scope`,`sm_action`,`sm_country`,`competition_key`,`total_results`) VALUES ('GW001','TOTAL','','','',1),('GW001','SM_ACTION',COALESCE(NEW.`sm_action`,''),'','',1),('GW001','COMPETITION_KEY','','',COALESCE(NEW.`competition_key`,''),1),('GW001','SM_ACTION_COMPETITION_KEY',COALESCE(NEW.`sm_action`,''),'',COALESCE(NEW.`competition_key`,''),1) ON DUPLICATE KEY UPDATE `total_results`=`total_results`+1,`updated_at`=CURRENT_TIMESTAMP",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_imc_results_global_ai"
+        },
+        {
+          "ACTION_ORDER": "3",
+          "ACTION_STATEMENT": "INSERT INTO `IMC Repository Report` (`game_world_id`,`repository`,`total_records`,`updated_at`) VALUES ('GW001','IMC Results',1,CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE `total_records`=`total_records`+1,`updated_at`=CURRENT_TIMESTAMP",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_repo_results_ai"
+        },
+        {
+          "ACTION_ORDER": "4",
+          "ACTION_STATEMENT": "INSERT INTO `IMC Site Results` (`game_world_id`,`sm_fixture_id`,`competition_key`,`sm_action`,`sm_country`,`sm_division`,`competition_group`,`competition_group_name`,`competition_stage`,`competition_round`,`match_date`,`home_sm_club_id`,`home_name`,`away_sm_club_id`,`away_name`,`home_sm_manager_id`,`away_sm_manager_id`,`home_score`,`away_score`,`penalty_home_score`,`penalty_away_score`,`aggregate_home_score`,`aggregate_away_score`,`result_status`,`fingerprint`,`imported_at`,`source_row_hash`,`synced_at`) VALUES (NEW.`game_world_id`,NEW.`sm_fixture_id`,NEW.`competition_key`,NEW.`sm_action`,NEW.`sm_country`,NEW.`sm_division`,NEW.`competition_group`,NEW.`competition_group_name`,NEW.`competition_stage`,NEW.`competition_round`,NEW.`match_date`,NEW.`home_sm_club_id`,NEW.`home_name`,NEW.`away_sm_club_id`,NEW.`away_name`,NEW.`home_sm_manager_id`,NEW.`away_sm_manager_id`,NEW.`home_score`,NEW.`away_score`,NEW.`penalty_home_score`,NEW.`penalty_away_score`,NEW.`aggregate_home_score`,NEW.`aggregate_away_score`,NEW.`result_status`,NEW.`fingerprint`,NEW.`imported_at`,SHA2(CAST(JSON_ARRAY('GW001',NEW.`game_world_id`,NEW.`sm_fixture_id`,NEW.`competition_key`,NEW.`sm_action`,NEW.`sm_country`,NEW.`sm_division`,NEW.`competition_group`,NEW.`competition_group_name`,NEW.`competition_stage`,NEW.`competition_round`,NEW.`match_date`,NEW.`home_sm_club_id`,NEW.`home_name`,NEW.`away_sm_club_id`,NEW.`away_name`,NEW.`home_sm_manager_id`,NEW.`away_sm_manager_id`,NEW.`home_score`,NEW.`away_score`,NEW.`penalty_home_score`,NEW.`penalty_away_score`,NEW.`aggregate_home_score`,NEW.`aggregate_away_score`,NEW.`result_status`,NEW.`fingerprint`,NEW.`imported_at`) AS CHAR),256),CURRENT_TIMESTAMP)",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_site_results_ai"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "UPDATE `IMC Results Report` SET `total_results`=GREATEST(`total_results`-1,0),`updated_at`=CURRENT_TIMESTAMP WHERE `game_world_id`='GW001' AND ((`scope`='TOTAL' AND `sm_action`='' AND `sm_country`='' AND `competition_key`='') OR (`scope`='SM_ACTION' AND `sm_action`=COALESCE(OLD.`sm_action`,'') AND `sm_country`='' AND `competition_key`='') OR (`scope`='COMPETITION_KEY' AND `sm_action`='' AND `sm_country`='' AND `competition_key`=COALESCE(OLD.`competition_key`,'')) OR (`scope`='SM_ACTION_COMPETITION_KEY' AND `sm_action`=COALESCE(OLD.`sm_action`,'') AND `sm_country`='' AND `competition_key`=COALESCE(OLD.`competition_key`,'')))",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "UPDATE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_imc_results_global_au_dec"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "INSERT INTO `IMC Results Report` (`game_world_id`,`scope`,`sm_action`,`sm_country`,`competition_key`,`total_results`) VALUES ('GW001','TOTAL','','','',1),('GW001','SM_ACTION',COALESCE(NEW.`sm_action`,''),'','',1),('GW001','COMPETITION_KEY','','',COALESCE(NEW.`competition_key`,''),1),('GW001','SM_ACTION_COMPETITION_KEY',COALESCE(NEW.`sm_action`,''),'',COALESCE(NEW.`competition_key`,''),1) ON DUPLICATE KEY UPDATE `total_results`=`total_results`+1,`updated_at`=CURRENT_TIMESTAMP",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "UPDATE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_imc_results_global_au_inc"
+        },
+        {
+          "ACTION_ORDER": "3",
+          "ACTION_STATEMENT": "UPDATE `IMC Site Results` SET `game_world_id`=NEW.`game_world_id`,`sm_fixture_id`=NEW.`sm_fixture_id`,`competition_key`=NEW.`competition_key`,`sm_action`=NEW.`sm_action`,`sm_country`=NEW.`sm_country`,`sm_division`=NEW.`sm_division`,`competition_group`=NEW.`competition_group`,`competition_group_name`=NEW.`competition_group_name`,`competition_stage`=NEW.`competition_stage`,`competition_round`=NEW.`competition_round`,`match_date`=NEW.`match_date`,`home_sm_club_id`=NEW.`home_sm_club_id`,`home_name`=NEW.`home_name`,`away_sm_club_id`=NEW.`away_sm_club_id`,`away_name`=NEW.`away_name`,`home_sm_manager_id`=NEW.`home_sm_manager_id`,`away_sm_manager_id`=NEW.`away_sm_manager_id`,`home_score`=NEW.`home_score`,`away_score`=NEW.`away_score`,`penalty_home_score`=NEW.`penalty_home_score`,`penalty_away_score`=NEW.`penalty_away_score`,`aggregate_home_score`=NEW.`aggregate_home_score`,`aggregate_away_score`=NEW.`aggregate_away_score`,`result_status`=NEW.`result_status`,`fingerprint`=NEW.`fingerprint`,`imported_at`=NEW.`imported_at`,`source_row_hash`=SHA2(CAST(JSON_ARRAY('GW001',NEW.`game_world_id`,NEW.`sm_fixture_id`,NEW.`competition_key`,NEW.`sm_action`,NEW.`sm_country`,NEW.`sm_division`,NEW.`competition_group`,NEW.`competition_group_name`,NEW.`competition_stage`,NEW.`competition_round`,NEW.`match_date`,NEW.`home_sm_club_id`,NEW.`home_name`,NEW.`away_sm_club_id`,NEW.`away_name`,NEW.`home_sm_manager_id`,NEW.`away_sm_manager_id`,NEW.`home_score`,NEW.`away_score`,NEW.`penalty_home_score`,NEW.`penalty_away_score`,NEW.`aggregate_home_score`,NEW.`aggregate_away_score`,NEW.`result_status`,NEW.`fingerprint`,NEW.`imported_at`) AS CHAR),256),`synced_at`=CURRENT_TIMESTAMP WHERE `source_row_hash`=SHA2(CAST(JSON_ARRAY('GW001',OLD.`game_world_id`,OLD.`sm_fixture_id`,OLD.`competition_key`,OLD.`sm_action`,OLD.`sm_country`,OLD.`sm_division`,OLD.`competition_group`,OLD.`competition_group_name`,OLD.`competition_stage`,OLD.`competition_round`,OLD.`match_date`,OLD.`home_sm_club_id`,OLD.`home_name`,OLD.`away_sm_club_id`,OLD.`away_name`,OLD.`home_sm_manager_id`,OLD.`away_sm_manager_id`,OLD.`home_score`,OLD.`away_score`,OLD.`penalty_home_score`,OLD.`penalty_away_score`,OLD.`aggregate_home_score`,OLD.`aggregate_away_score`,OLD.`result_status`,OLD.`fingerprint`,OLD.`imported_at`) AS CHAR),256) ORDER BY `site_result_id` LIMIT 1",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "UPDATE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_site_results_au"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "UPDATE `GW001_IMC Results Report` SET `total_results`=GREATEST(`total_results`-1,0), `updated_at`=CURRENT_TIMESTAMP WHERE `game_world_id`='GW001'",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "DELETE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_imc_results_report_ad"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "UPDATE `IMC Results Report` SET `total_results`=GREATEST(`total_results`-1,0),`updated_at`=CURRENT_TIMESTAMP WHERE `game_world_id`='GW001' AND ((`scope`='TOTAL' AND `sm_action`='' AND `sm_country`='' AND `competition_key`='') OR (`scope`='SM_ACTION' AND `sm_action`=COALESCE(OLD.`sm_action`,'') AND `sm_country`='' AND `competition_key`='') OR (`scope`='COMPETITION_KEY' AND `sm_action`='' AND `sm_country`='' AND `competition_key`=COALESCE(OLD.`competition_key`,'')) OR (`scope`='SM_ACTION_COMPETITION_KEY' AND `sm_action`=COALESCE(OLD.`sm_action`,'') AND `sm_country`='' AND `competition_key`=COALESCE(OLD.`competition_key`,'')))",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "DELETE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_imc_results_global_ad"
+        },
+        {
+          "ACTION_ORDER": "3",
+          "ACTION_STATEMENT": "UPDATE `IMC Repository Report` SET `total_records`=GREATEST(`total_records`-1,0),`updated_at`=CURRENT_TIMESTAMP WHERE `game_world_id`='GW001' AND `repository`='IMC Results'",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "DELETE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_repo_results_ad"
+        },
+        {
+          "ACTION_ORDER": "4",
+          "ACTION_STATEMENT": "DELETE FROM `IMC Site Results` WHERE `source_row_hash`=SHA2(CAST(JSON_ARRAY('GW001',OLD.`game_world_id`,OLD.`sm_fixture_id`,OLD.`competition_key`,OLD.`sm_action`,OLD.`sm_country`,OLD.`sm_division`,OLD.`competition_group`,OLD.`competition_group_name`,OLD.`competition_stage`,OLD.`competition_round`,OLD.`match_date`,OLD.`home_sm_club_id`,OLD.`home_name`,OLD.`away_sm_club_id`,OLD.`away_name`,OLD.`home_sm_manager_id`,OLD.`away_sm_manager_id`,OLD.`home_score`,OLD.`away_score`,OLD.`penalty_home_score`,OLD.`penalty_away_score`,OLD.`aggregate_home_score`,OLD.`aggregate_away_score`,OLD.`result_status`,OLD.`fingerprint`,OLD.`imported_at`) AS CHAR),256) LIMIT 1",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "DELETE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_site_results_ad"
+        }
+      ],
+      "total_rows": 18,
+      "truncated": false
+    },
+    "target": "custom"
+  },
+  "after": {
+    "action": "query",
+    "database": "Sql1956795_3",
+    "ok": true,
+    "result": {
+      "duration_ms": 9,
+      "returned_rows": 24,
+      "rows": [
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "SET NEW.sm_division=CASE WHEN NEW.game_world_id='GW001' AND ((REGEXP_LIKE(TRIM(COALESCE(NEW.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')) OR EXISTS (SELECT 1 FROM `GW001_IMC Results` r WHERE r.game_world_id=NEW.game_world_id AND r.sm_fixture_id=NEW.sm_fixture_id AND r.home_sm_club_id=NEW.home_sm_club_id AND r.away_sm_club_id=NEW.away_sm_club_id AND r.match_date=NEW.match_date AND (REGEXP_LIKE(TRIM(COALESCE(r.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(r.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(r.competition_group_name,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(r.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')))) THEN (SELECT CASE WHEN h.division_value IN ('2','3','4') AND h.division_value=a.division_value AND h.club_division=h.division_value AND a.club_division=a.division_value THEN h.division_value ELSE NULL END FROM gw_world_clubs h JOIN gw_world_clubs a ON a.game_world_id=h.game_world_id JOIN gw_source_captures hc ON hc.capture_id=h.capture_id AND hc.game_world_id=h.game_world_id AND hc.capture_status='complete' JOIN gw_source_captures ac ON ac.capture_id=a.capture_id AND ac.game_world_id=a.game_world_id AND ac.capture_status='complete' WHERE h.game_world_id='GW001' AND h.world_club_id=NEW.home_sm_club_id AND a.world_club_id=NEW.away_sm_club_id AND hc.generated_at < DATE_ADD(NEW.match_date,INTERVAL 1 DAY) AND ac.generated_at < DATE_ADD(NEW.match_date,INTERVAL 1 DAY)) ELSE NEW.sm_division END",
+          "ACTION_TIMING": "BEFORE",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_mr_playoff_div_bi"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "SET NEW.competition_key=CASE WHEN NEW.game_world_id='GW001' AND ((REGEXP_LIKE(TRIM(COALESCE(NEW.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')) OR EXISTS (SELECT 1 FROM `GW001_IMC Results` r WHERE r.game_world_id=NEW.game_world_id AND r.sm_fixture_id=NEW.sm_fixture_id AND r.home_sm_club_id=NEW.home_sm_club_id AND r.away_sm_club_id=NEW.away_sm_club_id AND r.match_date=NEW.match_date AND (REGEXP_LIKE(TRIM(COALESCE(r.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(r.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(r.competition_group_name,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(r.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')))) THEN CONCAT_WS('|',NEW.game_world_id,CASE WHEN UPPER(TRIM(COALESCE(NEW.sm_country,''))) IN ('','CUS') THEN NULL ELSE UPPER(TRIM(NEW.sm_country)) END,'DOMESTIC','playoff',NULLIF(TRIM(NEW.sm_division),'')) ELSE NEW.competition_key END",
+          "ACTION_TIMING": "BEFORE",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_mr_playoff_key_bi"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "SET NEW.sm_division=CASE WHEN NEW.game_world_id='GW001' AND ((REGEXP_LIKE(TRIM(COALESCE(NEW.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')) OR EXISTS (SELECT 1 FROM `GW001_IMC Results` r WHERE r.game_world_id=NEW.game_world_id AND r.sm_fixture_id=NEW.sm_fixture_id AND r.home_sm_club_id=NEW.home_sm_club_id AND r.away_sm_club_id=NEW.away_sm_club_id AND r.match_date=NEW.match_date AND (REGEXP_LIKE(TRIM(COALESCE(r.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(r.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(r.competition_group_name,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(r.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')))) THEN (SELECT CASE WHEN h.division_value IN ('2','3','4') AND h.division_value=a.division_value AND h.club_division=h.division_value AND a.club_division=a.division_value THEN h.division_value ELSE NULL END FROM gw_world_clubs h JOIN gw_world_clubs a ON a.game_world_id=h.game_world_id JOIN gw_source_captures hc ON hc.capture_id=h.capture_id AND hc.game_world_id=h.game_world_id AND hc.capture_status='complete' JOIN gw_source_captures ac ON ac.capture_id=a.capture_id AND ac.game_world_id=a.game_world_id AND ac.capture_status='complete' WHERE h.game_world_id='GW001' AND h.world_club_id=NEW.home_sm_club_id AND a.world_club_id=NEW.away_sm_club_id AND hc.generated_at < DATE_ADD(NEW.match_date,INTERVAL 1 DAY) AND ac.generated_at < DATE_ADD(NEW.match_date,INTERVAL 1 DAY)) ELSE NEW.sm_division END",
+          "ACTION_TIMING": "BEFORE",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "UPDATE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_mr_playoff_div_bu"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "SET NEW.competition_key=CASE WHEN NEW.game_world_id='GW001' AND ((REGEXP_LIKE(TRIM(COALESCE(NEW.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')) OR EXISTS (SELECT 1 FROM `GW001_IMC Results` r WHERE r.game_world_id=NEW.game_world_id AND r.sm_fixture_id=NEW.sm_fixture_id AND r.home_sm_club_id=NEW.home_sm_club_id AND r.away_sm_club_id=NEW.away_sm_club_id AND r.match_date=NEW.match_date AND (REGEXP_LIKE(TRIM(COALESCE(r.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(r.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(r.competition_group_name,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(r.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')))) THEN CONCAT_WS('|',NEW.game_world_id,CASE WHEN UPPER(TRIM(COALESCE(NEW.sm_country,''))) IN ('','CUS') THEN NULL ELSE UPPER(TRIM(NEW.sm_country)) END,'DOMESTIC','playoff',NULLIF(TRIM(NEW.sm_division),'')) ELSE NEW.competition_key END",
+          "ACTION_TIMING": "BEFORE",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "UPDATE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_mr_playoff_key_bu"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "INSERT INTO `IMC Repository Report` (`game_world_id`,`repository`,`total_records`,`updated_at`) VALUES ('GW001','IMC Match Report',1,CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE `total_records`=`total_records`+1,`updated_at`=CURRENT_TIMESTAMP",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_repo_match_report_ai"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "INSERT INTO `IMC Site Match Report` (`game_world_id`,`sm_fixture_id`,`competition_key`,`sm_action`,`sm_country`,`sm_division`,`competition_group`,`competition_stage`,`competition_round`,`match_date`,`home_sm_club_id`,`home_name`,`away_sm_club_id`,`away_name`,`home_sm_manager_id`,`home_manager_name`,`away_sm_manager_id`,`away_manager_name`,`home_score`,`away_score`,`penalty_home_score`,`penalty_away_score`,`aggregate_home_score`,`aggregate_away_score`,`stadium_name`,`attendance`,`team_stats_json`,`players_json`,`events_json`,`tactics_json`,`commentary_json`,`fingerprint`,`imported_at`,`source_key`,`synced_at`) VALUES (NEW.`game_world_id`,NEW.`sm_fixture_id`,NEW.`competition_key`,NEW.`sm_action`,NEW.`sm_country`,NEW.`sm_division`,NEW.`competition_group`,NEW.`competition_stage`,NEW.`competition_round`,NEW.`match_date`,NEW.`home_sm_club_id`,NEW.`home_name`,NEW.`away_sm_club_id`,NEW.`away_name`,NEW.`home_sm_manager_id`,NEW.`home_manager_name`,NEW.`away_sm_manager_id`,NEW.`away_manager_name`,NEW.`home_score`,NEW.`away_score`,NEW.`penalty_home_score`,NEW.`penalty_away_score`,NEW.`aggregate_home_score`,NEW.`aggregate_away_score`,NEW.`stadium_name`,NEW.`attendance`,NEW.`team_stats_json`,NEW.`players_json`,NEW.`events_json`,NEW.`tactics_json`,NEW.`commentary_json`,NEW.`fingerprint`,NEW.`imported_at`,SHA2(CONCAT_WS('|','GW001',COALESCE(CAST(NEW.`sm_fixture_id` AS CHAR),'NULL'),COALESCE(CAST(NEW.`fingerprint` AS CHAR),'NULL')),256),CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE `game_world_id`=VALUES(`game_world_id`),`sm_fixture_id`=VALUES(`sm_fixture_id`),`competition_key`=VALUES(`competition_key`),`sm_action`=VALUES(`sm_action`),`sm_country`=VALUES(`sm_country`),`sm_division`=VALUES(`sm_division`),`competition_group`=VALUES(`competition_group`),`competition_stage`=VALUES(`competition_stage`),`competition_round`=VALUES(`competition_round`),`match_date`=VALUES(`match_date`),`home_sm_club_id`=VALUES(`home_sm_club_id`),`home_name`=VALUES(`home_name`),`away_sm_club_id`=VALUES(`away_sm_club_id`),`away_name`=VALUES(`away_name`),`home_sm_manager_id`=VALUES(`home_sm_manager_id`),`home_manager_name`=VALUES(`home_manager_name`),`away_sm_manager_id`=VALUES(`away_sm_manager_id`),`away_manager_name`=VALUES(`away_manager_name`),`home_score`=VALUES(`home_score`),`away_score`=VALUES(`away_score`),`penalty_home_score`=VALUES(`penalty_home_score`),`penalty_away_score`=VALUES(`penalty_away_score`),`aggregate_home_score`=VALUES(`aggregate_home_score`),`aggregate_away_score`=VALUES(`aggregate_away_score`),`stadium_name`=VALUES(`stadium_name`),`attendance`=VALUES(`attendance`),`team_stats_json`=VALUES(`team_stats_json`),`players_json`=VALUES(`players_json`),`events_json`=VALUES(`events_json`),`tactics_json`=VALUES(`tactics_json`),`commentary_json`=VALUES(`commentary_json`),`fingerprint`=VALUES(`fingerprint`),`imported_at`=VALUES(`imported_at`),`synced_at`=VALUES(`synced_at`)",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_site_match_report_ai"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "UPDATE `IMC Site Match Report` SET `game_world_id`=NEW.`game_world_id`,`sm_fixture_id`=NEW.`sm_fixture_id`,`competition_key`=NEW.`competition_key`,`sm_action`=NEW.`sm_action`,`sm_country`=NEW.`sm_country`,`sm_division`=NEW.`sm_division`,`competition_group`=NEW.`competition_group`,`competition_stage`=NEW.`competition_stage`,`competition_round`=NEW.`competition_round`,`match_date`=NEW.`match_date`,`home_sm_club_id`=NEW.`home_sm_club_id`,`home_name`=NEW.`home_name`,`away_sm_club_id`=NEW.`away_sm_club_id`,`away_name`=NEW.`away_name`,`home_sm_manager_id`=NEW.`home_sm_manager_id`,`home_manager_name`=NEW.`home_manager_name`,`away_sm_manager_id`=NEW.`away_sm_manager_id`,`away_manager_name`=NEW.`away_manager_name`,`home_score`=NEW.`home_score`,`away_score`=NEW.`away_score`,`penalty_home_score`=NEW.`penalty_home_score`,`penalty_away_score`=NEW.`penalty_away_score`,`aggregate_home_score`=NEW.`aggregate_home_score`,`aggregate_away_score`=NEW.`aggregate_away_score`,`stadium_name`=NEW.`stadium_name`,`attendance`=NEW.`attendance`,`team_stats_json`=NEW.`team_stats_json`,`players_json`=NEW.`players_json`,`events_json`=NEW.`events_json`,`tactics_json`=NEW.`tactics_json`,`commentary_json`=NEW.`commentary_json`,`fingerprint`=NEW.`fingerprint`,`imported_at`=NEW.`imported_at`,`source_key`=SHA2(CONCAT_WS('|','GW001',COALESCE(CAST(NEW.`sm_fixture_id` AS CHAR),'NULL'),COALESCE(CAST(NEW.`fingerprint` AS CHAR),'NULL')),256),`synced_at`=CURRENT_TIMESTAMP WHERE `source_key`=SHA2(CONCAT_WS('|','GW001',COALESCE(CAST(OLD.`sm_fixture_id` AS CHAR),'NULL'),COALESCE(CAST(OLD.`fingerprint` AS CHAR),'NULL')),256)",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "UPDATE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_site_match_report_au"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "UPDATE `IMC Repository Report` SET `total_records`=GREATEST(`total_records`-1,0),`updated_at`=CURRENT_TIMESTAMP WHERE `game_world_id`='GW001' AND `repository`='IMC Match Report'",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "DELETE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_repo_match_report_ad"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "DELETE FROM `IMC Site Match Report` WHERE `source_key`=SHA2(CONCAT_WS('|','GW001',COALESCE(CAST(OLD.`sm_fixture_id` AS CHAR),'NULL'),COALESCE(CAST(OLD.`fingerprint` AS CHAR),'NULL')),256) LIMIT 1",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "DELETE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Match Report",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_site_match_report_ad"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "SET NEW.sm_division=CASE WHEN NEW.game_world_id='GW001' AND (REGEXP_LIKE(TRIM(COALESCE(NEW.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_group_name,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')) THEN (SELECT CASE WHEN h.division_value IN ('2','3','4') AND h.division_value=a.division_value AND h.club_division=h.division_value AND a.club_division=a.division_value THEN h.division_value ELSE NULL END FROM gw_world_clubs h JOIN gw_world_clubs a ON a.game_world_id=h.game_world_id JOIN gw_source_captures hc ON hc.capture_id=h.capture_id AND hc.game_world_id=h.game_world_id AND hc.capture_status='complete' JOIN gw_source_captures ac ON ac.capture_id=a.capture_id AND ac.game_world_id=a.game_world_id AND ac.capture_status='complete' WHERE h.game_world_id='GW001' AND h.world_club_id=NEW.home_sm_club_id AND a.world_club_id=NEW.away_sm_club_id AND hc.generated_at < DATE_ADD(NEW.match_date,INTERVAL 1 DAY) AND ac.generated_at < DATE_ADD(NEW.match_date,INTERVAL 1 DAY)) ELSE NEW.sm_division END",
+          "ACTION_TIMING": "BEFORE",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_results_playoff_div_bi"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "SET NEW.competition_key=CASE WHEN (REGEXP_LIKE(TRIM(COALESCE(NEW.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_group_name,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')) THEN CONCAT_WS('|',NEW.game_world_id,CASE WHEN UPPER(TRIM(COALESCE(NEW.sm_country,''))) IN ('','CUS') THEN NULL ELSE UPPER(TRIM(NEW.sm_country)) END,'DOMESTIC','playoff',NULLIF(TRIM(NEW.sm_division),'')) ELSE NEW.competition_key END",
+          "ACTION_TIMING": "BEFORE",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_results_playoff_bi"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "SET NEW.sm_division=CASE WHEN NEW.game_world_id='GW001' AND (REGEXP_LIKE(TRIM(COALESCE(NEW.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_group_name,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')) THEN (SELECT CASE WHEN h.division_value IN ('2','3','4') AND h.division_value=a.division_value AND h.club_division=h.division_value AND a.club_division=a.division_value THEN h.division_value ELSE NULL END FROM gw_world_clubs h JOIN gw_world_clubs a ON a.game_world_id=h.game_world_id JOIN gw_source_captures hc ON hc.capture_id=h.capture_id AND hc.game_world_id=h.game_world_id AND hc.capture_status='complete' JOIN gw_source_captures ac ON ac.capture_id=a.capture_id AND ac.game_world_id=a.game_world_id AND ac.capture_status='complete' WHERE h.game_world_id='GW001' AND h.world_club_id=NEW.home_sm_club_id AND a.world_club_id=NEW.away_sm_club_id AND hc.generated_at < DATE_ADD(NEW.match_date,INTERVAL 1 DAY) AND ac.generated_at < DATE_ADD(NEW.match_date,INTERVAL 1 DAY)) ELSE NEW.sm_division END",
+          "ACTION_TIMING": "BEFORE",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "UPDATE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_results_playoff_div_bu"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "SET NEW.competition_key=CASE WHEN (REGEXP_LIKE(TRIM(COALESCE(NEW.sm_action,'')), '^play[[:space:]-]*offs?$', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_stage,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_group_name,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i') OR REGEXP_LIKE(TRIM(COALESCE(NEW.competition_round,'')), '^play[[:space:]-]*offs?([[:space:]:-]|$)', 'i')) THEN CONCAT_WS('|',NEW.game_world_id,CASE WHEN UPPER(TRIM(COALESCE(NEW.sm_country,''))) IN ('','CUS') THEN NULL ELSE UPPER(TRIM(NEW.sm_country)) END,'DOMESTIC','playoff',NULLIF(TRIM(NEW.sm_division),'')) ELSE NEW.competition_key END",
+          "ACTION_TIMING": "BEFORE",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "UPDATE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_results_playoff_bu"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "UPDATE `GW001_IMC Results Report` SET `total_results`=`total_results`+1, `updated_at`=CURRENT_TIMESTAMP WHERE `game_world_id`='GW001'",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_imc_results_report_ai"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "INSERT INTO `IMC Results Report` (`game_world_id`,`scope`,`sm_action`,`sm_country`,`competition_key`,`total_results`) VALUES ('GW001','TOTAL','','','',1),('GW001','SM_ACTION',COALESCE(NEW.`sm_action`,''),'','',1),('GW001','COMPETITION_KEY','','',COALESCE(NEW.`competition_key`,''),1),('GW001','SM_ACTION_COMPETITION_KEY',COALESCE(NEW.`sm_action`,''),'',COALESCE(NEW.`competition_key`,''),1) ON DUPLICATE KEY UPDATE `total_results`=`total_results`+1,`updated_at`=CURRENT_TIMESTAMP",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_imc_results_global_ai"
+        },
+        {
+          "ACTION_ORDER": "3",
+          "ACTION_STATEMENT": "INSERT INTO `IMC Repository Report` (`game_world_id`,`repository`,`total_records`,`updated_at`) VALUES ('GW001','IMC Results',1,CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE `total_records`=`total_records`+1,`updated_at`=CURRENT_TIMESTAMP",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_repo_results_ai"
+        },
+        {
+          "ACTION_ORDER": "4",
+          "ACTION_STATEMENT": "INSERT INTO `IMC Site Results` (`game_world_id`,`sm_fixture_id`,`competition_key`,`sm_action`,`sm_country`,`sm_division`,`competition_group`,`competition_group_name`,`competition_stage`,`competition_round`,`match_date`,`home_sm_club_id`,`home_name`,`away_sm_club_id`,`away_name`,`home_sm_manager_id`,`away_sm_manager_id`,`home_score`,`away_score`,`penalty_home_score`,`penalty_away_score`,`aggregate_home_score`,`aggregate_away_score`,`result_status`,`fingerprint`,`imported_at`,`source_row_hash`,`synced_at`) VALUES (NEW.`game_world_id`,NEW.`sm_fixture_id`,NEW.`competition_key`,NEW.`sm_action`,NEW.`sm_country`,NEW.`sm_division`,NEW.`competition_group`,NEW.`competition_group_name`,NEW.`competition_stage`,NEW.`competition_round`,NEW.`match_date`,NEW.`home_sm_club_id`,NEW.`home_name`,NEW.`away_sm_club_id`,NEW.`away_name`,NEW.`home_sm_manager_id`,NEW.`away_sm_manager_id`,NEW.`home_score`,NEW.`away_score`,NEW.`penalty_home_score`,NEW.`penalty_away_score`,NEW.`aggregate_home_score`,NEW.`aggregate_away_score`,NEW.`result_status`,NEW.`fingerprint`,NEW.`imported_at`,SHA2(CAST(JSON_ARRAY('GW001',NEW.`game_world_id`,NEW.`sm_fixture_id`,NEW.`competition_key`,NEW.`sm_action`,NEW.`sm_country`,NEW.`sm_division`,NEW.`competition_group`,NEW.`competition_group_name`,NEW.`competition_stage`,NEW.`competition_round`,NEW.`match_date`,NEW.`home_sm_club_id`,NEW.`home_name`,NEW.`away_sm_club_id`,NEW.`away_name`,NEW.`home_sm_manager_id`,NEW.`away_sm_manager_id`,NEW.`home_score`,NEW.`away_score`,NEW.`penalty_home_score`,NEW.`penalty_away_score`,NEW.`aggregate_home_score`,NEW.`aggregate_away_score`,NEW.`result_status`,NEW.`fingerprint`,NEW.`imported_at`) AS CHAR),256),CURRENT_TIMESTAMP)",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "INSERT",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_site_results_ai"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "UPDATE `IMC Results Report` SET `total_results`=GREATEST(`total_results`-1,0),`updated_at`=CURRENT_TIMESTAMP WHERE `game_world_id`='GW001' AND ((`scope`='TOTAL' AND `sm_action`='' AND `sm_country`='' AND `competition_key`='') OR (`scope`='SM_ACTION' AND `sm_action`=COALESCE(OLD.`sm_action`,'') AND `sm_country`='' AND `competition_key`='') OR (`scope`='COMPETITION_KEY' AND `sm_action`='' AND `sm_country`='' AND `competition_key`=COALESCE(OLD.`competition_key`,'')) OR (`scope`='SM_ACTION_COMPETITION_KEY' AND `sm_action`=COALESCE(OLD.`sm_action`,'') AND `sm_country`='' AND `competition_key`=COALESCE(OLD.`competition_key`,'')))",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "UPDATE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_imc_results_global_au_dec"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "INSERT INTO `IMC Results Report` (`game_world_id`,`scope`,`sm_action`,`sm_country`,`competition_key`,`total_results`) VALUES ('GW001','TOTAL','','','',1),('GW001','SM_ACTION',COALESCE(NEW.`sm_action`,''),'','',1),('GW001','COMPETITION_KEY','','',COALESCE(NEW.`competition_key`,''),1),('GW001','SM_ACTION_COMPETITION_KEY',COALESCE(NEW.`sm_action`,''),'',COALESCE(NEW.`competition_key`,''),1) ON DUPLICATE KEY UPDATE `total_results`=`total_results`+1,`updated_at`=CURRENT_TIMESTAMP",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "UPDATE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_imc_results_global_au_inc"
+        },
+        {
+          "ACTION_ORDER": "3",
+          "ACTION_STATEMENT": "UPDATE `IMC Site Results` SET `game_world_id`=NEW.`game_world_id`,`sm_fixture_id`=NEW.`sm_fixture_id`,`competition_key`=NEW.`competition_key`,`sm_action`=NEW.`sm_action`,`sm_country`=NEW.`sm_country`,`sm_division`=NEW.`sm_division`,`competition_group`=NEW.`competition_group`,`competition_group_name`=NEW.`competition_group_name`,`competition_stage`=NEW.`competition_stage`,`competition_round`=NEW.`competition_round`,`match_date`=NEW.`match_date`,`home_sm_club_id`=NEW.`home_sm_club_id`,`home_name`=NEW.`home_name`,`away_sm_club_id`=NEW.`away_sm_club_id`,`away_name`=NEW.`away_name`,`home_sm_manager_id`=NEW.`home_sm_manager_id`,`away_sm_manager_id`=NEW.`away_sm_manager_id`,`home_score`=NEW.`home_score`,`away_score`=NEW.`away_score`,`penalty_home_score`=NEW.`penalty_home_score`,`penalty_away_score`=NEW.`penalty_away_score`,`aggregate_home_score`=NEW.`aggregate_home_score`,`aggregate_away_score`=NEW.`aggregate_away_score`,`result_status`=NEW.`result_status`,`fingerprint`=NEW.`fingerprint`,`imported_at`=NEW.`imported_at`,`source_row_hash`=SHA2(CAST(JSON_ARRAY('GW001',NEW.`game_world_id`,NEW.`sm_fixture_id`,NEW.`competition_key`,NEW.`sm_action`,NEW.`sm_country`,NEW.`sm_division`,NEW.`competition_group`,NEW.`competition_group_name`,NEW.`competition_stage`,NEW.`competition_round`,NEW.`match_date`,NEW.`home_sm_club_id`,NEW.`home_name`,NEW.`away_sm_club_id`,NEW.`away_name`,NEW.`home_sm_manager_id`,NEW.`away_sm_manager_id`,NEW.`home_score`,NEW.`away_score`,NEW.`penalty_home_score`,NEW.`penalty_away_score`,NEW.`aggregate_home_score`,NEW.`aggregate_away_score`,NEW.`result_status`,NEW.`fingerprint`,NEW.`imported_at`) AS CHAR),256),`synced_at`=CURRENT_TIMESTAMP WHERE `source_row_hash`=SHA2(CAST(JSON_ARRAY('GW001',OLD.`game_world_id`,OLD.`sm_fixture_id`,OLD.`competition_key`,OLD.`sm_action`,OLD.`sm_country`,OLD.`sm_division`,OLD.`competition_group`,OLD.`competition_group_name`,OLD.`competition_stage`,OLD.`competition_round`,OLD.`match_date`,OLD.`home_sm_club_id`,OLD.`home_name`,OLD.`away_sm_club_id`,OLD.`away_name`,OLD.`home_sm_manager_id`,OLD.`away_sm_manager_id`,OLD.`home_score`,OLD.`away_score`,OLD.`penalty_home_score`,OLD.`penalty_away_score`,OLD.`aggregate_home_score`,OLD.`aggregate_away_score`,OLD.`result_status`,OLD.`fingerprint`,OLD.`imported_at`) AS CHAR),256) ORDER BY `site_result_id` LIMIT 1",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "UPDATE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_site_results_au"
+        },
+        {
+          "ACTION_ORDER": "1",
+          "ACTION_STATEMENT": "UPDATE `GW001_IMC Results Report` SET `total_results`=GREATEST(`total_results`-1,0), `updated_at`=CURRENT_TIMESTAMP WHERE `game_world_id`='GW001'",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "DELETE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_imc_results_report_ad"
+        },
+        {
+          "ACTION_ORDER": "2",
+          "ACTION_STATEMENT": "UPDATE `IMC Results Report` SET `total_results`=GREATEST(`total_results`-1,0),`updated_at`=CURRENT_TIMESTAMP WHERE `game_world_id`='GW001' AND ((`scope`='TOTAL' AND `sm_action`='' AND `sm_country`='' AND `competition_key`='') OR (`scope`='SM_ACTION' AND `sm_action`=COALESCE(OLD.`sm_action`,'') AND `sm_country`='' AND `competition_key`='') OR (`scope`='COMPETITION_KEY' AND `sm_action`='' AND `sm_country`='' AND `competition_key`=COALESCE(OLD.`competition_key`,'')) OR (`scope`='SM_ACTION_COMPETITION_KEY' AND `sm_action`=COALESCE(OLD.`sm_action`,'') AND `sm_country`='' AND `competition_key`=COALESCE(OLD.`competition_key`,'')))",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "DELETE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_imc_results_global_ad"
+        },
+        {
+          "ACTION_ORDER": "3",
+          "ACTION_STATEMENT": "UPDATE `IMC Repository Report` SET `total_records`=GREATEST(`total_records`-1,0),`updated_at`=CURRENT_TIMESTAMP WHERE `game_world_id`='GW001' AND `repository`='IMC Results'",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "DELETE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_repo_results_ad"
+        },
+        {
+          "ACTION_ORDER": "4",
+          "ACTION_STATEMENT": "DELETE FROM `IMC Site Results` WHERE `source_row_hash`=SHA2(CAST(JSON_ARRAY('GW001',OLD.`game_world_id`,OLD.`sm_fixture_id`,OLD.`competition_key`,OLD.`sm_action`,OLD.`sm_country`,OLD.`sm_division`,OLD.`competition_group`,OLD.`competition_group_name`,OLD.`competition_stage`,OLD.`competition_round`,OLD.`match_date`,OLD.`home_sm_club_id`,OLD.`home_name`,OLD.`away_sm_club_id`,OLD.`away_name`,OLD.`home_sm_manager_id`,OLD.`away_sm_manager_id`,OLD.`home_score`,OLD.`away_score`,OLD.`penalty_home_score`,OLD.`penalty_away_score`,OLD.`aggregate_home_score`,OLD.`aggregate_away_score`,OLD.`result_status`,OLD.`fingerprint`,OLD.`imported_at`) AS CHAR),256) LIMIT 1",
+          "ACTION_TIMING": "AFTER",
+          "DEFINER": "Sql1956795@%",
+          "EVENT_MANIPULATION": "DELETE",
+          "EVENT_OBJECT_TABLE": "GW001_IMC Results",
+          "SQL_MODE": "ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION",
+          "TRIGGER_NAME": "trg_GW001_site_results_ad"
+        }
+      ],
+      "total_rows": 24,
+      "truncated": false
+    },
+    "target": "custom"
+  }
+}

@@ -1,0 +1,91 @@
+CASE_ID: IMC-DB-001-23
+DOC_TYPE: RESPONSE
+DATE: 2026-09-13
+VERDICT: BLOCKED
+TOPIC: GW001_PLAYOFF_DIVISION_AND_MATCH_REPORT_CONSISTENCY
+
+ESITO
+Correzione playoff eseguita: 6 Results verificati, distribuiti D2=2, D3=2, D4=2. Tutti e 6 i Match Report playoff sono presenti, collegati e normalizzati; nessun Match Report playoff atteso tra queste fixture manca. Raw e copie Site sono allineati.
+La certificazione completa Results/Match Report resta bloccata da un conflitto reale fra ID manager su una fixture non playoff. Il caricamento generale è ancora in corso: le assenze non sono errori di congruenza e i conteggi non sono definitivi.
+
+PRE-FLIGHT E ROOT CAUSE
+Letti REQUEST/RESPONSE DB22, contesto diagnostico ENG00905, schema reale, trigger completi e ordine, dati raw/Site/report e fonti anagrafiche prima delle scritture. DB target: Sql1956795_3, Database Manager target custom.
+DB22 normalizzava il tipo playoff nella chiave Results ma conservava sm_division=4 ricevuta. La stessa divisione errata alimentava tutte le chiavi. Nei Match Report mancava la normalizzazione equivalente: i sei record avevano GW001|CUS|DOMESTIC|league|4.
+Il primo campione del 2026-09-13 09:56:33 UTC contava 797 Results e 281 MR; i sei MR playoff erano già disponibili. Durante il pre-flight i MR sono aumentati: i confronti non assumono una fotografia globale immutabile.
+
+FONTE DELLA DIVISIONE
+Join per GW001 e home_sm_club_id/away_sm_club_id verso gw_world_clubs.world_club_id, relazione univoca verificata. Per tutte le 12 squadre division_value e club_division coincidono. Fonte capture_id=7503, completa, GW001 / sm_game_world_id=468172, generata 2026-09-04 20:00:50.144628.
+Metadati fonte: manager-scan-GW001-club-92a030e3-04ed-4258-969d-5f0f63d477f2.json
+SHA256: 3f99e0862cbaa25e2b518998bcce96c75f238750084078d69290dd4ceb3a742c
+Verificati mapping parsato e metadati della capture, non ricostruito il DOM originale. Controprova: 18 partite di campionato per ciascuna squadra (9 casa e 9 trasferta) coerenti con la divisione anagrafica. Nessuna divisione dedotta dal nome, punteggio o ordine delle fixture.
+
+INVENTARIO PLAYOFF
+Data 2026-09-12, fase Playoff Semifinale, country CUS.
+fixture | partita | divisione prima -> dopo | chiave finale Results = MR
+368724187 | Eintracht Frankfurt - Genoa CFC | 4 -> 2 | GW001|DOMESTIC|playoff|2
+368724188 | Bologna FC - Fenerbahçe SK | 4 -> 2 | GW001|DOMESTIC|playoff|2
+368724189 | Atlético Madrid - Olympique Marseille | 4 -> 3 | GW001|DOMESTIC|playoff|3
+368724190 | Celtic - SSC Napoli | 4 -> 3 | GW001|DOMESTIC|playoff|3
+368724191 | Legia Warszawa - Dynamo Kyiv | 4 -> 4 | GW001|DOMESTIC|playoff|4
+368724192 | SS Lazio - HERTHA BSC | 4 -> 4 | GW001|DOMESTIC|playoff|4
+Per tutte: chiave Results precedente GW001|DOMESTIC|playoff|4; chiave MR precedente GW001|CUS|DOMESTIC|league|4. MR collegati 6/6.
+
+SOLUZIONE E ORDINE
+Aggiunti sei trigger BEFORE INSERT/UPDATE, nessun trigger precedente sostituito:
+- Results: trg_GW001_results_playoff_div_bi/bu PRECEDES trg_GW001_results_playoff_bi/bu di DB22.
+- MR: trg_GW001_mr_playoff_div_bi/bu e trg_GW001_mr_playoff_key_bi/bu; key FOLLOWS division.
+Ordine finale per evento: divisione 1, chiave 2, poi AFTER preesistenti che aggiornano copie Site e report. Le 18 definizioni preesistenti sono rimaste identiche; ora 24 trigger pertinenti. Nessuna tabella/colonna aggiunta (inventario 320 tabelle, 5565 colonne invariato).
+Riconoscimento playoff da marcatori espliciti action/stage/round e group_name ove presente. Per MR è utilizzabile anche un Result playoff con la stessa fixture, GW, squadre orientate e data. Non basta una finale generica.
+Entrambe le squadre devono avere la stessa divisione valida 2/3/4, club_division coerente e capture completa non successiva al giorno della partita. Fonte mancante/conflittuale produce divisione NULL e chiave playoff senza suffisso divisione: errore rilevabile dai controlli, senza inventare una Divisione 4 né fermare l'import.
+Nessun aggiornamento incrociato Results->MR introdotto: ciascun record attraversa la propria regola su INSERT/UPDATE. Un record già irrisolto richiede successivo UPDATE/backfill controllato dopo la disponibilità della fonte; non viene retrocorretto dal solo arrivo di una capture.
+CUS viene omesso dalla chiave come in DB22. Nessun importer, frontend, Schedule, altro GW o deploy modificato.
+
+MIGRAZIONI E INCIDENTE GESTITO
+Plan 4391, esecuzione 4392: IMC-DB-001-23-GW001-playoff-division-v1, sei CREATE TRIGGER riusciti.
+SHA piano: 3617a2afb195b30f9f2ceea2a7c64ed19c4b524111e6f1d539c9f4c2279a3449.
+Verifica immediata 4394: definizioni e ordine corretti.
+Plan 4396 / esecuzione 4397: primo backfill fallito al primo statement per Illegal mix of collations utf8mb4_0900_ai_ci / utf8mb4_unicode_ci nell'operatore <=>. Nessuna delle sei righe modificata; verifiche 4399/4400. DDL già attivo conservato.
+Corretto il confronto atteso con CAST AS BINARY, ripianificato:
+Plan 4401, esecuzione 4403: IMC-DB-001-23-GW001-playoff-backfill-v2.
+SHA piano: bd764b958c8b7dd352fa5173212de60e72de8d0c851e3ce4e69a09afb16d5979.
+Esecuzione riuscita: 4 Results e 6 MR effettivamente cambiati. Verifica immediata 4404 positiva.
+MIGRATION.sql contiene solo DDL riuscito e backfill v2 riuscito. Il tentativo fallito resta documentato nelle evidenze. Non rieseguire CREATE TRIGGER già installati senza un nuovo pre-flight.
+Nessuna pausa import, cancellazione, dato fittizio o lock applicativo introdotto.
+
+CONGRUENZA E PRESERVAZIONE
+Collegamento primario sm_fixture_id, con separazione GW001 e verifica unicità/assenza duplicati.
+Campi comparabili controllati: GW, fixture, competition_key, action, country, division, competition_group, stage, round, data, ID e nomi squadre casa/trasferta, ID manager, punteggi, rigori e aggregati.
+I nomi sono confrontati anche byte per byte per distinguere varianti di maiuscole. Fingerprint/imported_at sono metadati di acquisizioni diverse e non devono essere uguali tra Results e MR. Campi presenti solo in una fonte (es. JSON report, stadio, presenze, nomi manager, result_status/group_name) non permettono confronto incrociato diretto: sono preservati e confrontati raw/Site.
+Confronto immagini iniziali/finali: 797 Results conservati, nessuna nuova riga o perdita, solo quattro playoff cambiati. Su 339 MR iniziali, nessuna perdita, solo sei playoff cambiati; 34 nuovi MR nel campione successivo di 373 sono importazioni concorrenti.
+Campo per campo, i quattro playoff D2/D3 cambiano soltanto sm_division e competition_key; gli altri due MR soltanto competition_key. Tutti gli altri campi, inclusi i JSON MR, restano identici. Zero modifiche a 791 Results non playoff e 333 MR non playoff già presenti nel campione iniziale.
+Copie Site confrontate su tutte le 26 colonne Results e 33 MR, con confronto binario NULL-safe. Campione di verifica 4454: 797 Results / 410 MR, zero assenze/divergenze raw-Site, conteggi e fixture uniche coerenti. Report aggregati riconciliati con raw, zero differenze e zero scope inattesi non vuoti (4443).
+Campione finale conteggi, 2026-09-13 10:05:44 UTC:
+Results raw=797, Site=797, report totale=797.
+MR raw=429, Site=429, report totale=429.
+MR non ancora caricati rispetto ai Results=368; MR orfani=0.
+Campione finale congruenza, 2026-09-13 10:05:45 UTC, 429 coppie:
+zero divergenze su fixture, GW, squadre ID, data, competizione/chiave/divisione/fase/turno, punteggi, rigori, aggregati.
+Nomi squadre: zero differenze nel confronto senza distinzione maiuscole; 21 differenze binarie (10 casa, 11 trasferta).
+Manager: un conflitto non-NULL casa; zero conflitti non-NULL trasferta; 15 campi casa e 18 trasferta mancanti da un solo lato (33 campi, non necessariamente 33 fixture distinte).
+Controllo finale playoff 4467: sei coppie, zero divisioni/chiavi errate e zero errori di collegamento. Rimane su SS Lazio-Hertha il manager trasferta NULL nel Result e valorizzato nel MR, oltre alla variante HERTHA BSC/Hertha BSC.
+
+BLOCKER REALE
+Fixture 367418923, 2026-08-23, Club América - River Plate:
+home_sm_manager_id Results=20605515; MR=5053060 (Giuseppe Trovato).
+Il manager ospite coincide. Non c'è evidenza sufficiente per scegliere quale ID casa sia corretto alla data della partita.
+È una fixture non playoff: modificarla violerebbe acceptance 12. Non sovrascritto nessun ID per ottenere artificialmente zero differenze.
+Occorre una fonte autoritativa storica per questa fixture e un intervento esplicitamente autorizzato sul dato non playoff. Le assenze manager e il caricamento incompleto restano distinti da questo conflitto.
+
+RECORD FUTURI E LIMITI
+Regole INSERT e UPDATE installate e verificate nelle definizioni reali. UPDATE provato sui sei playoff reali. Cinque nuovi MR ordinari (fixture 367418974-367418978) osservati dopo installazione risultano correttamente copiati e congruenti nelle chiavi: il flusso concorrente continua.
+Non è stato osservato un nuovo INSERT playoff dopo l'installazione: i sei esistevano già. Non si dichiara una prova end-to-end di INSERT playoff futuro non avvenuta. La regola BEFORE INSERT è presente e usa lo stesso calcolo della BEFORE UPDATE esercitata.
+gw_world_clubs è un mapping corrente non versionato per stagione: una futura sostituzione dell'anagrafica può rendere irrisolvibile una vecchia fixture; il cutoff della capture evita di attribuirle automaticamente una nuova divisione storicamente non dimostrata. VERIFY.sql segnala i casi.
+La verifica riguarda le fotografie indicate, non la conclusione dell'import. A import concluso ripetere VERIFY.sql e leggere ogni divergenza: non assumere copertura definitiva né congruenza totale.
+
+ROLLBACK
+ROLLBACK.sql predisposto prima delle scritture, non eseguito. Rimuove soltanto i sei nuovi trigger e ripristina i pre-valori dei sei Results/MR con guardie su fixture, fingerprint e stato corrente atteso. Conserva DB22 e gli AFTER; le copie Site/report vengono aggiornate dal percorso esistente. Non elimina o reinserisce record, non tocca nuovi MR privi di pre-immagine e non riporta indietro timestamp tecnici.
+Prima di usarlo rileggere dati/trigger, verificare guardie e pianificare/eseguire tramite Database Manager. Una guardia non corrispondente richiede revisione, non un UPDATE più ampio. DDL MySQL non è rollback transazionale globale.
+
+ALLEGATI
+MIGRATION.sql; ROLLBACK.sql; VERIFY.sql; EVIDENCE.json; TRIGGERS_BEFORE_AFTER.json.
+Verdict unico: BLOCKED per certificazione completa; correzione playoff e normalizzazione automatica implementate e verificate nei limiti esplicitati.
