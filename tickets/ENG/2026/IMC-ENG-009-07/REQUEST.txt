@@ -1,0 +1,234 @@
+CASE_ID: IMC-ENG-009-07
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-13
+TOPIC: GW001_FULL_DATA_AUDIT_MATCH_REPORT_CORE_SNAPSHOT_MINISITE_INTEGRATION
+
+IMC | MINISITE IMPLEMENTATION WORK
+GW001 · AUDIT FINALE + MATCH REPORT + CORE IMC + COLLEGAMENTO COMPLETO AL MINISITO
+
+CONTESTO AUTORITATIVO
+
+IMC-ENG-009-06 ha affrontato l'integrazione Results e Schedule per GW001/GW007.
+
+IMC-DB-001-23 ha analizzato e predisposto la coerenza tra Results e Match Report del GW001, comprese fixture e playoff.
+
+IMC-DB-001-24 ha completato l'analisi delle tabelle IMC del CORE Sql1956795_1 usando GW001 come benchmark.
+
+Dopo la RESPONSE di IMC-DB-001-24 sono stati risolti i punti bloccanti pertinenti:
+- IMC Manager Assignment Global usa ora team_id specifico del Game World;
+- le assegnazioni club sono risolte tramite game_world_id + team_id;
+- IMC Manager Assignment Global contiene team_name corretto per 204/204 assegnazioni club di GW001–GW009;
+- per GW001, Giuseppe Trovato risulta correttamente associato a Club América dal 23/08/2026 al 24/08/2026;
+- IMC Competition Codex Global contiene ora la colonna competition_key;
+- IMC Competition Codex Global contiene i playoff GW001 di divisione 2, 3 e 4:
+  - GW001|DOMESTIC|playoff|2
+  - GW001|DOMESTIC|playoff|3
+  - GW001|DOMESTIC|playoff|4.
+
+IMC Game World Club Mapping è una tabella corretta di appartenenza dei club ai Game World e non deve essere trattata come errata. Gli identificativi team_id, sm_club_id e sm_world_club_id appartengono a namespace differenti e non devono essere confrontati direttamente.
+
+STATO MATCH REPORT
+
+Tutti i Match Report disponibili sono stati caricati, al netto dei Match Report delle nazionali.
+
+Questo CASE può quindi lavorare sui Match Report club del GW001.
+I Match Report delle nazionali non devono essere inventati, ricostruiti o dichiarati disponibili.
+
+FONTI AUTORITATIVE
+
+- MySQL Aruba = fonte dati autoritativa;
+- Supabase IMC Nexus = ponte tecnico autorizzato verso MySQL Aruba;
+- GitHub tommasomellogrand-ui/imc-website = fonte autoritativa del codice e del minisito;
+- IMC Data Room = fonte autoritativa di incarico e risposta.
+
+Leggere integralmente prima di operare:
+- tickets/ENG/2026/IMC-ENG-009-06/REQUEST.txt;
+- tickets/ENG/2026/IMC-ENG-009-06/RESPONSE.txt;
+- tickets/DB/2026/IMC-DB-001-23/REQUEST.txt;
+- tickets/DB/2026/IMC-DB-001-23/RESPONSE.txt;
+- tickets/DB/2026/IMC-DB-001-24/REQUEST.txt;
+- tickets/DB/2026/IMC-DB-001-24/RESPONSE.txt;
+- stato corrente completo di imc-website;
+- struttura corrente delle tabelle IMC pertinenti nel CORE Sql1956795_1;
+- repository Site GW001 per Results, Schedule e Match Report.
+
+OBIETTIVO
+
+1. Rifare un audit completo e riverificare tutti i dati, i collegamenti e i presupposti definiti.
+2. Integrare i Match Report club del GW001 nel flusso e nel minisito.
+3. Adeguare l'API IMC affinché esponga gli identificativi necessari delle squadre e dei manager.
+4. Realizzare il processo di generazione, validazione e importazione dello snapshot JSON versionato del GW001.
+5. Collegare al minisito GW001 Results, Schedule, Match Report e dati IMC pertinenti del CORE.
+6. Verificare il funzionamento reale end-to-end sul minisito GW001.
+
+AUDIT OBBLIGATORIO
+
+Prima di modificare:
+- verificare lo stato effettivo di Results, Schedule e Match Report GW001;
+- verificare conteggi, fixture_id, competition_key e associazioni tra i tre repository;
+- verificare che i Match Report club caricati siano coerenti con i Results;
+- distinguere esplicitamente i Match Report delle nazionali, attualmente esclusi;
+- verificare IMC Manager Assignment Global usando game_world_id + team_id;
+- verificare i tre playoff GW001 in IMC Competition Codex Global;
+- verificare le tabelle IMC CORE pertinenti e le relazioni effettivamente utilizzabili;
+- verificare lo stato corrente dell'API e del minisito GW001;
+- registrare anomalie reali senza deduzioni o correzioni non autorizzate.
+
+IMPLEMENTAZIONE AUTORIZZATA
+
+A. API IMC
+Adeguare l'API IMC del minisito affinché esponga gli identificativi necessari per collegare correttamente:
+- squadre;
+- manager;
+- Results;
+- Schedule;
+- Match Report;
+- dati IMC CORE pertinenti.
+
+Ogni dato deve essere filtrato obbligatoriamente per GW001.
+Nessun dato di altri Game World deve entrare nel flusso GW001.
+
+B. SNAPSHOT JSON VERSIONATO
+Realizzare il processo che:
+- genera uno snapshot JSON UTF-8 versionato per GW001;
+- acquisisce i dati IMC CORE pertinenti tramite il ponte autorizzato;
+- include metadati di versione, data di generazione e game_world_id;
+- valida struttura, campi obbligatori, riferimenti e conteggi;
+- rifiuta snapshot incompleti o riferiti a un Game World differente;
+- consente l'importazione locale nel minisito;
+- non impone al minisito una lettura diretta futura del CORE.
+
+C. MATCH REPORT GW001
+Collegare i Match Report club del GW001 ai Results tramite sm_fixture_id come chiave primaria di raccordo e usare gli altri dati coerenti disponibili, compresa competition_key.
+
+Il minisito deve:
+- aprire il Match Report corretto dalla partita corrispondente;
+- mantenere Results e Match Report coerenti;
+- gestire correttamente assenza, incompletezza ed errore;
+- non creare Match Report per le nazionali mancanti.
+
+D. COLLEGAMENTO COMPLETO AL MINISITO GW001
+Collegare e verificare:
+- Results;
+- Schedule;
+- Match Report club;
+- assegnazioni manager IMC;
+- identità e mapping club IMC;
+- competizioni IMC, compresi i playoff D2, D3 e D4;
+- gli altri dati IMC CORE pertinenti definiti da IMC-DB-001-24.
+
+PRESERVAZIONE OBBLIGATORIA
+
+GW001 deve conservare integralmente:
+- identità Road To History;
+- struttura editoriale;
+- composizione;
+- navigazione;
+- responsive behavior;
+- filtri e comportamento già approvati.
+
+Non ridisegnare il minisito.
+Non alterare l'identità visuale.
+Non inventare dati mancanti.
+Non modificare altri Game World.
+
+VINCOLI
+
+- Nessuna modifica ai dati sorgente Results, Schedule o Match Report.
+- Nessuna nuova normalizzazione competition_key.
+- Nessuna modifica alle assegnazioni manager già corrette.
+- Nessuna modifica a IMC Game World Club Mapping.
+- Nessuna modifica DB ulteriore salvo blocker reale, documentato e sottoposto prima a Tom.
+- I Match Report delle nazionali restano fuori perimetro perché non caricati.
+- Operare esclusivamente su GW001 e sui componenti condivisi strettamente necessari.
+
+ACCEPTANCE CRITERIA
+
+Il CASE è completato soltanto se:
+
+1. L'audit finale è registrato con conteggi e anomalie.
+2. Results GW001 è collegato e verificato.
+3. Schedule GW001 è collegato e applica la regola temporale già autorizzata.
+4. Tutti i Match Report club disponibili del GW001 sono collegati alle fixture corrette.
+5. Nessun Match Report nazionale viene inventato o presentato come disponibile.
+6. sm_fixture_id collega correttamente Results e Match Report.
+7. Le competition_key playoff D2, D3 e D4 sono riconosciute.
+8. Le assegnazioni manager sono risolte tramite game_world_id + team_id.
+9. I nomi delle squadre mostrati sono coerenti con GW001.
+10. L'API espone gli identificativi necessari di squadre e manager.
+11. Lo snapshot JSON GW001 viene generato, versionato e validato.
+12. Lo snapshot rifiuta dati cross-GW o incompleti.
+13. Il minisito importa e usa correttamente lo snapshot.
+14. I dati IMC CORE pertinenti risultano collegati al minisito.
+15. Non esiste contaminazione con altri Game World.
+16. Loading, empty, error e not-found non mostrano dati inventati.
+17. Desktop e mobile conservano la baseline approvata.
+18. Deep link, refresh, filtri e navigazione funzionano.
+19. Le GitHub Actions pertinenti terminano con successo.
+20. Il deploy termina con successo.
+21. La verifica live del minisito GW001 è positiva.
+22. Il rollback è documentato e verificabile.
+
+GITHUB / DEPLOY
+
+- leggere integralmente ogni file prima di modificarlo;
+- applicare modifiche minime e circoscritte;
+- commit;
+- eseguire e verificare le GitHub Actions pertinenti;
+- deploy dei soli pacchetti necessari;
+- verifica live reale del GW001 su desktop e mobile;
+- dichiarare online soltanto dopo Action success e verifica live positiva.
+
+OUTPUT AUTORITATIVO
+
+Registrare:
+tickets/ENG/2026/IMC-ENG-009-07/RESPONSE.txt
+
+La RESPONSE deve includere:
+- pre-flight;
+- audit completo;
+- conteggi Results, Schedule e Match Report;
+- Match Report club collegati e Match Report nazionali esclusi;
+- architettura API implementata;
+- contratto e contenuto dello snapshot JSON;
+- validazioni;
+- dati IMC CORE collegati;
+- file creati/modificati;
+- test e fixture campione;
+- verifica playoff;
+- verifica assegnazioni manager;
+- test desktop/mobile;
+- commit SHA;
+- Actions;
+- deploy;
+- verifica live;
+- rollback;
+- limiti;
+- verdict finale.
+
+Al termine tornare nella chat con Tom indicando:
+- verdict;
+- esito audit;
+- stato Results;
+- stato Schedule;
+- numero Match Report club collegati;
+- conferma esclusione Match Report nazionali;
+- stato API;
+- stato snapshot JSON;
+- stato dati IMC CORE;
+- esito deploy e verifica live;
+- eventuali blocker residui.
+
+VERDICT FINALE OBBLIGATORIO
+
+Restituire uno solo tra:
+- COMPLETED
+- COMPLETED_WITH_DOCUMENTED_LIMITS
+- BLOCKED
+
+WRITE AUTHORIZED: YES, esclusivamente nel repository tommasomellogrand-ui/imc-website e nella RESPONSE del CASE.
+DB WRITE: NO.
+DB TRIGGER/SCHEMA WRITE: NO.
+SOURCE DATA WRITE: NO.
+OTHER GAME WORLD WRITE: NO.
