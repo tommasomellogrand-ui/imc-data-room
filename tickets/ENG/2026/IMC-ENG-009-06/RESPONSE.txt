@@ -1,0 +1,147 @@
+CASE_ID: IMC-ENG-009-06
+DOC_TYPE: RESPONSE
+AREA: ENG
+DATE: 2026-09-13
+TOPIC: PHASE_2_RESULTS_SCHEDULE_LIVE_DATA_GW001_GW007
+VERDICT: BLOCKED
+
+ESITO
+Integrazione principale pubblicata e verificata. Chiusura finale bloccata dalla coda GitHub Actions: il commit di affinamento cfd84107cb9d6e20cb93d36fef5b6bd4c5c19343 non ha ancora un job assegnato nella run 34748685007. Non viene dichiarato distribuito.
+Results e Schedule di GW001/GW007 leggono automaticamente i repository IMC Site corretti. Le quattro pagine non caricano gli snapshot JavaScript. Nessuna scrittura MySQL, modifica schema/trigger/importer o riclassificazione di competition_key.
+
+PRE-FLIGHT
+Repository codice: tommasomellogrand-ui/imc-website, branch main.
+Baseline: bbed3f5874632cab85d5a38a765a22bb2214f922; tree 4231d204e5361f9ccd34fe3f67830e991c521c51.
+Albero ricorsivo letto: 2067 elementi, non troncato. Checkout di lavoro locale circoscritto; commit Git basati sul tree remoto, aggiornamenti main fast-forward senza force.
+REQUEST corrente: blob be7dbc9aca6fc104cf4750e78e5352f804730399.
+Letti REQUEST/RESPONSE dei CASE ENG-009-04, ENG-009-05, DB-001-22, foundation/contratti, runtime e pagine, loader e workflow pertinenti. Ogni file esistente modificato è stato letto prima della modifica.
+Consumer iniziali: GW001 exploration.js + exploration-data.js; GW007 app.js + data.js. Results/Schedule erano campioni statici. GW001 Results: 80 risultati; GW007 Results: 39 partite League D1 del 9 settembre. I calendari mostravano date trascorse.
+Baseline visiva e funzionale osservata nel browser pubblico: Results/Schedule di entrambi i GW, desktop e riquadri responsive a 390 px; GW001 visual-review.html e GW007 review.html, anche a 1440 px. Testi di fonte snapshot, gerarchia, navigazioni, colori, filtri e card registrati prima dell'integrazione.
+Percorso dati esistente verificato: Gateway MINISITE resource results/schedule, query alle tabelle IMC Site. Credenziali restano esclusivamente nella configurazione PHP privata esistente.
+
+ARCHITETTURA IMPLEMENTATA
+Quattro HTML -> live-fixtures.js specifico del Golden Master -> integration controller -> adapter iniettato nella createDataBoundary della platform -> POST same-origin /minisite/api/results-schedule.php -> MySQL Aruba.
+L'endpoint nuovo è limitato rigidamente a GW001/GW007 e results/schedule:
+- GW001: config db.custom, Sql1956795_3;
+- GW007: config db.gold, Sql1956795_2.
+Non accetta SQL, tabelle o database scelti dal client. Query preparate con game_world_id obbligatorio. Per GW007 il server limita anche sm_country a ENG, ESP, GER, ITA. Gli altri contesti del database non sono aggiunti al minisito.
+Il nuovo endpoint riutilizza le funzioni di configurazione/lettura del Gateway già pubblicato. Nessun file runtime del Gateway esistente è stato modificato.
+Risposte no-store; pagine da massimo 1000 righe; ordinamento deterministico; conteggi, data server, revisione, provenienza e cursore espliciti. Revisioni incoerenti tra pagine o duplicati interrompono la lettura, senza consegnare un risultato parziale come completo.
+Ogni apertura/rilettura recupera Site, senza rigenerare snapshot. Sono previste riletture automatiche durante la permanenza nella pagina e al ritorno in primo piano. Il secondo commit conserva le card durante l'aggiornamento in background, senza svuotamenti intermedi; una precedente lettura è dichiarata esplicitamente mentre si aggiorna. Al cambio della data Rome gli incontri precedenti vengono rimossi prima della nuova lettura.
+Il Core della platform resta generico e invariato: i riferimenti ai GW, all'endpoint e al DOM risiedono nell'integrazione, non nei contratti universali.
+
+MAPPING E FILTRI
+I record sono validati e mappati nel contratto match attraverso validateModel:
+- sm_fixture_id -> fixtureId, mantenuto come stringa;
+- game_world_id, sm_country, sm_division -> context;
+- competition_key originale -> competition.key; nessuna ricostruzione, normalizzazione o riscrittura;
+- home_name/away_name -> squadre;
+- match_date, match_time quando presente -> dateTime;
+- result_status -> stato Results; Schedule -> IN PROGRAMMA;
+- home_score/away_score -> punteggi Results;
+- penalty_* e aggregate_* -> rigori/aggregato quando valorizzati;
+- fonte e data di lettura -> sourceState.
+I valori null non diventano zero; nomi, date, orari e competizioni mancanti sono dichiarati come non disponibili. Il fuso di match_time non viene inventato: l'orario è mostrato come registrato.
+GW001 mantiene i pulsanti Tutte/Platinum/Gold/Silver/Bronze e il filtro data Results; la selezione competizione usa la competition_key completa. Le chiavi con paese e quelle senza paese sono entrambe supportate.
+GW007 mantiene i quattro Kingdom e il filtro Territorio; il controllo competizione contiene le chiavi del contesto selezionato. Non compare un quinto Kingdom.
+Stato condivisibile nell'URL: division, k, competition, date, id. Refresh e popstate ricostruiscono i filtri. Una combinazione valida senza righe produce empty; riferimento inesistente o territorio non ammesso produce not-found.
+Nessuna contaminazione cross-GW: controllo server e controllo client su game_world_id e prefisso della competition_key.
+
+REGOLA SCHEDULE
+Timezone della data odierna: Europe/Rome, calcolata dal server PHP a ogni richiesta.
+Predicato: match_date >= today, con today in formato YYYY-MM-DD.
+Date passate escluse; oggi incluso; date future incluse; date nulle escluse e segnalate come incomplete.
+Il client verifica nuovamente il predicato rispetto alla data server. Il test controllato verifica 12/09 escluso, 13/09 incluso, 14/09 incluso per today=13/09/2026, oltre al passaggio UTC/Rome in inverno/estate.
+Nessun DELETE/UPDATE/INSERT è impiegato: l'esclusione riguarda soltanto la lettura Schedule. Results non ha il predicato temporale.
+
+VERIFICA DATI AUTORITATIVA
+Pre-flight via Supabase IMC Nexus -> MySQL, action=query solamente:
+4319: custom, campione IMC Site Results GW001.
+4320: gold, campione IMC Site Schedule GW007.
+4321/4323: conteggi Results/Schedule per sm_country e competition_key, MIN/MAX match_date, con WHERE game_world_id rispettivamente GW001/GW007.
+4322/4324: COUNT e SUM per date precedenti/uguali/successive al 2026-09-13 e date nulle, raggruppati per sm_country.
+Le query di verifica sono SELECT; il ponte tecnico non è usato come fonte alternativa di dati sportivi.
+In Actions, results-schedule-live.py ha letto tutte le pagine del nuovo endpoint e, indipendentemente, tutte le pagine della preesistente lettura Gateway Site. Ha confrontato insiemi di site ID, game_world_id, competition_key, fixture ID, data, squadre, punteggi/orari e conteggi; nessuna comparazione limitata al solo rendering.
+
+Conteggi al 13/09/2026, prima dei filtri utente:
+GW001 Results: 797 nella fonte, 797 ricevuti, 797 mostrati; 0 esclusioni temporali.
+GW001 Schedule: 20 nella fonte, 20 passati esclusi, 0 odierni, 0 futuri, 0 ricevuti/mostrati; stato empty corretto.
+GW007 Results: 3384 nel GW intero; 1501 nel perimetro ENG/ESP/GER/ITA, tutti ricevuti/mostrati; 0 esclusioni temporali.
+GW007 Schedule: 9268 nel GW intero; 4753 nel perimetro ENG/ESP/GER/ITA, 278 passati esclusi, 0 odierni, 4475 futuri ricevuti/mostrati.
+GW007 Results per Kingdom: ENG 631, ESP 224, GER 301, ITA 345.
+GW007 Schedule per Kingdom dopo data: ENG 2066, ESP 653, GER 740, ITA 1016.
+Nessuna data nulla negli Schedule verificati.
+
+Campioni e filtri osservati nel browser:
+- GW001 playoff: GW001|DOMESTIC|playoff|4, sei fixture 368724187–368724192; sm_action originale league non confonde il filtro League.
+- 368724192: SS Lazio 2–4 HERTHA BSC, 12/09/2026.
+- 368724187: Eintracht Frankfurt 0–2 Genoa CFC, 12/09/2026.
+- GW001 division=1: 90 risultati.
+- GW001 competition=GW001|DOMESTIC|playoff|4: 6 risultati, mantenuti dopo refresh.
+- GW001 date=2026-09-12: 6 risultati trascorsi, regolarmente mantenuti nei Results.
+- GW001 id=not-present: not-found, zero card, nessun risultato sostitutivo.
+- GW007 Results k=ENG: 631; competition=GW007|ENG|DOMESTIC|league|1: 90; refresh mantiene filtro e conteggio.
+- GW007 Results k=FRA: not-found, zero card.
+- GW007 Schedule k=ESP: 653; competition=GW007|ESP|DOMESTIC|league|2: 363; Indietro ripristina 653.
+- Prima card Schedule GW007 osservata: Xerez CD–CD Guadalajara, ESP League D2, 14/09/2026 ore 20:00.
+
+STATI E VERIFICA UX
+loading osservato all'apertura con nessuna card inventata; ready dopo completamento; empty su Schedule GW001; not-found verificato sui due GW. Errori HTTP, abort, fonte cambiata, duplicati e dati incompleti coperti da test controllati: error/stale/degraded non si trasformano in snapshot di ripiego.
+Controlli visivi live desktop/mobile per tutte e quattro le pagine: stessi CSS, font, asset, shell, titoli, card, territorio/rail e comportamento responsive dei Golden Master. Sono cambiate la provenienza dei dati e le opzioni necessarie a selezionare le competizioni reali. Nessun nuovo template universale.
+Menu mobile RTH aperto/chiuso; menu Four Kingdoms aperto/chiuso. Filtri, URL, refresh e history verificati. Confronti browser a 390 px e 1440 px tramite gli strumenti responsive già esistenti; anche pagine desktop aperte direttamente.
+79 file preesistenti fuori dalle quattro pagine coincidono byte per byte con la baseline della Phase 1; verifica anche rimuovendo la platform dal checkout di test. La verifica live della foundation confronta i file fuori scope. Il vecchio runtime e gli snapshot degli altri moduli non sono stati alterati.
+
+FILE CREATI
+minisite/api/results-schedule.php
+minisite/integrations/results-schedule/adapter.js
+minisite/integrations/results-schedule/controller.js
+minisite/GW001/live-fixtures.js
+minisite/GW007/live-fixtures.js
+minisite/tests/results-schedule-files.json
+minisite/tests/results-schedule.test.mjs
+minisite/tests/results-schedule-live.py
+.github/workflows/deploy-minisite-results-schedule.yml
+
+FILE MODIFICATI
+minisite/GW001/results.html
+minisite/GW001/schedule.html
+minisite/GW007/results.html
+minisite/GW007/schedule.html
+minisite/tests/verify-isolation.mjs
+minisite/tests/live-check.py
+.github/workflows/deploy-website-aruba.yml
+.github/workflows/deploy-minisite-gw001.yml
+.github/workflows/deploy-minisite-gw007.yml
+Le esclusioni nei vecchi workflow evitano il deploy generale e lasciano queste quattro entry al workflow dedicato. Il baseline storico resta immutato: il test esclude nominativamente solo le quattro entry integrate.
+
+COMMIT, ACTIONS E DEPLOY
+Implementazione: 40afbdf6f460254b8c3fdf5028bd96ea416e17a5.
+Stabilità durante refresh e versionamento cache: cfd84107cb9d6e20cb93d36fef5b6bd4c5c19343.
+Deploy iniziale: https://github.com/tommasomellogrand-ui/imc-website/actions/runs/34748422649 — SUCCESS.
+Foundation: https://github.com/tommasomellogrand-ui/imc-website/actions/runs/34748422670 — SUCCESS.
+Deploy finale: https://github.com/tommasomellogrand-ui/imc-website/actions/runs/34748685007 — QUEUED, nessun job assegnato alla verifica del 13/09/2026, circa 09:04 UTC.
+17 test contratti/boundary/dati, 0 failure; PHP lint; sintassi JS; isolamento 79 file.
+Manifest di deploy: 14 file, endpoint e dipendenze prima, quattro HTML per ultimi. Cinque moduli della platform esistente pubblicati invariati come dipendenze. FTPS con verifica byte per byte; confronto HTTP dei file statici; lettura reale delle quattro combinazioni GW/resource e confronto indipendente Site.
+Nessun deploy generale del sito o pacchetto di altri GW è stato avviato per questi commit.
+Artifact iniziale results-schedule-live-evidence, ID 10315320910, digest sha256:3d4750785f9cd7ae1a6f2861be582d5bb33a58573131755d8717b5c1c7d2cd10; contiene query-result metadata, campioni e confronti del workflow.
+Verifica live positiva sul primo deploy 40afbdf6f460254b8c3fdf5028bd96ea416e17a5, desktop/mobile, dati e filtri come documentato sopra. La correzione finale di refresh è implementata e testata localmente, ma non ancora distribuibile/verificabile live finché GitHub non esegue la run 34748685007. Per chiudere il CASE occorre verificare SUCCESS di questa run, rileggere nel browser le quattro pagine/versioni ENG00906-2 e aggiornare questa RESPONSE con il risultato. Nessuna nuova autorizzazione utente è necessaria per questi passaggi già richiesti.
+
+ROLLBACK CIRCOSCRITTO
+Non eseguito in produzione, perché annullerebbe l'integrazione richiesta.
+Rollback funzionale: creare un nuovo commit che ripristini soltanto i quattro HTML dalla baseline bbed3f5874632cab85d5a38a765a22bb2214f922; distribuire esclusivamente quei quattro HTML con verifica byte/HTTP. Tornano a puntare ai vecchi runtime/snapshot già presenti e invariati. I nuovi file diventano non referenziati; possono restare sul server senza effetti sugli altri moduli. Nessuna operazione DB necessaria.
+Blob originali verificabili:
+GW001/results.html: 21ef8f03ea6680a9d6544a4fb86b46776b4e9534.
+GW001/schedule.html: d8224f7e284148de0126ec425548edc505933488.
+GW007/results.html: f1cb621623f1f17bd4cfdf61b169c9d40ed24389.
+GW007/schedule.html: 5052c160f71f0b354631768442b282403d26a61f.
+Se si usa il workflow dedicato per un rollback anziché un uploader dei soli HTML, adeguare nello stesso commit i test delle entry che impongono la modalità live: non disattivare indiscriminatamente i gate. Non fare reset di main o ripristino globale, per non cancellare lavoro concorrente.
+
+LIMITI DOCUMENTATI
+1. Match Center/Match Report restano fuori scope e non sono integrati ai nuovi dati. I collegamenti già risolvibili dai Match Center esistenti sono preservati; le nuove fixture senza destinazione verificata mostrano “Match Center non disponibile”. Non sono instradate al fallback di una partita diversa. La lista degli ID risolvibili è una capability di navigazione, non uno snapshot di dati Results/Schedule. Nessuna pagina Match, Club, Archive o altro modulo è stata modificata.
+2. Non esistono righe Schedule del 13/09/2026 nei perimetri verificati. L'inclusione del giorno odierno è testata con casi controllati e predicato >=; non viene dichiarato un test live su una riga odierna inesistente. Nessun dato è stato creato per il test.
+3. Mobile verificato come layout responsive nel browser a 390 px; non si dichiara una prova su dispositivo iPhone/Safari fisico.
+4. Gli orari della fonte non hanno timezone sportiva dichiarata. Europe/Rome governa esclusivamente la data odierna e la presentazione dell'istante di lettura; nessuna conversione presunta degli orari degli incontri.
+5. La freschezza indica l'ultima lettura Site, non garantisce che il processo a monte abbia importato ogni partita. Il sito non inventa record mancanti. Nessuna modifica o backfill DB è parte di questo CASE.
+
+BLOCKER RESIDUO: GitHub Actions run 34748685007 ancora queued e senza job. Le letture principali sono online e validate; manca la distribuzione/verifica live dell’ultimo affinamento. Il CASE non è dichiarato completato.
+VERDICT FINALE: BLOCKED
