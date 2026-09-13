@@ -1,0 +1,198 @@
+CASE_ID: IMC-DB-001-22
+DOC_TYPE: RESPONSE
+AREA: DB
+DATE: 2026-09-13
+TOPIC: UNIVERSAL_PLAYOFF_RESULTS_NORMALIZATION_BEFORE_SITE_TRIGGER
+VERDICT: COMPLETED_WITH_DOCUMENTED_LIMITS
+
+1. ESITO
+Normalizzati 8 Results playoff reali: GW001=6, GW005=2.
+Attivata la stessa regola DB su INSERT e UPDATE in tutte le 9 pipeline Results -> Site effettivamente attive, GW001-GW009 sui rispettivi target.
+Zero Results playoff residui con key non dedicata; zero non-playoff trasferiti a key playoff; zero mancanti/extra/divergenti raw-Site; report Results allineati.
+Nessuna modifica importer, frontend, Schedule, Match Report, Transfers, Stats o Codex.
+Il limite principale è la prova dei nuovi INSERT playoff: nessun risultato fittizio introdotto. La definizione INSERT è identica alla UPDATE, esercitata e verificata su tutti gli 8 record reali.
+
+2. FONTI E PERCORSO
+REQUEST autoritativo letto integralmente: blob d6e9067cedf5896133dbfed314415c992ccca129.
+RESPONSE IMC-ENG-009-05 letta integralmente come diagnosi, blob dd5ae0f3ea2b5123a856d39fdf267be686016109. Nessuna sua proposta assunta come vincolo tecnico.
+Codice Database Manager corrente verificato, blob 40dbfbbeb409cb62b7ebd13f0cafdb9884beb4fa; nessuna modifica.
+MySQL via Supabase Nexus toanuzojdkfjgucztpze -> private.imc_aruba_request -> Database Manager Aruba.
+CORE Sql1956795_1: nessun repository Results individuato.
+GOLD Sql1956795_2: MySQL 8.0.45-36.
+CUSTOM Sql1956795_3: MySQL 8.0.45-36.
+Supabase esclusivamente ponte tecnico, non fonte business.
+Pre-flight avviato 08:02 UTC; DDL custom 08:07:29 UTC, DDL gold 08:08:15 UTC, backfill 08:08:48 UTC; controlli finali successivi. Timestamp puntuali per richiesta in AUDIT_EVIDENCE.json.
+52 richieste Database Manager registrate, con payload, risposta HTTP, SQL e risultati; token di conferma rimossi dagli artefatti.
+Documentazione MySQL verificata per SET NEW in BEFORE e precedenza rispetto ad AFTER:
+https://dev.mysql.com/doc/refman/8.0/en/trigger-syntax.html
+
+3. INVENTARIO E STATO INIZIALE
+Sono state lette tutte le 50 tabelle GW001-GW025_IMC Results presenti sui due database, senza assumere che tutte fossero operative. Sono state inoltre lette le definizioni complete dei trigger pertinenti e la struttura Results/Site/Report.
+Dati e pipeline attivi:
+custom: GW001, GW004, GW005, GW006, GW009;
+gold: GW002, GW003, GW007, GW008.
+Le restanti tabelle sono vuote e prive della pipeline Results -> Site pertinente. Non sono state attivate né modificate: non si crea una nuova route o una pipeline sito estranea al ticket.
+La regola non contiene eccezioni per numero di GW, paese o divisione. Per una futura attivazione di una tabella oggi vuota o un nuovo GW occorre includere la stessa coppia di trigger nel provisioning della relativa pipeline; nessun trigger MySQL si estende automaticamente a tabelle create successivamente. Non viene dichiarata copertura operativa di pipeline inesistenti.
+
+Inventario playoff deterministico:
+GW001, 6 righe, stage "Playoff Semifinale", action league, country CUS, division 4.
+Fixture 368724187,368724188,368724189,368724190,368724191,368724192.
+Vecchia key GW001|CUS|DOMESTIC|league|4.
+GW005, 2 righe, stage "Playoff Finale", action league, country CUS, division 1.
+Fixture 312788412,312788413.
+Vecchia key GW005|CUS|DOMESTIC|league|1.
+Negli altri GW nessun candidato playoff nel campione.
+Una ricerca più larga su action/stage/round/group-name/group/key per play, sparegg, promotion, relegation ha trovato esattamente queste 8 righe e nessun candidato aggiuntivo ambiguo.
+Nessuna inferenza da data, rigori, nomi squadre, turno finale o presunte regole del GW. La sola stringa "Finale" delle coppe non è un segnale playoff.
+
+Pre-flight raw -> Site: 0 missing,0 divergent,0 hash mismatch in tutti i GW attivi; conteggi e identità fixture/fingerprint equivalenti. Report globali verificati su tutti gli scope, nei due versi:0 divergenze/omissioni e0 aggregati nonzero inattesi.
+Trigger iniziali: custom47, gold36 sui raw Results attivi; nessun BEFORE. Le copie Site erano AFTER INSERT/UPDATE/DELETE, come gli aggiornamenti dei report. Quindi propagavano correttamente anche la key League semanticamente errata.
+
+4. ROOT CAUSE E SOLUZIONE
+L'import riconosceva la vista come league ma conservava il marcatore esplicito Playoff nella fase. Non esisteva una normalizzazione database di competition_key prima della replica. Il problema non era una perdita di record nei trigger Site.
+
+Soluzione: una coppia BEFORE INSERT / BEFORE UPDATE su ogni repository Results attivo, che assegna soltanto NEW.competition_key.
+Sequenza:
+richiesta INSERT/UPDATE dell'importer arriva a MySQL -> BEFORE normalizza NEW.competition_key -> riga raw persistita con key corretta -> AFTER report/Site leggono NEW già normalizzato.
+"Prima" è relativo alla persistenza SQL della riga, non all'arrivo della richiesta nel database: tutta la trasformazione è server-side dopo l'ingresso in MySQL, senza alterare importer o payload inviato. Non introdotto un passaggio asincrono dopo commit né una finestra in cui Site riceve la key sbagliata.
+Non si tenta un UPDATE della stessa tabella da AFTER, non necessario e incompatibile con le restrizioni MySQL. Non occorre ritardare o sostituire i trigger Site.
+AFTER esistenti invariati in statement, evento, timing e ACTION_ORDER. BEFORE hanno ordine1 per il rispettivo evento. INSERT e UPDATE applicano il medesimo corpo.
+
+5. REGOLA CANONICA V1
+Riconoscimento case-insensitive con TRIM:
+- sm_action uguale a playoff/playoffs, ammesse separazioni con spazi o trattino;
+oppure
+- competition_stage, competition_group_name o competition_round iniziano con il token playoff/playoffs (anche play-off / play off), seguito da spazio, due punti, trattino o fine stringa.
+Non viene cercato un generico "Finale", né si usa la key già esistente come unica prova.
+I marker sono espliciti, non dedotti. Etichette future prive di qualsiasi marker di questa famiglia non possono essere riconosciute senza una nuova evidenza/mappatura: limite dichiarato, non classificazione per supposizione.
+
+Formato:
+GW|[COUNTRY_REALE]|DOMESTIC|playoff|[DIVISION]
+GW = game_world_id della riga.
+COUNTRY_REALE = sm_country in maiuscolo e senza spazi periferici; omesso se NULL, vuoto o CUS.
+DIVISION = sm_division originale con TRIM, omessa se NULL/vuota.
+Non si deduce una divisione differente dalla provenienza né si mescola la fase nella key. Semifinale/finale/round restano nei rispettivi campi.
+Le parentesi quadre indicano segmenti opzionali, non caratteri della key.
+
+Nuove key effettive:
+GW001|DOMESTIC|playoff|4
+GW005|DOMESTIC|playoff|1
+
+sm_action resta league perché questo CASE autorizza competition_key e non la riscrittura dei campi DOM/SM. competition_group resta DOMESTIC, sm_country resta CUS nei record originali. fingerprint,imported_at,fixture,score,rigori e tutti gli altri25campi raw restano invariati.
+I consumer che vogliono isolare League devono utilizzare competition_key; un filtro esclusivamente sm_action=league continua intenzionalmente a comprendere i playoff. Non è stata cambiata questa semantica del campo sorgente.
+
+6. PIANO, MIGRAZIONI E MODIFICHE ESATTE
+Prima delle scritture predisposti e registrati MIGRATION_PLAYOFF_V1.sql e ROLLBACK_PLAYOFF_V1.sql. La versione finale dello SQL di backfill è stata registrata prima di eseguirlo.
+Percorso per ogni fase: plan_migration -> controllo target/statements/hash -> execute_migration con token del piano -> lettura immediata stato reale.
+Nessun DROP o sostituzione dei trigger esistenti. Nessuna nuova tabella/colonna/procedura.
+
+DDL custom:
+migration_id IMC-DB-001-22-custom-normalize-v1
+request plan4284, execute4285, verifica4286
+plan_sha256 6edc7350f0990688ea39ac3b0ac1fad9640346db4291b973bfe79af46f192b0a
+10 CREATE TRIGGER, successo.
+
+DDL gold:
+migration_id IMC-DB-001-22-gold-normalize-v1
+plan4287,execute4288,verifica4289
+plan_sha256 7de323fb9af27556c0d63c975f62a3d6effdf37e33d07ce95ff6e92927979d74
+8 CREATE TRIGGER, successo.
+
+Backfill custom:
+migration_id IMC-DB-001-22-custom-backfill-v1
+plan4290,execute4291,verifiche4292-4295
+plan_sha256 44af2e88fe9da66dadb4e55e013c373b2ec4d2591243b895dacd57863c432285
+2 UPDATE, affected_rows6 e2; totale8.
+SET competition_key=competition_key con WHERE marcatore playoff AND key diversa dalla canonica.
+Questa autoassegnazione lascia in ingresso la key League: è il BEFORE UPDATE a modificarla. La prova esercita davvero il normalizzatore, non un UPDATE che precompila la key finale aggirando il test.
+
+Trigger aggiunti:
+Sql1956795_3:
+trg_GW001_results_playoff_bi / trg_GW001_results_playoff_bu
+trg_GW004_results_playoff_bi / trg_GW004_results_playoff_bu
+trg_GW005_results_playoff_bi / trg_GW005_results_playoff_bu
+trg_GW006_results_playoff_bi / trg_GW006_results_playoff_bu
+trg_GW009_results_playoff_bi / trg_GW009_results_playoff_bu
+Sql1956795_2:
+trg_GW002_results_playoff_bi / trg_GW002_results_playoff_bu
+trg_GW003_results_playoff_bi / trg_GW003_results_playoff_bu
+trg_GW007_results_playoff_bi / trg_GW007_results_playoff_bu
+trg_GW008_results_playoff_bi / trg_GW008_results_playoff_bu
+
+Tabelle cui sono associati: GWxxx_IMC Results dei nove GW sopra.
+Dati raw modificati direttamente: solo GW001_IMC Results e GW005_IMC Results (competition_key).
+Dati modificati automaticamente dagli AFTER custom: IMC Site Results (key,source_row_hash,synced_at) e IMC Results Report (conteggi/scope/timestamp).
+IMC Repository Report e GW001_IMC Results Report invariati nei totali; nessun UPDATE diretto dei report o del Site.
+Definizioni finali integrali, SQL_MODE,DEFINER,ACTION_ORDER e confronto precedente nel file TRIGGERS_BEFORE_AFTER.json.
+Totale trigger pertinenti finale custom57, gold44, esattamente +10/+8. Nessun trigger esistente alterato.
+Tabelle/colonne del DB prima/dopo DDL invariate: custom320/5565; gold299/5269.
+
+7. CONTEGGI PRIMA/DOPO
+Baseline immediatamente pre-migrazione, dopo i controlli iniziali:
+GW | target | Results prima | dopo | playoff prima/dopo | normalizzati
+GW001 | custom |797|797|6/6|6
+GW002 | gold |6111|6111|0/0|0
+GW003 | gold |10174|10174|0/0|0
+GW004 | custom |1454|1454|0/0|0
+GW005 | custom |587|587|2/2|2
+GW006 | custom |1412|1412|0/0|0
+GW007 | gold |3384|3384|0/0|0
+GW008 | gold |647|647|0/0|0
+GW009 | custom |288|288|0/0|0
+Tutti gli altri slot raw ispezionati:0 prima/0 dopo, nessuna modifica.
+
+Nota concorrenza: prima lettura esplorativa GW003=9868 (4267); una successiva già prima delle migrazioni=10174 (4272,4282). Sono306 import concorrenti avvenuti prima delle nostre scritture, non introdotti dal CASE. Baseline checksum prima dell'intervento10174 e finale10174 identiche. Non si maschera tale variazione confrontando campioni di orari diversi.
+
+Conteggi per key interessata:
+GW001 vecchia League D4:96 ->90; nuova playoff D4:0 ->6.
+GW005 vecchia League D1:58 ->56; nuova playoff D1:0 ->2.
+Totali generali e conteggi playoff fisici invariati: è una riclassificazione, non un trasferimento con DELETE/INSERT.
+
+8. VERIFICHE
+- Record before/after completi per8fixture: unico campo raw cambiato competition_key. Tutti gli altri campi identici, incluso fingerprint.
+- Checksum aggregati di due porzioni SHA256 dell'intero payload NON playoff, più conteggi: invariati in tutti9GW (4282/4283 vs4293/4296). Nessun non-playoff riclassificato.
+- Final detector (4299/4300): needs_change=0, false_playoff_key=0 in tutti9GW.
+- Raw/Site: identità game_world_id+sm_fixture_id; confronto NULL-safe di tutti26campi e hash Site ricalcolato. missing0,divergent0,hash_mismatch0 in tutti9GW (4294/4297).
+- Site count uguale raw e fixture/fingerprint distinti uguali count (4301/4303,4308/4310). Con anti-missing0 e cardinalità/identità univoche, extra0. Nessuna perdita o duplicazione introdotta.
+- Ogni playoff ha stessa nuova key in raw e Site (4292); l'hash Site è aggiornato per il nuovo payload.
+- IMC Results Report verificato su tutti gli scope esistenti: custom4 e gold8. Expected missing/different0 e unexpected nonzero0 (4295/4298).
+- Report per key conferma GW00190 League+6 playoff; GW00556 League+2 playoff, sia COMPETITION_KEY sia SM_ACTION_COMPETITION_KEY. In quest'ultimo sm_action resta league, coerente con raw.
+- IMC Repository Report: tutti i totali Results equivalenti. GW001_IMC Results Report locale797, invariato (4306).
+- Definizioni AFTER precedenti integralmente confrontate con finali: statement,ordine,timing,eventi invariati. Sono semplicemente precedute dai nuovi BEFORE.
+- Idempotenza: ricalcolare la canonica sui dati finali non cambia nulla; il WHERE del backfill seleziona0righe. Niente doppio prefisso/segmento playoff, niente inserimenti aggiuntivi. Il Database Manager protegge inoltre la ripetizione dello stesso migration_id.
+Non è stata eseguita una seconda migrazione di scrittura a vuoto solo per ottenere affected_rows0: la selezione equivalente READ prova l'assenza di ulteriori candidati.
+
+9. FUTURI DATI E LIMITI
+I futuri INSERT/UPDATE sulle nove tabelle attive attraversano il BEFORE con corpo identico, senza intervento client. Caso non-playoff: ELSE mantiene la key. Caso già canonico: stessa key. Caso marcatore playoff e key League: key canonica prima di ogni AFTER.
+Prova dinamica reale del ramo playoff effettuata su UPDATE:8/8. Non eseguito un INSERT playoff nuovo, né un duplicato/reinsert di una fixture reale per simulare il futuro. La copertura INSERT è dimostrata dalla definizione installata e dalla precedenza MySQL, non da una falsa prova d'import. Per questo il verdict include DOCUMENTED_LIMITS.
+La verifica GOLD del ramo positivo non ha record playoff reali disponibili: stessa regola installata; tutti i record non-playoff e mirror/report rimangono invariati.
+Le 41 tabelle raw vuote senza pipeline non sono dichiarate attive né coperte da un flusso Site inesistente. Nuovi GW/tabelle richiedono provisioning della medesima regola insieme al loro Site/report. La soluzione è universale rispetto a GW/paese/divisione dei dati, non un meccanismo di auto-creazione trigger per nuove tabelle.
+Se un futuro import omette ogni marker playoff, il DB non può distinguerlo deterministicamente da League usando solo score/data/nomi: occorre evidenza esplicita. Non si inventano criteri.
+Non cambiati sm_action o altre colonne sorgente; non corrette key degli altri repository fuori scope. Queste modifiche non chiudono gli altri gap del ticket ENG009-05.
+I controlli non sono un unico snapshot transazionale e il DB resta aperto agli import. La baseline immediata, i risultati di ciascuno statement e i controlli finali sono conservati.
+
+10. ROLLBACK
+ROLLBACK_PLAYOFF_V1.sql predisposto prima dell'esecuzione, NON ESEGUITO.
+Procedura circoscritta:
+1. leggere stato corrente/candidati e verificare che non ci siano correzioni concorrenti sulle8fixture;
+2. pianificare e rimuovere esclusivamente i18trigger nuovi, sui rispettivi target;
+3. ripristinare le vecchie key delle8righe fotografate usando guardie fixture+fingerprint+key canonica;
+4. lasciare ai trigger AFTER originali il ripristino di Site/hash/report;
+5. verificare conteggi,26campi,duplicati e report come nel presente audit.
+Non eseguire UPDATE di ripristino prima di rimuovere i BEFORE, che ricanonizzerebbero le key.
+Nessun Results viene eliminato. Gli aggregati nuovi possono restare come righe a zero, coerenti con il comportamento dei report.
+I timestamp tecnici sync/report non vengono riportati artificialmente indietro: rollback logico dei dati, non ripristino bitwise dei timestamp.
+Eventuali nuovi playoff importati dopo la migrazione non hanno una preimage salvata: inventariarli e decidere separatamente se conservare la key corretta o ripristinare una convenzione; mai cancellarli o applicare una key presunta.
+
+11. ARTEFATTI
+Nel medesimo CASE:
+- MIGRATION_PLAYOFF_V1.sql:18 CREATE TRIGGER e2UPDATE eseguiti, target espliciti;
+- ROLLBACK_PLAYOFF_V1.sql: rollback circoscritto, non eseguito;
+- TRIGGERS_BEFORE_AFTER.json: definizioni complete prima/dopo, ordine e metadati;
+- AUDIT_EVIDENCE.json: inventari,8record prima/dopo,query/piani/esiti e controlli, con token rimossi;
+- RESPONSE.txt: presente consegna.
+Nessun file fuori CASE modificato. Nessun deploy, modifica importer o frontend.
+
+VERDICT FINALE: COMPLETED_WITH_DOCUMENTED_LIMITS
+Blocker residui sullo stato attuale delle nove pipeline: nessuno.
+Limiti aperti: INSERT playoff non simulato con dati fittizi; nuove pipeline/tabelle da provisionare con la regola; riconoscimento richiede marker esplicito.
