@@ -1,0 +1,273 @@
+CASE_ID: IMC-ENG-009-06
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-13
+TOPIC: PHASE_2_RESULTS_SCHEDULE_LIVE_DATA_GW001_GW007
+
+IMC | MINISITE IMPLEMENTATION WORK
+PHASE 2 · RESULTS + SCHEDULE REAL DATA FOR GW001 AND GW007
+
+CONTESTO AUTORITATIVO
+IMC-ENG-009-04 ha creato la foundation del nuovo Minisite Platform mantenendo invariati i runtime live.
+
+IMC-ENG-009-05 ha verificato il layer dati di GW001 e GW007.
+
+IMC-DB-001-22 ha completato la normalizzazione universale dei Results playoff prima del passaggio verso Site Results.
+
+Questo CASE autorizza esclusivamente la prima integrazione reale dei dati nei minisiti, limitata a:
+- GW001;
+- GW007;
+- Results;
+- Schedule.
+
+FONTI DA LEGGERE INTEGRALMENTE
+Prima di eseguire:
+- tickets/ENG/2026/IMC-ENG-009-04/REQUEST.txt;
+- tickets/ENG/2026/IMC-ENG-009-04/RESPONSE.txt;
+- tickets/ENG/2026/IMC-ENG-009-05/REQUEST.txt;
+- tickets/ENG/2026/IMC-ENG-009-05/RESPONSE.txt;
+- tickets/DB/2026/IMC-DB-001-22/REQUEST.txt;
+- tickets/DB/2026/IMC-DB-001-22/RESPONSE.txt;
+- stato corrente completo del repository tommasomellogrand-ui/imc-website;
+- runtime, loader, configurazioni, workflow e pagine Results/Schedule correnti di GW001 e GW007;
+- foundation e contratti correnti sotto minisite/platform/.
+
+ARCHITETTURA AUTORITATIVA
+- MySQL Aruba = fonte dati autoritativa;
+- Supabase IMC Nexus = ponte tecnico verso MySQL Aruba;
+- GitHub = fonte autoritativa di codice, sito e Gateway.
+
+Routing:
+- GW001 → target custom / Sql1956795_3;
+- GW007 → target gold / Sql1956795_2.
+
+I dati da utilizzare sono:
+- IMC Site Results;
+- IMC Site Schedule;
+filtrati obbligatoriamente per il Game World corretto.
+
+OBIETTIVO
+Collegare i minisiti GW001 e GW007 ai Results e agli Schedule reali, eliminando per queste sezioni la dipendenza operativa dagli snapshot JavaScript statici.
+
+Il sito deve leggere e rappresentare automaticamente i nuovi Results e Schedule disponibili nei repository Site, senza richiedere la rigenerazione manuale degli snapshot statici.
+
+SCOPE FUNZIONALE
+
+GW001:
+- pagina/sezione Results;
+- pagina/sezione Schedule;
+- filtri esistenti per divisione e competizione;
+- supporto delle competition_key reali, compresa la competition_key playoff normalizzata.
+
+GW007:
+- pagina/sezione Results;
+- pagina/sezione Schedule;
+- filtri esistenti per country/Kingdom e competizione;
+- mantenimento dei quattro contesti approvati ENG, ESP, GER, ITA;
+- supporto delle competition_key reali.
+
+Per entrambi:
+- mostrare correttamente fixture, squadre, data, orario quando disponibile, punteggi e stato pertinente;
+- mantenere separati i dati del GW001 da quelli del GW007;
+- utilizzare game_world_id, competition_key e gli altri campi reali necessari;
+- non inventare dati mancanti;
+- preservare gli stati loading, ready, empty, error, not-found, stale e degraded previsti dalla platform dove pertinenti.
+
+REGOLA OBBLIGATORIA DI DATA PER SCHEDULE
+La sezione Schedule deve ragionare dinamicamente sulla data corrente.
+
+Regola:
+- match_date precedente alla data odierna → la partita non deve essere mostrata nella sezione Schedule;
+- match_date uguale alla data odierna → la partita deve essere mostrata nella sezione Schedule;
+- match_date successiva alla data odierna → la partita deve essere mostrata nella sezione Schedule.
+
+Esempio autoritativo:
+- data odierna: 13 settembre 2026;
+- Schedule del 12 settembre 2026: non mostrato;
+- Schedule del 13 settembre 2026: mostrato;
+- Schedule successivo al 13 settembre 2026: mostrato.
+
+Il filtro deve:
+- essere calcolato automaticamente rispetto alla data corrente;
+- essere applicato a ogni caricamento;
+- non cancellare né modificare il record nel database;
+- rimuovere la partita passata esclusivamente dalla visualizzazione Schedule;
+- lasciare invariata l'eventuale presenza della partita nella sezione Results;
+- usare una gestione della data coerente e documentata per entrambi i minisiti.
+
+PRESERVAZIONE OBBLIGATORIA
+L'integrazione dati non deve modificare l'identità o l'esperienza approvata dei due Golden Master.
+
+GW001 deve conservare integralmente:
+- visual design Road To History;
+- struttura editoriale;
+- composizione;
+- gerarchia;
+- responsive behavior;
+- navigazione e linguaggio visuale.
+
+GW007 deve conservare integralmente:
+- identità Four Kingdoms;
+- Kingdom e Territory context;
+- quattro contesti ENG/ESP/GER/ITA;
+- composizione;
+- colori, mappa, asset, motion e responsive behavior;
+- navigazione e linguaggio visuale.
+
+La platform deve adattarsi ai due Golden Master.
+Non introdurre un template visuale universale.
+Non ridisegnare le pagine.
+
+PRE-FLIGHT OBBLIGATORIO
+Prima di modificare:
+
+1. registrare branch, SHA e stato corrente di imc-website;
+2. leggere integralmente ogni file che verrà modificato;
+3. verificare il consumer attuale di Results e Schedule nei due GW;
+4. identificare il percorso autorizzato di lettura dei repository Site;
+5. verificare i contratti già creati nella Phase 1;
+6. registrare baseline funzionale e visuale delle pagine Results e Schedule;
+7. identificare workflow e percorso di deploy pertinenti;
+8. predisporre rollback circoscritto.
+
+IMPLEMENTAZIONE
+Implementare esclusivamente quanto necessario per:
+
+1. leggere IMC Site Results e IMC Site Schedule per GW001;
+2. leggere IMC Site Results e IMC Site Schedule per GW007;
+3. filtrare sempre i dati per game_world_id corretto;
+4. mappare i dati reali nei contratti/view model della platform;
+5. mantenere i filtri esistenti dei due minisiti;
+6. applicare la regola dinamica sulle date dello Schedule;
+7. mantenere Results indipendente dal filtro temporale dello Schedule;
+8. sostituire per queste sezioni l'uso operativo degli snapshot statici;
+9. gestire errori, vuoti e dati incompleti senza fallback inventati;
+10. preservare integralmente rendering e identità approvati.
+
+Se per la lettura è necessaria una modifica tecnica lato sito o Gateway già appartenente al repository autoritativo, applicare soltanto la modifica minima indispensabile alla lettura READ-only di Results e Schedule per GW001/GW007.
+
+Nessuna modifica DB è autorizzata.
+
+FUORI SCOPE
+Non modificare o integrare:
+- Match Report;
+- Standings;
+- Power Ranking;
+- SM Player Stats;
+- Transfers;
+- Player Codex;
+- Manager;
+- Club;
+- Player;
+- Archive;
+- altri dataset;
+- altri Game World;
+- importer;
+- database;
+- schema DB;
+- trigger DB;
+- classificazioni o competition_key;
+- grafica, composizione o identità dei minisiti.
+
+Le pagine o componenti fuori scope devono rimanere invariati.
+
+TEST E ACCEPTANCE CRITERIA
+Il CASE è completato soltanto se:
+
+1. GW001 Results legge dati reali di GW001;
+2. GW001 Schedule legge dati reali di GW001;
+3. GW007 Results legge dati reali di GW007;
+4. GW007 Schedule legge dati reali di GW007;
+5. nessun dato attraversa il confine tra i due Game World;
+6. le competition_key playoff sono lette correttamente nei Results;
+7. i filtri divisione/competizione GW001 funzionano sui dati reali;
+8. i filtri Kingdom/country/competizione GW007 funzionano sui dati reali;
+9. uno Schedule precedente a oggi non viene mostrato;
+10. uno Schedule con data odierna viene mostrato;
+11. uno Schedule futuro viene mostrato;
+12. il filtro temporale non elimina o altera record nel database;
+13. Results non perde partite perché già trascorse;
+14. nuovi dati Site diventano disponibili senza rigenerare snapshot statici;
+15. loading, empty, error e not-found non mostrano dati inventati;
+16. desktop e mobile mantengono la baseline approvata;
+17. deep link, refresh, filtri e navigazione restano funzionanti;
+18. nessun modulo fuori scope viene modificato nel comportamento;
+19. Actions pertinenti terminano con successo;
+20. verifica live positiva dopo il deploy;
+21. rollback verificabile e documentato.
+
+VERIFICHE DATI
+Confrontare campioni reali e conteggi pertinenti tra:
+- IMC Site Results e rendering Results;
+- IMC Site Schedule filtrato per data e rendering Schedule.
+
+Registrare:
+- query/letture eseguite;
+- game_world_id;
+- competition_key;
+- fixture campione;
+- totale ricevuto;
+- totale mostrato dopo i filtri;
+- esclusioni Schedule per match_date precedente a oggi;
+- assenza di contaminazione cross-GW.
+
+Non dichiarare correttezza sulla base del solo rendering.
+
+GITHUB / DEPLOY
+Procedura obbligatoria:
+- leggere file corrente prima di modificare;
+- modifica minima e circoscritta;
+- commit;
+- eseguire e verificare le GitHub Actions pertinenti;
+- deploy dei soli pacchetti necessari;
+- verifica live reale di GW001 e GW007 su desktop e mobile;
+- dire online soltanto dopo Action success e verifica live positiva.
+
+ROLLBACK
+Il rollback deve consentire il ritorno al comportamento precedente di Results e Schedule senza modificare DB, trigger o dati.
+
+OUTPUT AUTORITATIVO
+Registrare:
+tickets/ENG/2026/IMC-ENG-009-06/RESPONSE.txt
+
+La RESPONSE deve includere:
+- pre-flight;
+- architettura di lettura implementata;
+- file creati/modificati;
+- mapping Results;
+- mapping Schedule;
+- implementazione del filtro data;
+- test GW001;
+- test GW007;
+- conteggi e fixture campione;
+- test della competition_key playoff;
+- verifica filtri e isolamento;
+- test desktop/mobile;
+- commit SHA;
+- Actions;
+- deploy;
+- verifica live;
+- rollback;
+- limiti;
+- verdict finale.
+
+Al termine tornare nella chat con Tom indicando:
+- verdict;
+- stato GW001 Results;
+- stato GW001 Schedule;
+- stato GW007 Results;
+- stato GW007 Schedule;
+- esito del filtro sulle date;
+- eventuali blocker residui.
+
+VERDICT FINALE OBBLIGATORIO
+Restituire uno solo tra:
+- COMPLETED
+- COMPLETED_WITH_DOCUMENTED_LIMITS
+- BLOCKED
+
+WRITE AUTHORIZED: YES, esclusivamente nel repository codice/sito entro questo scope e in RESPONSE.txt nella Data Room.
+DB WRITE: NO.
+DB TRIGGER/SCHEMA WRITE: NO.
+IMPORTER WRITE: NO.
+LIVE UX CHANGE: NO, salvo sostituzione della fonte dati mantenendo l'esperienza approvata.
