@@ -1,0 +1,47 @@
+CASE_ID: IMC-DB-001-21
+DOC_TYPE: RESPONSE
+DATE: 2026-09-13
+TOPIC: TRANSFERS_IMPORTER_IDEMPOTENCY_RESUME_GW015
+VERDICT: BLOCKED
+
+BLOCCO AUTORITATIVO
+REQUEST.txt letto integralmente dal repository tommasomellogrand-ui/imc-data-room.
+Blob REQUEST: 4c22c3a5275fce26b157ec01371079a505f804d3.
+
+Il file obbligatorio:
+tickets/DB/2026/IMC-DB-001-21/INPUT_TRANSFERS_IMPORT.js
+non è disponibile sul branch predefinito main.
+La richiesta diretta del file restituisce GitHub HTTP 404 NOT_FOUND.
+La lettura della directory del CASE conferma che contiene soltanto REQUEST.txt al momento della verifica.
+
+Non sono state usate memoria, versioni alternative o codice Results per sostituire l'input Transfers indicato.
+
+STATO DELL'AUDIT
+Root cause del difetto operativo: non verificata sul sorgente, perché assente. Il REQUEST segnala il resume basato su max(imc_transfer_number) e posizione DOM; questa è la descrizione dell'incarico, non un riscontro effettuato sul codice.
+
+Identità/fingerprint: non definita né validata; occorrono sorgente autoritativo e riscontri DOM/schema.
+Classificazione IDENTICAL/NEW/CHANGED_EXISTING/COLLISION: non implementata.
+Resume: non modificato.
+Paginazione Gateway e Soccer Manager: non verificata.
+Codice corrente Gateway Transfers, struttura reale GW001/GW007, indici e constraint: non ispezionati in questa esecuzione, arrestata sul prerequisito mancante.
+Routing GW001–GW015: nessun routing validato o inventato in questa esecuzione; nessun codice eseguibile prodotto.
+GW fail-closed: non applicabile a un importer nuovo, poiché non prodotto; nessuna scrittura è stata tentata verso alcun GW.
+Test obbligatori offline 1–12: non eseguiti; non esiste un sorgente autoritativo da correggere e sottoporre a test.
+Differenze dal codice input: nessuna modifica.
+Limiti residui: incarico non implementato e non pronto per retest.
+
+DELIVERABLE
+RESPONSE.txt: presente rapporto di blocco.
+OUTPUT_TRANSFERS_IMPORT.js: NON prodotto. Un placeholder o un importer ricostruito non soddisferebbe il requisito di codice completo derivato dall'input autoritativo.
+
+SBLOCCO RICHIESTO
+Rendere disponibile INPUT_TRANSFERS_IMPORT.js nel percorso esatto indicato dal REQUEST, oppure aggiornare REQUEST.txt con il percorso autoritativo corretto se il sorgente è già raccolto altrove. Non occorre reinviare materiali in chat.
+
+PERIMETRO
+Nessuna modifica DB, storico, schema, Gateway o produzione.
+Nessun DELETE, RESET, UPDATE, ALTER o deploy.
+Nessuna modifica a Schedule, Results o Match Report.
+Unica scrittura esterna: questo RESPONSE.txt nel CASE.
+
+VERDICT FINALE: BLOCKED
+Motivazione: input sorgente obbligatorio assente nel percorso autoritativo; impossibile correggere e validare fedelmente l'importer richiesto.
