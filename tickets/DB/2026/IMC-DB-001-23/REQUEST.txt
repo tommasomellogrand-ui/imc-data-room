@@ -1,0 +1,231 @@
+CASE_ID: IMC-DB-001-23
+DOC_TYPE: REQUEST
+AREA: DB
+DATE: 2026-09-13
+TOPIC: GW001_PLAYOFF_DIVISION_AND_MATCH_REPORT_CONSISTENCY
+
+IMC | DATABASE MANAGER
+GW001 · PLAYOFF DIVISION CORRECTION AND RESULTS/MATCH REPORT CONSISTENCY
+
+CONTESTO AUTORITATIVO
+IMC-DB-001-22 ha creato la normalizzazione automatica dei Results playoff prima del passaggio verso IMC Site Results.
+
+Nel GW001, i Results playoff normalizzati da quel CASE risultano attualmente associati alla Divisione 4. La classificazione non è corretta come insieme unico: i playoff del GW001 appartengono alle Divisioni 4, 3 e 2.
+
+È inoltre in corso il caricamento completo di tutti i Match Report. Il conteggio e la copertura dei Match Report osservabili durante il CASE non devono essere considerati definitivi finché il caricamento è in corso.
+
+OBIETTIVO AUTORITATIVO
+Il Database Manager deve:
+
+1. determinare la divisione reale di ogni partita playoff del GW001;
+2. correggere quanto già realizzato sui Results da IMC-DB-001-22, affinché ogni Result playoff abbia divisione e competition_key coerenti con la divisione reale;
+3. predisporre la stessa normalizzazione per tutti i Match Report playoff del GW001, inclusi quelli già caricati e quelli che arriveranno durante o dopo l'intervento;
+4. verificare la coerenza e la congruenza completa tra ogni Match Report e il relativo ResultResult;
+5. garantire che Results, Match Report e rispettivi repository Site ricevano dati coerenti prima dei successivi utilizzi da parte dei minisiti.
+
+COLLEGAMENTO PRIMARIO
+La prima chiave autoritativa di collegamento tra Result eResult e Match Report è:
+
+- sm_fixture_id.
+
+Il Database Manager deve partire da sm_fixture_id e verificare tutte le ulteriori corcorrispondendenzeze disponibili e pertinenti tra i due repository.
+
+Deve individuare autonomamente, leggendo lo schema e i dati reali, quali campi confrontare per certificare la congruenza. Il REQUEST non deve inventare né imporre una lista chiusa di campi.
+
+DIVISIONE REALE DEI PLAYOFF
+Il Database Manager deve verificare se e come sia possibile risalire deterministicamente alla divisione reale attraverso:
+
+- identificativi delle squadre presenti nel Result;
+- identificativi delle squadre presenti nel Match Report;
+- anagrafiche, mapping e fonti autoritative disponibili nei database;
+- ulteriori relazioni reali dimostrate nello schema.
+
+Non assegnare divisioni per supposizione.
+Non dedurre la divisione da nomi, date, punteggi, ordine delle fixture o memoria esterna se non supportati da una fonte autoritativa verificabile.
+
+Il risultato richiesto è che i playoff del GW001 siano distribuiti correttamente tra:
+- Divisione 4;
+- Divisione 3;
+- Divisione 2.
+
+COMPETITION KEY
+Per ciascuna partita playoff:
+
+- il Result e il relativo Match Report devono avere competition_key congrue;
+- la competition_key deve riflettere la divisione reale determinata;
+- sm_fixture_id resta il collegamento primario;
+- le ulteriori corrispondenze devono essere verificate sui dati reali;
+- la regola deve funzionare sia per i record già presenti sia per quelli futuri.
+
+Il Database Manager deve determinare autonomamente la modifica tecnica necessaria, mantenendo coerenza con la normalizzazione playoff introdotta da IMC-DB-001-22.
+
+CARICAMENTO MATCH REPORT IN CORSO
+Il caricamento completo dei Match Report è attualmente in corso.
+
+Di conseguenza il Database Manager deve:
+
+- non trattare il conteggio iniziale come definitivo;
+- leggere e registrare il timestamp e lo stato del campione utilizzato;
+- predisporre subito la regola automatica necessaria per i Match Report playoff futuri;
+- applicare la correzione ai Match Report playoff già presenti;
+- verificare che i nuovi Match Report caricati successivamente attraversino la stessa normalizzazione;
+- predisporre controlli ripetibili per verificare la congruenza dell'intero caricamento;
+- distinguere chiaramente tra record non ancora caricati e record caricati ma incoerenti;
+- dichiarare eventuali limiti dovuti al caricamento ancora in corso.
+
+SCOPE
+IN SCOPE:
+- GW001_IMC Results;
+- GW001_IMC Match Report;
+- IMC Site Results per GW001;
+- IMC Site Match Report per GW001;
+- competition_key dei playoff GW001;
+- divisione dei playoff GW001;
+- trigger e normalizzazioni strettamente necessari;
+- report pertinenti dei due repository;
+- dati playoff già presenti e futuri;
+- verifica di congruenza Results/Match Report.
+
+OUT OF SCOPE:
+- Schedule;
+- Transfers;
+- SM Player Stats;
+- Player Codex;
+- frontend e minisiti;
+- importer;
+- Game World diversi dal GW001, salvo letture non mutanti strettamente necessarie per comprendere strutture condivise;
+- modifiche non necessarie all'obiettivo.
+
+PRE-FLIGHT OBBLIGATORIO
+Prima di qualsiasi modifica:
+
+1. leggere integralmente REQUEST e RESPONSE di IMC-DB-001-22;
+2. leggere integralmente RESPONSE di IMC-ENG-009-05 come contesto diagnostico;
+3. leggere lo stato corrente dei Results e Match Report GW001;
+4. leggere le definizioni complete dei trigger Results e Match Report pertinenti;
+5. verificare ACTION_TIMING, ACTION_ORDER e dipendenze;
+6. inventariare tutti i Results playoff GW001;
+7. inventariare tutti i Match Report playoff GW001 presenti al momento del campione;
+8. collegare Results e Match Report prima di tutto tramite sm_fixture_id;
+9. rilevare tutte le congruenze e divergenze sui campi realmente comparabili;
+10. identificare le fonti autoritative utilizzabili per determinare la divisione delle squadre;
+11. registrare conteggi, timestamp e stato iniziale;
+12. predisporre piano di migrazione e rollback prima delle scritture.
+
+RESPONSABILITÀ TECNICA
+Il Database Manager deve determinare autonomamente:
+
+- come ricavare la divisione reale delle squadre;
+- come gestire una partita se le fonti restituiscono informazioni incomplete o conflittuali;
+- come correggere la regola Results introdotta da IMC-DB-001-22;
+- come normalizzare i Match Report prima del passaggio verso IMC Site Match Report;
+- come mantenere congruenti competition_key e divisione tra i due repository;
+- come gestire in sicurezza il caricamento concorrente ancora in corso;
+- come rendere ripetibili le verifiche al termine del caricamento.
+
+Il REQUEST stabilisce il risultato richiesto, non prescrive la soluzione tecnica.
+
+ESECUZIONE AUTORIZZATA
+Il Database Manager è autorizzato a progettare ed eseguire esclusivamente le modifiche DB necessarie entro questo scope.
+
+Per modifiche a trigger o struttura:
+- plan_migration;
+- verifica target, statement e impatto;
+- execute_migration;
+- verifica immediata dello stato reale.
+
+Non modificare importer o frontend.
+Non creare dati fittizi.
+Non cancellare Match Report per ripetere prove.
+Non interrompere il caricamento in corso salvo impossibilità tecnica documentata: in tal caso fermarsi e dichiarare BLOCKED senza assumere autorizzazioni ulteriori.
+
+ACCEPTANCE CRITERIA
+Il CASE è completato soltanto se:
+
+1. ogni Result playoff GW001 ha divisione reale verificata;
+2. i playoff non risultano più tutti associati alla Divisione 4;
+3. i playoff sono correttamente attribuiti alle Divisioni 4, 3 e 2;
+4. ogni Result playoff ha competition_key coerente con la divisione reale;
+5. ogni Match Report playoff presente è collegato al relativo Result tramite sm_fixture_id;
+6. Result e Match Report collegati hanno divisione e competition_key congrue;
+7. i Match Report futuri attraversano automaticamente la stessa regola;
+8. IMC Site Results è coerente con il raw Results;
+9. IMC Site Match Report è coerente con il raw Match Report;
+10. i report pertinenti restano allineati;
+11. nessun record viene perso, duplicato o associato alla fixture sbagliata;
+12. nessun record non-playoff viene modificato;
+13. tutti i campi comparabili scelti dal Database Manager sono verificati e documentati;
+14. le assenze dovute al caricamento ancora in corso sono distinte dalle incoerenze;
+15. la verifica è ripetibile quando il caricamento sarà concluso.
+
+VERIFICHE FINALI OBBLIGATORIE
+Registrare almeno:
+
+- elenco fixture playoff GW001;
+- divisione precedente e divisione corretta per ciascuna fixture;
+- competition_key precedente e finale per ciascun Result;
+- Match Report collegato o stato non ancora caricato;
+- confronto Result/Match Report per sm_fixture_id;
+- confronto degli ulteriori campi congruenti individuati;
+- conteggi raw/Site/report prima e dopo;
+- zero playoff con divisione o competition_key errata;
+- zero Match Report collegati a un Result diverso;
+- zero non-playoff modificati;
+- definizioni e ordine finali dei trigger;
+- prova sui record reali disponibili;
+- comportamento previsto e verificabile per i Match Report che arriveranno successivamente;
+- timestamp dell'ultima verifica rispetto al caricamento in corso.
+
+ROLLBACK
+Predisporre prima dell'esecuzione un rollback circoscritto e verificabile.
+La RESPONSE deve spiegare come ripristinare lo stato precedente senza perdere Results o Match Report.
+
+OUTPUT AUTORITATIVI
+Registrare nel CASE:
+
+- tickets/DB/2026/IMC-DB-001-23/RESPONSE.txt;
+- eventuali SQL, rollback ed evidenze tecniche prodotti, con nomi espliciti.
+
+La RESPONSE deve includere:
+
+- stato iniziale;
+- stato del caricamento Match Report;
+- inventario playoff;
+- fonti autoritative utilizzate per la divisione;
+- metodo di collegamento e congruenza;
+- root cause;
+- soluzione scelta dal Database Manager;
+- modifiche alla normalizzazione Results;
+- normalizzazione Match Report;
+- migrazioni eseguite;
+- conteggi prima/dopo;
+- verifica raw/Site/report;
+- verifica record già presenti e futuri;
+- rollback;
+- limiti;
+- verdict finale.
+
+VERDICT FINALE OBBLIGATORIO
+Restituire uno solo tra:
+
+- COMPLETED;
+- COMPLETED_WITH_DOCUMENTED_LIMITS;
+- BLOCKED.
+
+Al termine tornare nella chat con Tom indicando:
+
+- verdict;
+- numero di Results playoff verificati;
+- distribuzione corretta tra Divisioni 4, 3 e 2;
+- numero di Match Report playoff collegati;
+- eventuali Match Report ancora non caricati;
+- esito della congruenza Results/Match Report;
+- esito dei repository Site;
+- eventuali blocker residui.
+
+WRITE AUTHORIZED: YES, esclusivamente entro lo scope DB sopra definito.
+DB WRITE: YES, esclusivamente dopo pre-flight e piano di migrazione.
+IMPORTER WRITE: NO.
+FRONTEND WRITE: NO.
+SCHEDULE WRITE: NO.
+DEPLOY WEBSITE: NO.
