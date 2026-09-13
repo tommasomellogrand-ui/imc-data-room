@@ -1,0 +1,246 @@
+CASE_ID: IMC-ENG-009-05
+DOC_TYPE: REQUEST
+AREA: ENG
+DATE: 2026-09-13
+TOPIC: PRE_PHASE_2_DATA_TRIGGER_AUDIT_GW001_GW007
+
+IMC | MINISITE IMPLEMENTATION WORK
+PRE-PHASE 2 · DATA LAYER AND TRIGGER AUDIT FOR GW001 + GW007
+
+CONTESTO AUTORITATIVO
+IMC-ENG-009-04 è completato con stato COMPLETED_WITH_DOCUMENTED_LIMITS.
+
+La Phase 1 ha creato la foundation `minisite/platform/` e i contratti dei due Golden Master:
+- GW001 Road To History · family=SINGLE;
+- GW007 The Four Kingdoms · family=MULTI_GOLD.
+
+Nessun renderer o adapter live è stato migrato.
+Prima di autorizzare la Phase 2 è obbligatorio verificare che il layer dati reale che alimenta i minisiti sia presente, coerente e compatibile con gli adapter futuri.
+
+FONTI AUTORITATIVE DA LEGGERE INTEGRALMENTE
+Prima di eseguire:
+- `tickets/ENG/2026/IMC-ENG-009-04/REQUEST.txt`;
+- `tickets/ENG/2026/IMC-ENG-009-04/RESPONSE.txt`;
+- stato corrente del repository `tommasomellogrand-ui/imc-website`;
+- codice corrente dei runtime GW001 e GW007;
+- codice corrente dei relativi data loader/client/endpoint/configuration;
+- definizioni correnti dei trigger MySQL e repository coinvolti, lette attraverso il bridge autorizzato.
+
+ARCHITETTURA DATI AUTORITATIVA
+- MySQL Aruba = fonte dati autoritativa;
+- Supabase IMC Nexus = ponte tecnico verso MySQL Aruba, non fonte dati;
+- GitHub = fonte autoritativa di codice, sito e Gateway.
+
+Routing:
+- GW001 → Sql1956795_3 · target custom;
+- GW007 → Sql1956795_2 · target gold.
+
+Accesso MySQL:
+ChatGPT → Supabase → progetto IMC Nexus
+project ref: toanuzojdkfjgucztpze
+→ `private.imc_aruba_request(...)`
+→ Database Manager Aruba
+→ MySQL Aruba.
+
+SCOPE
+Audit esclusivamente READ-only di:
+- GW001;
+- GW007;
+- repository raw realmente consumati o necessari ai due minisiti;
+- repository `IMC Site ...` realmente coinvolti;
+- report/controlli necessari a provare l'allineamento;
+- trigger MySQL che popolano o aggiornano il layer sito;
+- contratti/campi/stati richiesti dal nuovo Minisite Core.
+
+NON estendere l'audit agli altri Game World salvo letture strettamente necessarie per comprendere una definizione di trigger condivisa.
+NON eseguire la Phase 2.
+NON modificare codice, DB, Gateway, trigger, schema, dati, workflow, deploy o minisiti live.
+
+OBIETTIVO
+Stabilire con evidenze reali se il percorso dati dei due Golden Master è pronto per la Phase 2:
+
+repository raw
+→ trigger MySQL
+→ repository `IMC Site ...`
+→ report/controlli
+→ loader/runtime attuale
+→ futuro adapter della platform.
+
+A · PRE-FLIGHT OBBLIGATORIO
+1. Registrare branch e SHA correnti di `imc-website` e della Data Room.
+2. Leggere i file runtime/data effettivamente usati da GW001 e GW007.
+3. Inventariare ogni dataset/repository richiesto da ciascuna pagina/modulo.
+4. Non assumere nomi o dipendenze: ricavarli dal codice e dallo schema reale.
+5. Registrare le query READ eseguite, il database target e l'orario del campione.
+
+B · MATRICE CONSUMI REALI
+Produrre una matrice distinta per GW001 e GW007 con:
+- pagina/modulo;
+- dato richiesto;
+- repository raw;
+- repository sito;
+- report di controllo;
+- loader/endpoint/file consumer;
+- chiave di join o filtro;
+- campi obbligatori;
+- stato: PRESENTE | PARZIALE | ASSENTE | NON_USATO.
+
+Verificare almeno, solo dove realmente previsti dal codice:
+- Results;
+- Schedule;
+- Match Report;
+- standings/classifiche;
+- Competition/Competition Key;
+- context SINGLE per GW001;
+- Country/Territory/Kingdom context per GW007;
+- Power Ranking e sua provenienza reale;
+- Transfers;
+- Player Codex;
+- SM Player Stats;
+- manager/club/player detail;
+- archive/stagione;
+- eventuali action/competition mapping.
+
+C · AUDIT TRIGGER MYSQL
+Per entrambi i database:
+1. leggere `information_schema.TRIGGERS`;
+2. identificare i trigger pertinenti ai repository raw e `IMC Site ...`;
+3. riportare per ogni trigger:
+   - nome;
+   - EVENT_MANIPULATION;
+   - EVENT_OBJECT_TABLE;
+   - ACTION_TIMING;
+   - ACTION_STATEMENT completo o hash + estratto sufficiente, senza omettere la logica rilevante;
+   - repository destinazione;
+   - chiavi usate;
+   - operazioni coperte: INSERT | UPDATE | DELETE;
+   - eventuali filtri per game_world_id, competition, season o context;
+   - dipendenze da altri trigger/procedure;
+   - stato tecnico verificato.
+4. distinguere chiaramente:
+   - trigger presente e corretto;
+   - trigger presente ma incompleto;
+   - trigger presente ma non dimostrato;
+   - trigger assente;
+   - trigger non necessario.
+
+Non limitarsi alla sola esistenza nominale: verificare la logica reale.
+
+D · PROVA DI ALLINEAMENTO DATI
+Per ogni repository realmente necessario:
+1. confrontare conteggi raw, site e report con filtri equivalenti;
+2. confrontare chiavi e record campione deterministici;
+3. controllare record mancanti, eccedenti o divergenti;
+4. verificare null inattesi e campi obbligatori;
+5. verificare duplicati sulle chiavi autoritative, inclusi `fingerprint` e `sm_fixture_id` dove applicabili;
+6. verificare che UPDATE e DELETE siano propagabili secondo la definizione reale del trigger, senza eseguire scritture di prova;
+7. distinguere i dati mancanti per assenza di import da quelli mancanti per errore del trigger;
+8. indicare il timestamp/freschezza dell'ultimo dato disponibile.
+
+Per il controllo globale usare `IMC Repository Report` quando applicabile.
+Per un confronto specifico usare raw + `IMC Site ...` + report pertinente.
+Non dichiarare allineamento sulla base dei soli conteggi se le chiavi o i contenuti divergono.
+
+E · DATA CONTRACT PER LA PLATFORM
+Confrontare l'output reale del layer sito con:
+- contracts e data boundary creati in `minisite/platform/`;
+- dichiarazione GW001 SINGLE/COMPETITION;
+- dichiarazione GW007 MULTI_GOLD/TERRITORY/KINGDOM/FIXED_CONTEXT_SET;
+- stati loading, ready, empty, error, not-found, stale, degraded;
+- requisiti di deep-link/context persistence già registrati nella baseline;
+- eventuale futura necessità di `RANKED_ACTIVE_MANAGER_COUNTRIES`.
+
+Per ogni gap indicare:
+- campo/comportamento mancante;
+- origine del gap;
+- impatto su GW001;
+- impatto su GW007;
+- severità: BLOCKER | HIGH | MEDIUM | LOW;
+- correzione consigliata;
+- quale CASE separato dovrebbe autorizzarla: DB | Gateway | ENG | Creative.
+
+F · TEST READ-ONLY DI FUNZIONAMENTO
+Eseguire prove ripetibili senza alterare dati:
+- almeno un percorso completo per GW001;
+- almeno un percorso completo per ciascun contesto effettivo di GW007;
+- fixture nota e fixture non trovata;
+- competition_key presente/assente dove il runtime lo gestisce;
+- filtri division/country/territory/kingdom;
+- record con match report e senza match report;
+- comportamento con dataset empty o parziale solo se riproducibile senza scritture;
+- verifica che i dati letti dal runtime corrispondano ai dati MySQL autoritativi.
+
+Usare record reali e registrare identificativi/campioni sufficienti a rendere il test ripetibile.
+Non inventare fixture, manager, club, classifiche o risultati.
+
+G · VERDICT OBBLIGATORIO
+Restituire uno solo dei seguenti verdict:
+
+1. `READY_FOR_PHASE_2_GW001_GW007`
+   Entrambi i Golden Master hanno layer dati e trigger sufficienti.
+
+2. `READY_FOR_PHASE_2_WITH_DOCUMENTED_NON_BLOCKING_GAPS`
+   Entrambi possono procedere; restano solo gap non bloccanti esplicitamente elencati.
+
+3. `PARTIALLY_READY`
+   Un Golden Master è pronto e l'altro no. Specificare quale.
+
+4. `NOT_READY_FOR_PHASE_2`
+   Esistono blocker dati/trigger/contract che impediscono l'integrazione sicura.
+
+Il verdict deve derivare dalle evidenze raccolte, non da supposizioni.
+
+H · PIANO DI CORREZIONE, SENZA ESECUZIONE
+Se emergono problemi:
+- definire l'elenco minimo e ordinato dei ticket successivi;
+- separare rigorosamente DB/trigger, Gateway, ENG/runtime e Creative;
+- indicare dipendenze e acceptance criteria;
+- non creare automaticamente altri ticket;
+- non applicare alcuna correzione.
+
+I · VINCOLI ASSOLUTI
+- READ ONLY.
+- DB WRITE: NO.
+- CODE WRITE: NO.
+- TRIGGER/SCHEMA WRITE: NO.
+- GATEWAY WRITE: NO.
+- DEPLOY: NO.
+- LIVE UX CHANGE: NO.
+- PHASE 2: NON ESEGUITA.
+- Nessun dato dichiarato senza lettura MySQL Aruba.
+- Non usare Supabase come fonte dati.
+- Non usare memoria o vecchi export come prova dello stato corrente.
+- Nessuna scrittura di prova nei repository.
+- Nessuna modifica incidentale fuori scope.
+
+L · OUTPUT AUTORITATIVO
+Registrare:
+`tickets/ENG/2026/IMC-ENG-009-05/RESPONSE.txt`
+
+La RESPONSE deve includere:
+- executive summary;
+- pre-flight;
+- matrice consumi GW001;
+- matrice consumi GW007;
+- inventario trigger Sql1956795_3;
+- inventario trigger Sql1956795_2;
+- prove raw → site → report;
+- data-contract compatibility;
+- test read-only eseguiti;
+- gap e severità;
+- verdict obbligatorio;
+- piano minimo di correzione oppure autorizzabilità della Phase 2;
+- elenco completo delle query READ;
+- limiti dell'audit.
+
+Al termine tornare nella chat con Tom con:
+- verdict;
+- stato GW001;
+- stato GW007;
+- blocker;
+- prossimo passo autorizzabile.
+
+WRITE AUTHORIZED: YES, esclusivamente RESPONSE.txt nella Data Room.
+DB WRITE: NO.
+CODE WRITE: NO.
+LIVE UX CHANGE: NO.
