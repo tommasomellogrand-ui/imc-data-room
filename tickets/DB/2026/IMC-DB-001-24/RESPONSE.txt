@@ -1,0 +1,2165 @@
+CASE_ID: IMC-DB-001-24
+DOC_TYPE: RESPONSE
+AREA: DB
+TOPIC: CORE_IMC_TABLES_FILE_IMPORT_ANALYSIS_GW001_BENCHMARK
+DATE: 2026-09-13
+VERDICT: ANALYSIS_COMPLETED_WITH_DOCUMENTED_LIMITS
+SCOPE: SOLO ANALISI E PROPOSTA
+DB WRITE / SCHEMA WRITE / TRIGGER WRITE / CODE WRITE / DEPLOY: NO
+FILE OPERATIVO CREATO O IMPORTATO: NO
+
+1. EXECUTIVE SUMMARY
+
+Analizzate tutte le 12 tabelle IMC% effettivamente presenti in Sql1956795_1 CORE: inventario completo, 72 colonne, PK/indici/FK, SHOW CREATE TABLE, conteggi esatti, campioni reali e verifiche di contenuto/relazioni. L'analisi riguarda tutto il CORE; il benchmark concreto è GW001.
+Proposta: un pacchetto JSON UTF-8 versionato per GW, prodotto fuori dal minisito attraverso il ponte autorizzato e importato come snapshot locale validato. Nessuna lettura futura diretta del CORE dal minisito.
+
+Da integrare: identità mondo, club e stemmi, nazionali e mapping, identità manager, catalogo competizioni, anagrafiche giocatori, dettagli globali e storico rating. Le assegnazioni nazionali sono utilizzabili dopo validazione temporale; mapping e assegnazioni club richiedono chiarimento prima della risoluzione operativa.
+Stati della matrice: 9 INTEGRARE, 3 DA_DECIDERE, 0 NON_INTEGRARE a livello tabella. INTEGRARE esprime pertinenza proposta, non autorizzazione all'implementazione o certificazione di tutti i dati. Le esclusioni sono specificate per campo/perimetro.
+
+Il benchmark NON autorizza un'importazione completa senza condizioni:
+- zero corrispondenze dirette fra gli ID club del mapping GW001 CORE e quelli dei repository;
+- 36/42 incarichi club GW001 non hanno corrispondenza nel mapping globale e anche alcune corrispondenze numeriche non hanno semantica coerente;
+- catalogo competizioni senza competition_key, senza stagione e senza i playoff GW001 osservati;
+- API pubblica corrente restituisce nomi e fixture ID ma non gli ID squadre/manager necessari al raccordo;
+- dati importati in crescita durante le letture, quindi non esiste uno snapshot atomico comune a tutte le query.
+L'analisi è completata con questi limiti documentati; nessuna modifica correttiva è stata eseguita.
+
+2. PRE-FLIGHT E PROVENIENZA
+
+REQUEST autoritativo letto da tommasomellogrand-ui/imc-data-room:
+tickets/DB/2026/IMC-DB-001-24/REQUEST.txt
+blob SHA: 7c131be74fa3dd5a1f2700fd77cbcc42eca06733.
+CASE_ID, AREA, TOPIC e vincoli confermati.
+
+Accesso: ChatGPT → Supabase progetto IMC Nexus toanuzojdkfjgucztpze → private.imc_aruba_request(action=query,target=core/custom) → MySQL Aruba.
+Q4402 restituisce DATABASE()=Sql1956795_1 e NOW()=2026-09-13 12:02:21.
+Timestamp bridge UTC: 2026-09-13 10:02:21.320643+00. Il tempo server MySQL osservato differisce di +2 ore; qui non si presume la configurazione del fuso DB.
+Finestra delle query dati: 10:02:21–10:07:18 UTC, 13 settembre 2026.
+Per ogni query l'appendice riporta target, testo esatto, request_id, created UTC e HTTP status.
+Elenco completo IMC% acquisito con information_schema.TABLES, 12 BASE TABLE; nessuna vista IMC nell'elenco.
+Strutture: COLUMNS + STATISTICS + KEY_COLUMN_USAGE + SHOW CREATE TABLE di tutte le 12 tabelle.
+Conteggi: COUNT(*) effettivi, non stime information_schema.
+Contenuti: campioni per ogni tabella; lettura integrale Codex GW, Country, Manager e Competition; mapping e incarichi GW001 integrali; profili aggregati globali e verifiche referenziali.
+Letture dei dati CUSTOM eseguite solo per il benchmark e i raccordi richiesti, non come report globale degli import.
+La Q4417 di conteggio ha avuto errore sintattico ALLSELECT (HTTP 500), corretta nella Q4437. Nessuna modifica dati.
+Q4457 restituisce 500/1.317 ID giocatore (truncated=true): NON usata come set completo. Sostituita da Q4468 con JSON_ARRAYAGG, 1.378 ID completi nella nuova rilevazione; la differenza riflette import in corso.
+
+Repository sito letto al commit fissato:
+cfd84107cb9d6e20cb93d36fef5b6bd4c5c19343
+Letture pertinenti: minisite/GW001/index.html, exploration.js, live-fixtures.js, results.html, match.html; minisite/integrations/results-schedule/adapter.js; minisite/api/results-schedule.php; albero repository completo non troncato.
+Nessun AGENTS.md rilevato nell'albero letto.
+Lo stato esaminato è il codice GitHub corrente a quel commit; nessuna dichiarazione di equivalenza al deploy live, che non è stato testato.
+
+3. INVENTARIO COMPLETO
+
+Tabella | Righe COUNT(*) | Colonne | Stato proposto
+IMC Club Codex Global | 7072 | 4 | INTEGRARE
+IMC Competition Codex Global | 326 | 10 | INTEGRARE
+IMC Country Codex Global | 37 | 2 | DA_DECIDERE
+IMC Game World Club Mapping | 1434 | 4 | DA_DECIDERE
+IMC Game World Codex Global | 10 | 5 | INTEGRARE
+IMC Game World National Team Mapping | 720 | 4 | INTEGRARE
+IMC Manager Assignment Global | 272 | 9 | DA_DECIDERE
+IMC Manager Codex Global | 60 | 4 | INTEGRARE
+IMC National Team Codex Global | 80 | 4 | INTEGRARE
+IMC Player Codex Global | 176687 | 5 | INTEGRARE
+IMC Player Codex Global Data | 2333 | 15 | INTEGRARE
+IMC Player Codex Global Rating History | 11939 | 6 | INTEGRARE
+
+Conteggi CORE osservati alla Q4437 (10:03:54 UTC); non congelano eventuali import successivi.
+Tutte le tabelle sono InnoDB, utf8mb4, utf8mb4_0900_ai_ci.
+Le sole FK reali rilevate sono: mapping club → GW; mapping nazionale → GW e Codex nazionale; storico rating → Player Codex. Gli altri collegamenti sono logici/candidati e richiedono validazione.
+
+4.1. MATRICE — IMC Club Codex Global
+
+Voce | Analisi
+Nome tabella | IMC Club Codex Global
+Funzione reale | Anagrafica globale dei club e riferimenti agli stemmi.
+Campi | id [bigint; NOT NULL]; name [text; NULL ammesso]; image_file [text; NULL ammesso]; image_url [text; NULL ammesso]
+Chiave primaria | id
+Chiavi e riferimenti utili | Nessuna FK dichiarata. Indici e relazioni logiche descritti nella struttura e nelle dipendenze.
+Dati effettivamente presenti | 7072 righe globali; campione reale: {"id":"1","image_file":"1.png","image_url":"https://cdn.soccerwiki.org/images/logos/clubs/1.png","name":"Arsenal"}
+Relazione con Game World | Nessuna colonna GW; selezione tramite mapping o riferimenti verificati.
+Relazione con GW001 | 40 club del mapping GW001 risolvono nel Codex; 40 URL presenti. Nessun ID del mapping coincide con gli ID istanza dei repository GW001.
+Dati utili al minisito | id e name per identità globale; image_url per stemma. image_file solo come riferimento asset opzionale, senza inventare un URL.
+Dati non utili / esclusi | Club esterni al perimetro verificato; image_file non risolvibile. Nessun campo contiene rosa, divisione o manager.
+Destinazione nel minisito | Club, risultati, calendario, intestazioni Match Center, classifiche.
+Trasferimento tramite file | clubs[]: id, name, image_url; image_file facoltativo se il resolver è documentato.
+Momento/condizione importazione | Primo caricamento e variazione anagrafica/asset; includere i nuovi avversari verificati.
+Motivazione | Sostituire i loghi associati per nome con identità e stemmi verificabili.
+Dipendenze | Mapping club corretto per le istanze; asset raggiungibili.
+Rischi | Il Codex è globale: non attribuire automaticamente appartenenza a GW001. 10 URL mancanti su 7.072.
+Stato | INTEGRARE
+
+Struttura integrale letta (SHOW CREATE, non eseguita come DDL):
+CREATE TABLE `IMC Club Codex Global` (
+  `id` bigint NOT NULL,
+  `name` text,
+  `image_file` text,
+  `image_url` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+4.2. MATRICE — IMC Competition Codex Global
+
+Voce | Analisi
+Nome tabella | IMC Competition Codex Global
+Funzione reale | Catalogo delle competizioni per GW, azioni native/custom e quantità attese.
+Campi | id [bigint; NOT NULL]; game_world_id [text; NOT NULL]; sm_action [text; NULL ammesso]; custom_competition [text; NULL ammesso]; sm_action_group [text; NOT NULL]; sm_country [text; NULL ammesso]; sm_division [int; NULL ammesso]; teams_count [int; NULL ammesso]; expected_match [int; NULL ammesso]; is_sm_action [tinyint(1); NOT NULL]
+Chiave primaria | id
+Chiavi e riferimenti utili | Nessuna FK dichiarata. Indici e relazioni logiche descritti nella struttura e nelle dipendenze.
+Dati effettivamente presenti | 326 righe globali; campione reale: {"custom_competition":null,"expected_match":null,"game_world_id":"GW001","id":"1","is_sm_action":"1","sm_action":"leaguecup","sm_action_group":"Domestic Competition","sm_country":null,"sm_division":null,"teams_count":null}
+Relazione con Game World | game_world_id esplicito; 326 righe per GW001–GW009, nessuna GW010.
+Relazione con GW001 | 12 righe GW001; league D1–D4: 10 squadre e 90 expected_match ciascuna. Playoff presenti nei repository ma assenti dal catalogo GW001.
+Dati utili al minisito | Tutti i 10 campi per definizione, chiave del catalogo, raggruppamento, dimensioni e copertura attesa.
+Dati non utili / esclusi | Non usare expected_match come giornate; non ricostruire competition_key automaticamente; non trattare sm_action_group come identico a competition_group.
+Destinazione nel minisito | Competizioni, selettori, contesto classifiche e archivio, indicatori di completezza.
+Trasferimento tramite file | competitions[] con tutti i campi originali; competition_links[] separato per legare ID CORE alle chiavi esistenti, solo dopo verifica.
+Momento/condizione importazione | Primo import, nuova competizione o variazione struttura; revisione per stagione, che la tabella non identifica.
+Motivazione | Eliminare strutture hardcoded e rendere espliciti i valori attesi.
+Dipendenze | Traduzione controllata dei gruppi; decisione su null/CUS, dimensioni cup e playoff; fonte stagione.
+Rischi | Nessuna competition_key né stagione né unique semantica. Null non equivale a zero. Tuple osservate senza duplicati; normalizzazione resta da approvare.
+Stato | INTEGRARE
+
+Struttura integrale letta (SHOW CREATE, non eseguita come DDL):
+CREATE TABLE `IMC Competition Codex Global` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `game_world_id` text NOT NULL,
+  `sm_action` text,
+  `custom_competition` text,
+  `sm_action_group` text NOT NULL,
+  `sm_country` text,
+  `sm_division` int DEFAULT NULL,
+  `teams_count` int DEFAULT NULL,
+  `expected_match` int DEFAULT NULL,
+  `is_sm_action` tinyint(1) NOT NULL DEFAULT '1',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=327 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+4.3. MATRICE — IMC Country Codex Global
+
+Voce | Analisi
+Nome tabella | IMC Country Codex Global
+Funzione reale | Vocabolario misto di territori/etichette di campionato.
+Campi | id [bigint; NOT NULL]; name [varchar(255); NOT NULL]
+Chiave primaria | id
+Chiavi e riferimenti utili | Nessuna FK dichiarata. Indici e relazioni logiche descritti nella struttura e nelle dipendenze.
+Dati effettivamente presenti | 37 righe globali; campione reale: {"id":"26","name":"Americano/a"}
+Relazione con Game World | Nessun GW; relazione testuale candidata con sm_country e Country del Codex GW.
+Relazione con GW001 | GW001.Country e sm_country del catalogo sono null; Results usa CUS, assente tra le 37 etichette.
+Dati utili al minisito | id e name solo per territori con corrispondenza esatta verificata, soprattutto mondi multi-country.
+Dati non utili / esclusi | Nessun dato utile al filtro territoriale GW001 accertato. Non usare come dizionario universale di nazionalità o nazionali.
+Destinazione nel minisito | Filtri territori/competizioni negli altri GW; nessun filtro paese aggiunto a GW001.
+Trasferimento tramite file | territories[] opzionale, vuoto per GW001; stato not_applicable e motivazione.
+Momento/condizione importazione | Quando il GW dispone di territori verificati; a modifica del vocabolario.
+Motivazione | Evitare equivalenze inventate fra ENG, Inghilterra, England e raggruppamenti come Scandinavia.
+Dipendenze | Crosswalk esplicito se necessario; nessuna FK disponibile.
+Rischi | 37 nomi comprendono codici e macroaree; Country CSV non prova presenza reale nelle competizioni.
+Stato | DA_DECIDERE
+
+Struttura integrale letta (SHOW CREATE, non eseguita come DDL):
+CREATE TABLE `IMC Country Codex Global` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_imc_country_name` (`name`)
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+4.4. MATRICE — IMC Game World Club Mapping
+
+Voce | Analisi
+Nome tabella | IMC Game World Club Mapping
+Funzione reale | Tabella dichiarata di mapping club/GW; il contenuto attuale replica l'ID globale nel campo SM Club ID.
+Campi | Club ID [bigint; NOT NULL]; Club Name [text; NOT NULL]; Game World [varchar(255); NOT NULL]; SM Club ID [bigint; NOT NULL]
+Chiave primaria | Game World + SM Club ID
+Chiavi e riferimenti utili | Game World → IMC Game World Codex Global.IMC GW Indici e relazioni logiche descritti nella struttura e nelle dipendenze.
+Dati effettivamente presenti | 1434 righe globali; campione reale: {"Club ID":"76","Club Name":"Sunderland","Game World":"GW001","SM Club ID":"76"}
+Relazione con Game World | PK composta Game World + SM Club ID; FK Game World → Codex GW.
+Relazione con GW001 | 40 righe, tutti Club ID=SM Club ID; zero corrispondenze dirette con gli ID club osservati nei tre repository.
+Dati utili al minisito | Club ID, Club Name e Game World come inventario dichiarato; SM Club ID va conservato come dato sorgente non validato, non usato nel join operativo.
+Dati non utili / esclusi | Escludere dalla risoluzione automatica gli attuali SM Club ID GW001; non trasformarli mediante offset o somiglianza dei nomi.
+Destinazione nel minisito | Risolutore identità per Club/Results/Schedule/Match Center.
+Trasferimento tramite file | club_mappings[] operativo solo dopo verifica; nell'analisi gli unresolved restano espliciti e gli ID originali separati.
+Momento/condizione importazione | Dopo risoluzione documentata del namespace; poi nuovi club/mapping.
+Motivazione | È la dipendenza necessaria per collegare istanza del gioco e anagrafica globale.
+Dipendenze | Fonte autoritativa per SM Club ID di istanza; estensione agli avversari esterni ai 40 club.
+Rischi | Tutti i 1.434 mapping globalmente hanno ID uguali; GW007, GW008 e GW010 senza righe. Non inferire causa o correzione.
+Stato | DA_DECIDERE
+
+Struttura integrale letta (SHOW CREATE, non eseguita come DDL):
+CREATE TABLE `IMC Game World Club Mapping` (
+  `Club ID` bigint NOT NULL,
+  `Club Name` text NOT NULL,
+  `Game World` varchar(255) NOT NULL,
+  `SM Club ID` bigint NOT NULL,
+  PRIMARY KEY (`Game World`,`SM Club ID`),
+  CONSTRAINT `fk_imc_gw_club_mapping_world` FOREIGN KEY (`Game World`) REFERENCES `IMC Game World Codex Global` (`IMC GW`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+4.5. MATRICE — IMC Game World Codex Global
+
+Voce | Analisi
+Nome tabella | IMC Game World Codex Global
+Funzione reale | Anagrafica dei Game World e consistenza dichiarata dei club.
+Campi | IMC GW [varchar(255); NOT NULL]; IMC GW Name [text; NOT NULL]; SM Game World ID [bigint; NOT NULL]; Active Club [int; NOT NULL]; Country [text; NULL ammesso]
+Chiave primaria | IMC GW
+Chiavi e riferimenti utili | Nessuna FK dichiarata. Indici e relazioni logiche descritti nella struttura e nelle dipendenze.
+Dati effettivamente presenti | 10 righe globali; campione reale: {"Active Club":"40","Country":null,"IMC GW":"GW001","IMC GW Name":"Road To History","SM Game World ID":"468172"}
+Relazione con Game World | PK IMC GW.
+Relazione con GW001 | GW001 / Road To History / SM Game World ID 468172 / Active Club 40 / Country null.
+Dati utili al minisito | Tutti i 5 campi; Country conservato anche raw, eventuale lista derivata esplicitamente.
+Dati non utili / esclusi | Non trattare Active Club come numero manager attivi né numero totale di avversari; niente stagione o calendario dedotti.
+Destinazione nel minisito | Home, header, selezione mondo, metadati archivio.
+Trasferimento tramite file | world: game_world_id, name, sm_game_world_id, active_club_count, country_raw; mapping dei nomi documentato.
+Momento/condizione importazione | Bootstrap e variazioni del mondo.
+Motivazione | Una identità unica e verificabile del pacchetto e del minisito.
+Dipendenze | Nessuna dipendenza per anagrafica; coerenza con tutti i record esportati.
+Rischi | Country contiene CSV/etichette; per GW002/003 include SUI: conservarlo come stato osservato senza riprendere vecchie regole. GW010 non ha altri cataloghi/mapping rilevati.
+Stato | INTEGRARE
+
+Struttura integrale letta (SHOW CREATE, non eseguita come DDL):
+CREATE TABLE `IMC Game World Codex Global` (
+  `IMC GW` varchar(255) NOT NULL,
+  `IMC GW Name` text NOT NULL,
+  `SM Game World ID` bigint NOT NULL,
+  `Active Club` int NOT NULL,
+  `Country` text,
+  PRIMARY KEY (`IMC GW`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+4.6. MATRICE — IMC Game World National Team Mapping
+
+Voce | Analisi
+Nome tabella | IMC Game World National Team Mapping
+Funzione reale | Mapping degli ID istanza delle nazionali verso il Codex globale.
+Campi | National Team ID [bigint; NOT NULL]; National Team Name [text; NOT NULL]; Game World [varchar(255); NOT NULL]; SM National Team ID [bigint; NOT NULL]
+Chiave primaria | Game World + SM National Team ID
+Chiavi e riferimenti utili | National Team ID → IMC National Team Codex Global.id; Game World → IMC Game World Codex Global.IMC GW Indici e relazioni logiche descritti nella struttura e nelle dipendenze.
+Dati effettivamente presenti | 720 righe globali; campione reale: {"Game World":"GW001","National Team ID":"43","National Team Name":"Albania","SM National Team ID":"1869072"}
+Relazione con Game World | PK Game World + SM National Team ID; unique Game World + National Team ID; due FK reali.
+Relazione con GW001 | 80 righe, 80 risolte nel Codex; 80/80 nazionali distinte dei Results hanno mapping.
+Dati utili al minisito | Tutti i 4 campi per join verificato e nome sorgente.
+Dati non utili / esclusi | Nessun ID nazionale deve essere interpretato come club; niente filtri limitati alle sole nazionali IMC.
+Destinazione nel minisito | Competizioni NATIONS, Match Center, assegnazioni nazionali e profili.
+Trasferimento tramite file | national_team_mappings[] con GW, national_team_id, sm_national_team_id, source_name.
+Momento/condizione importazione | Bootstrap e nuove nazionali/nuovo GW.
+Motivazione | Il benchmark dimostra un collegamento deterministico funzionante.
+Dipendenze | National Team Codex e identificazione del tipo entità via competition_group.
+Rischi | Il nome home_sm_club_id nei Results può contenere una nazionale. Schedule e report NATIONS non presenti nel set letto: verifica empirica limitata ai Results.
+Stato | INTEGRARE
+
+Struttura integrale letta (SHOW CREATE, non eseguita come DDL):
+CREATE TABLE `IMC Game World National Team Mapping` (
+  `National Team ID` bigint NOT NULL,
+  `National Team Name` text NOT NULL,
+  `Game World` varchar(255) NOT NULL,
+  `SM National Team ID` bigint NOT NULL,
+  PRIMARY KEY (`Game World`,`SM National Team ID`),
+  UNIQUE KEY `uq_imc_gw_nt_global` (`Game World`,`National Team ID`),
+  KEY `idx_imc_gw_nt_global_id` (`National Team ID`),
+  CONSTRAINT `fk_imc_gw_nt_global` FOREIGN KEY (`National Team ID`) REFERENCES `IMC National Team Codex Global` (`id`),
+  CONSTRAINT `fk_imc_gw_nt_world` FOREIGN KEY (`Game World`) REFERENCES `IMC Game World Codex Global` (`IMC GW`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+4.7. MATRICE — IMC Manager Assignment Global
+
+Voce | Analisi
+Nome tabella | IMC Manager Assignment Global
+Funzione reale | Cronologia incarichi club/nazionale dei manager.
+Campi | id [bigint unsigned; NOT NULL]; game_world_id [varchar(16); NOT NULL]; manager_id [varchar(255); NOT NULL]; full_name [varchar(255); NOT NULL]; club_id [bigint unsigned; NULL ammesso]; assignment_type [varchar(32); NOT NULL]; start_date [date; NOT NULL]; end_date [date; NULL ammesso]; national_team_id [bigint unsigned; NULL ammesso]
+Chiave primaria | id
+Chiavi e riferimenti utili | Nessuna FK dichiarata. Indici e relazioni logiche descritti nella struttura e nelle dipendenze.
+Dati effettivamente presenti | 272 righe globali; campione reale: {"assignment_type":"club","club_id":"1","end_date":null,"full_name":"Giovanni Cabrioli","game_world_id":"GW004","id":"1","manager_id":"MNG013","national_team_id":null,"start_date":"2026-03-11"}
+Relazione con Game World | game_world_id esplicito; manager_id collega logicamente il Codex; nessuna FK dichiarata.
+Relazione con GW001 | 66 righe, 42 club + 24 nazionali; 41 manager distinti; 63 incarichi senza end_date. 36/42 incarichi club non trovano il club nel mapping GW001.
+Dati utili al minisito | id, game_world_id, manager_id, assignment_type, start_date, end_date e national_team_id per i collegamenti verificati. club_id solo dopo chiarimento del namespace.
+Dati non utili / esclusi | full_name è una copia da confrontare col Codex, non seconda identità. Escludere gli incarichi club non validati dalla visualizzazione; non ricavare statistiche di carriera dal solo incarico.
+Destinazione nel minisito | Manager, club, nazionali, archivio cronologico; attribuzione alla data partita solo con intervalli validati.
+Trasferimento tramite file | assignments[]; national_team validabili ora, club in stato unresolved. source_full_name opzionale nella qualità, display dal Codex.
+Momento/condizione importazione | Variazione incarico e fine/inizio mandato, conservando lo storico.
+Motivazione | Sostituire manager dimostrativi e ricostruire incarichi senza sovrascrivere i report storici.
+Dipendenze | Manager Codex, mapping entità e regola temporale dei confini di giornata.
+Rischi | club_id 126 di Cabrioli risolve Siena FC, mentre il report lo identifica al Genoa; club_id 150 di Mello risolve Gimnàstic Tarragona. Nessuna correzione presunta. Intervalli non invertiti nei controlli eseguiti; sovrapposizioni non certificate.
+Stato | DA_DECIDERE
+
+Struttura integrale letta (SHOW CREATE, non eseguita come DDL):
+CREATE TABLE `IMC Manager Assignment Global` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `game_world_id` varchar(16) NOT NULL,
+  `manager_id` varchar(255) NOT NULL,
+  `full_name` varchar(255) NOT NULL,
+  `club_id` bigint unsigned DEFAULT NULL,
+  `assignment_type` varchar(32) NOT NULL,
+  `start_date` date NOT NULL,
+  `end_date` date DEFAULT NULL,
+  `national_team_id` bigint unsigned DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `idx_imc_manager_assignment_gw` (`game_world_id`),
+  KEY `idx_imc_manager_assignment_manager` (`manager_id`),
+  KEY `idx_imc_manager_assignment_type` (`assignment_type`)
+) ENGINE=InnoDB AUTO_INCREMENT=273 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+4.8. MATRICE — IMC Manager Codex Global
+
+Voce | Analisi
+Nome tabella | IMC Manager Codex Global
+Funzione reale | Identità manager IMC, data ingresso e ID Soccer Manager.
+Campi | manager_id [varchar(255); NOT NULL]; full_name [text; NOT NULL]; imc_join_date [date; NULL ammesso]; sm_manager_id [bigint; NULL ammesso]
+Chiave primaria | manager_id
+Chiavi e riferimenti utili | Nessuna FK dichiarata. Indici e relazioni logiche descritti nella struttura e nelle dipendenze.
+Dati effettivamente presenti | 60 righe globali; campione reale: {"full_name":"Tommaso Mello","imc_join_date":"2026-06-15","manager_id":"MNG001","sm_manager_id":"13051324"}
+Relazione con Game World | Nessun GW diretto; selezione via assegnazioni e ID presenti nelle fixture.
+Relazione con GW001 | 41 manager distinti referenziati dagli incarichi GW001, tutti risolti. Report fixture 368724187: 8006256 → MNG013 Giovanni Cabrioli; 2982514 → MNG025 Nicolae Sasarman.
+Dati utili al minisito | Tutti i 4 campi, con imc_join_date null preservata; join sm_manager_id solo quando valorizzato e univoco.
+Dati non utili / esclusi | Nessun ritratto, palmarès o rendimento nel Codex. Non riempire ID o data mancanti.
+Destinazione nel minisito | Pagina Manager, nomi in Match Center, rimandi club e archivio.
+Trasferimento tramite file | managers[]: manager_id, full_name, imc_join_date, sm_manager_id.
+Momento/condizione importazione | Bootstrap, nuovo manager o aggiornamento identità.
+Motivazione | Il raccordo tra ID SM e IMC è direttamente verificabile.
+Dipendenze | Assegnazioni validate per il contesto club; fixture per l'identità storica.
+Rischi | 1 sm_manager_id nullo (MNG044); 53 date ingresso nulle su 60; nessun duplicato sm_manager_id non nullo rilevato.
+Stato | INTEGRARE
+
+Struttura integrale letta (SHOW CREATE, non eseguita come DDL):
+CREATE TABLE `IMC Manager Codex Global` (
+  `manager_id` varchar(255) NOT NULL,
+  `full_name` text NOT NULL,
+  `imc_join_date` date DEFAULT NULL,
+  `sm_manager_id` bigint DEFAULT NULL,
+  PRIMARY KEY (`manager_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+4.9. MATRICE — IMC National Team Codex Global
+
+Voce | Analisi
+Nome tabella | IMC National Team Codex Global
+Funzione reale | Identità e bandiere di 80 nazionali.
+Campi | id [bigint; NOT NULL]; name [text; NOT NULL]; image_file [text; NULL ammesso]; image_url [text; NULL ammesso]
+Chiave primaria | id
+Chiavi e riferimenti utili | Nessuna FK dichiarata. Indici e relazioni logiche descritti nella struttura e nelle dipendenze.
+Dati effettivamente presenti | 80 righe globali; campione reale: {"id":"1","image_file":"1.svg","image_url":"/nexus/assets/flags/nations/1.svg","name":"England"}
+Relazione con Game World | Nessun GW; selezione tramite National Team Mapping.
+Relazione con GW001 | Tutte le 80 nazionali di GW001 risolte; England id 1, istanza 1869096, /nexus/assets/flags/nations/1.svg.
+Dati utili al minisito | id, name e image_url; image_file opzionale per resolver documentato.
+Dati non utili / esclusi | Non derivare la bandiera da Country Codex; non attribuire statistiche dai soli dati anagrafici.
+Destinazione nel minisito | NATIONS nelle competizioni/fixture, assegnazioni e profili.
+Trasferimento tramite file | national_teams[]: id,name,image_url; image_file solo se necessario.
+Momento/condizione importazione | Bootstrap e variazione anagrafica/asset.
+Motivazione | Nomi e bandiere coerenti senza confusione club/nazionale.
+Dipendenze | Mapping nazionale e asset path risolvibile dall'hosting finale.
+Rischi | Gli 80 URL sono presenti ma la raggiungibilità live non è stata testata. I percorsi /nexus richiedono lo stesso host o una base URL verificata.
+Stato | INTEGRARE
+
+Struttura integrale letta (SHOW CREATE, non eseguita come DDL):
+CREATE TABLE `IMC National Team Codex Global` (
+  `id` bigint NOT NULL,
+  `name` text NOT NULL,
+  `image_file` text,
+  `image_url` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+4.10. MATRICE — IMC Player Codex Global
+
+Voce | Analisi
+Nome tabella | IMC Player Codex Global
+Funzione reale | Grande anagrafica globale dei giocatori e immagini.
+Campi | id [bigint; NOT NULL]; forename [text; NULL ammesso]; surname [text; NULL ammesso]; image_file [text; NULL ammesso]; image_url [text; NULL ammesso]
+Chiave primaria | id
+Chiavi e riferimenti utili | Nessuna FK dichiarata. Indici e relazioni logiche descritti nella struttura e nelle dipendenze.
+Dati effettivamente presenti | 176687 righe globali; campione reale: {"forename":"Jens","id":"1","image_file":"1.jpg","image_url":null,"surname":"LEHMANN"}
+Relazione con Game World | Nessun GW o rosa: perimetro ricavabile dagli ID nei report, non dalla tabella.
+Relazione con GW001 | 1.378/1.378 ID rilevati nei players_json risolvono; 1.338 URL disponibili, 40 mancanti.
+Dati utili al minisito | Tutti i campi anagrafici; image_file solo se risolvibile. Selezionare unicamente ID referenziati nel perimetro documentato.
+Dati non utili / esclusi | Non esportare tutti i 176.687 giocatori per ogni GW; non dedurre appartenenza attuale a un club.
+Destinazione nel minisito | Player e formazioni/eventi Match Center.
+Trasferimento tramite file | players[] con id,forename,surname,image_url; eventuale image_file.
+Momento/condizione importazione | Bootstrap, nuovi ID osservati nei report e variazione identità/asset.
+Motivazione | Elimina il giocatore immaginario e collega ogni riga al suo soggetto reale.
+Dipendenze | players_json[].sm_player_id; più eventuali ID evento verificati per completezza futura.
+Rischi | 112.991 URL globalmente mancanti; il solo filename non prova un percorso. Il benchmark dei 1.378 copre players_json, non tutti gli ID presenti solo negli eventi.
+Stato | INTEGRARE
+
+Struttura integrale letta (SHOW CREATE, non eseguita come DDL):
+CREATE TABLE `IMC Player Codex Global` (
+  `id` bigint NOT NULL,
+  `forename` text,
+  `surname` text,
+  `image_file` text,
+  `image_url` text,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+4.11. MATRICE — IMC Player Codex Global Data
+
+Voce | Analisi
+Nome tabella | IMC Player Codex Global Data
+Funzione reale | Dati globali estesi del giocatore, rating e attributi fisici/economici.
+Campi | player_id [bigint; NOT NULL]; full_name [varchar(255); NULL ammesso]; nationality [varchar(100); NULL ammesso]; position [varchar(100); NULL ammesso]; rating [tinyint unsigned; NULL ammesso]; market_value [bigint unsigned; NULL ammesso]; age [tinyint unsigned; NULL ammesso]; date_of_birth [date; NULL ammesso]; height_cm [smallint unsigned; NULL ammesso]; weight_kg [smallint unsigned; NULL ammesso]; foot [varchar(20); NULL ammesso]; soccerwiki_club_name [varchar(255); NULL ammesso]; soccerwiki_club_id [bigint unsigned; NULL ammesso]; wage [bigint unsigned; NULL ammesso]; updated_at [datetime; NOT NULL]
+Chiave primaria | player_id
+Chiavi e riferimenti utili | Nessuna FK dichiarata. Indici e relazioni logiche descritti nella struttura e nelle dipendenze.
+Dati effettivamente presenti | 2333 righe globali; campione reale: {"age":"41","date_of_birth":"1985-02-05","foot":"Ambidestro","full_name":"Cristiano RONALDO","height_cm":"187","market_value":"448000","nationality":"Portugal","player_id":"1131","position":"A(C)","rating":"92","soccerwiki_club_id":"665","soccerwiki_club_name":"Al Nassr FC","updated_at":"2026-09-08 22:50:44","wage":"106000","weight_kg":"85"}
+Relazione con Game World | Nessun GW; player_id è relazione logica, non FK.
+Relazione con GW001 | 1.152/1.378 giocatori del set hanno dati; 226 assenti. Globalmente 29/2.333 righe senza anagrafica madre.
+Dati utili al minisito | player_id,full_name,nationality,position,rating,age,date_of_birth,height_cm,weight_kg,foot,updated_at. soccerwiki_club_name/id solo come contesto SoccerWiki esplicito.
+Dati non utili / esclusi | market_value e wage non utilizzabili come economia GW001 senza prova di semantica/valuta; conservarli solo in sezione globale opzionale approvata. soccerwiki_club_* non è rosa GW001. age è valore sorgente, non ricalcolare silenziosamente.
+Destinazione nel minisito | Dossier Player e contesto globale separato dai voti partita.
+Trasferimento tramite file | player_details[] con campi sopra; global_economics opzionale per market_value,wage con unità non specificata. orphan esclusi con errore documentato.
+Momento/condizione importazione | Dopo aggiornamento Codex, mantenendo updated_at; import del sottoinsieme referenziato.
+Motivazione | Attributi reali al posto di placeholder, distinguendo rating globale e prestazione.
+Dipendenze | Player Codex, validazione ID e provenienza/tempo del dato.
+Rischi | Rating 91 di Kobel nel CORE è diverso dal voto 6 del report: non confonderli. Il club SoccerWiki di Kobel è Borussia Dortmund, il report lo colloca nell'Eintracht.
+Stato | INTEGRARE
+
+Struttura integrale letta (SHOW CREATE, non eseguita come DDL):
+CREATE TABLE `IMC Player Codex Global Data` (
+  `player_id` bigint NOT NULL,
+  `full_name` varchar(255) DEFAULT NULL,
+  `nationality` varchar(100) DEFAULT NULL,
+  `position` varchar(100) DEFAULT NULL,
+  `rating` tinyint unsigned DEFAULT NULL,
+  `market_value` bigint unsigned DEFAULT NULL,
+  `age` tinyint unsigned DEFAULT NULL,
+  `date_of_birth` date DEFAULT NULL,
+  `height_cm` smallint unsigned DEFAULT NULL,
+  `weight_kg` smallint unsigned DEFAULT NULL,
+  `foot` varchar(20) DEFAULT NULL,
+  `soccerwiki_club_name` varchar(255) DEFAULT NULL,
+  `soccerwiki_club_id` bigint unsigned DEFAULT NULL,
+  `wage` bigint unsigned DEFAULT NULL,
+  `updated_at` datetime NOT NULL,
+  PRIMARY KEY (`player_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+
+4.12. MATRICE — IMC Player Codex Global Rating History
+
+Voce | Analisi
+Nome tabella | IMC Player Codex Global Rating History
+Funzione reale | Storico variazioni del rating globale per giocatore.
+Campi | id [bigint unsigned; NOT NULL]; player_id [bigint; NOT NULL]; change_date [date; NOT NULL]; old_rating [tinyint unsigned; NOT NULL]; new_rating [tinyint unsigned; NOT NULL]; imported_at [datetime; NOT NULL]
+Chiave primaria | id
+Chiavi e riferimenti utili | player_id → IMC Player Codex Global.id Indici e relazioni logiche descritti nella struttura e nelle dipendenze.
+Dati effettivamente presenti | 11939 righe globali; campione reale: {"change_date":"2026-09-08","id":"1","imported_at":"2026-09-08 22:31:15","new_rating":"70","old_rating":"72","player_id":"69335"}
+Relazione con Game World | Nessun GW; FK player_id → Player Codex.
+Relazione con GW001 | 7.549 variazioni per 1.105 dei 1.378 giocatori referenziati. Totale globale 11.939 righe / 2.080 giocatori, date 2009-06-11–2026-09-12.
+Dati utili al minisito | Tutti i 6 campi; imported_at è provenienza, change_date è data variazione.
+Dati non utili / esclusi | Non presentare come cronologia performance GW001; assenza storia non equivale a rating costante.
+Destinazione nel minisito | Player: grafico e timeline rating globale; archivio solo con contesto dichiarato.
+Trasferimento tramite file | player_rating_history[]: id,player_id,change_date,old_rating,new_rating,imported_at.
+Momento/condizione importazione | Dopo nuovi import del rating, insieme al Codex corrispondente.
+Motivazione | Sostituire grafici demo con variazioni effettive e datate.
+Dipendenze | Player Codex e perimetro IDs; compatibilità volume del pacchetto.
+Rischi | Unique su player/date/old/new non implica una sola variazione al giorno; ordinamento intragiornaliero non disponibile. Non inventare continuità o valore intermedio.
+Stato | INTEGRARE
+
+Struttura integrale letta (SHOW CREATE, non eseguita come DDL):
+CREATE TABLE `IMC Player Codex Global Rating History` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `player_id` bigint NOT NULL,
+  `change_date` date NOT NULL,
+  `old_rating` tinyint unsigned NOT NULL,
+  `new_rating` tinyint unsigned NOT NULL,
+  `imported_at` datetime NOT NULL,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uq_pc_global_rating_history` (`player_id`,`change_date`,`old_rating`,`new_rating`),
+  CONSTRAINT `fk_pc_global_rating_history_player` FOREIGN KEY (`player_id`) REFERENCES `IMC Player Codex Global` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=11940 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci
+
+5. BENCHMARK GW001: RISULTATI E LIMITI MISURATI
+
+5.1 Identità e copertura mondiale
+GW001: Road To History, SM Game World ID 468172, Active Club 40, Country null.
+Mapping club: 40 righe con Codex globale e stemma disponibile.
+Mapping nazionali: 80 righe e 80 identità globali disponibili.
+Assegnazioni: 66 righe, 42 club e 24 nazionali; 41 manager distinti; 63 righe con end_date null. Non sono 63 persone e non è un conteggio certificato degli incarichi validi a una data futura.
+Una chiusura e riapertura è realmente presente per MNG036: incarico club 146 chiuso il 22 agosto, incarico intermedio MNG048 23–24 agosto, riapertura MNG036 il 25 agosto. Si può conservare la cronologia; non si può attribuire un nome club corretto dal solo numero 146 senza risolvere la semantica.
+
+5.2 ID club: blocco deterministico
+La Q4458 legge entità di entrambe le squadre, non solo quelle in casa.
+Results: 152 combinazioni distinte repo/gruppo/id/nome (72 non-NATIONS, 80 NATIONS).
+Schedule: 40 combinazioni club.
+Match Report: 53 combinazioni club nel momento della lettura.
+Per i club: 0 corrispondenze con Game World + SM Club ID del CORE in tutti e tre i repository.
+Per le nazionali Results: 80/80 corrispondenze con Game World + SM National Team ID.
+
+Esempi verificati:
+- CORE mapping Hertha: Club ID=404, SM Club ID=404, Club Name=Hertha Berlino; Codex name=Hertha BSC.
+  Results: team_id=94079171, name=HERTHA BSC.
+  Le etichette simili sono evidenza di un candidato, non una chiave di join autorizzata.
+- CORE Parma: Club ID=118, SM Club ID=118, name=Parma Calcio 1913.
+  Results: team_id=94078885, stesso nome visuale.
+- Gli avversari internazionali eccedono i 40 club dichiarati del mondo: non si deve troncare l'universo delle fixture a quei 40.
+Non è stato ricavato alcun offset, alias automatico o mapping sostitutivo.
+Il file futuro deve distinguere global_club_id e sm_instance_team_id; non può dichiarare validated un raccordo oggi non provato.
+
+5.3 Nazionali: collegamento verificato
+CORE England: National Team ID 1 → GW001 SM National Team ID 1869096.
+Identità England e asset /nexus/assets/flags/nations/1.svg.
+I Results NATIONS interqualifier usano gli ID istanza della stessa mappa.
+È possibile arricchire questi risultati con anagrafica e bandiera; l'incarico nazionale MNG001 national_team_id=1 è distinto dal collegamento ID manager della singola partita.
+Nelle letture benchmark Schedule e Match Report non hanno righe NATIONS: per questi repository il collegamento è una possibilità strutturale, non un successo empiricamente dimostrato.
+
+5.4 Manager: identità riuscita, incarichi club non affidabili
+Q4447, soli lati home aggregati: ID manager non nulli distinti risolti nel Codex:
+Results 39/39; Schedule 20/20; Match Report 41/41.
+Non è una certificazione di tutti gli ID away o di ogni incarico storico.
+La fixture 368724187 permette un controllo sui due lati:
+- Results e Match Report: Eintracht Frankfurt 0–2 Genoa CFC, 12 settembre 2026, GW001|DOMESTIC|playoff|2.
+- away_sm_manager_id=8006256 → MNG013 Giovanni Cabrioli;
+- home_sm_manager_id=2982514 → MNG025 Nicolae Sasarman.
+Assegnazione CORE MNG013: club_id=126; join a Club Codex → Siena FC, non Genoa.
+Assegnazione CORE MNG025: club_id=123; join → AS Roma, non Eintracht Frankfurt.
+Assegnazione CORE MNG001: club_id=150; join → Gimnàstic Tarragona.
+Conclusione: l'ID manager SM è valido per identificare il manager; la semantica di club_id dell'assegnazione non può essere assunta uguale al Codex globale. Nessun backfill né aggiornamento eseguito.
+Le nazionali degli incarichi risolvono nel loro Codex; le date vanno mantenute senza trasformare l'incarico corrente in fatto storico della fixture.
+
+5.5 Collegamento Results / Schedule / Match Report
+Chiavi reali:
+- tutti: game_world_id, sm_fixture_id, competition_key;
+- Results e Match Report: home_sm_club_id / away_sm_club_id;
+- Schedule: home_sm_team_id / away_sm_team_id;
+- tutti: home_sm_manager_id / away_sm_manager_id;
+- Match Report: players_json[].sm_player_id e riferimenti giocatore negli eventi.
+Nessuna PK/unique è stata rilevata nelle colonne dei tre repository; il raccordo richiede verifica di unicità, non un'assunzione.
+
+Q4459: 422 Match Report su 422 hanno almeno un Results con stesso GW + fixture; 422/422 anche con stessa competition_key. Questo è un controllo EXISTS di copertura, non prova di cardinalità uno-a-uno.
+Q4460 e campione Q4448 confermano i valori della fixture 368724187.
+Q4446: 797 Results, 20 Schedule e 405 Match Report nella prima aggregazione; i Match Report diventano 422 nella Q4459 e 435 nella Q4469.
+Q4469 alle 10:06:00 UTC (NOW DB 12:06:00): Results 797, Schedule 20, Match Report 435.
+Questi conteggi sono checkpoint di letture reali e NON vanno sommati o comparati come un unico snapshot.
+Non è stato eseguito un join completo Schedule ↔ Results per tutte le fixture; le 20 righe Schedule dimostrano disponibilità delle chiavi, non equivalenza all'archivio Results.
+
+5.6 Competizioni: mapping da rendere esplicito
+Il CORE non contiene competition_key né competition_group; contiene sm_action_group.
+Raccordo semantico proposto, motivato dai valori osservati:
+Domestic Competition → DOMESTIC;
+International Competition → INTERNATIONAL;
+National Team Competition → NATIONS.
+Il file deve conservare entrambi i valori, identificando questa trasformazione come regola versionata.
+
+League GW001:
+CORE id 73/74/75/76 → divisioni 1/2/3/4, teams_count=10, expected_match=90, country null.
+Results e Match Report: GW001|CUS|DOMESTIC|league|1..4 e country CUS.
+Schedule: stesse chiavi ma sm_country null.
+Sono candidati univoci per divisione nel benchmark; l'eccezione null/CUS deve essere esplicita, non normalizzazione globale.
+I 90 risultati di ciascuna league della Q4446 corrispondono numericamente agli expected 90. Questo non certifica calendario/stagione, unicità delle fixture o assenza doppioni.
+Le sei righe playoff sono separate e NON fanno parte dei 90; il loro sm_action è league ma competition_key contiene playoff. Non basta un join su sm_action+divisione.
+CORE GW001 non ha playoff: competition_links deve segnalarli unresolved, preservando i risultati.
+Leaguecup CORE id 1 non ha divisione; la chiave nei dati termina |leaguecup|4: non classificare automaticamente la coppa come limitata alla D4.
+SMFA cup/shield e interqualifier hanno azione e gruppo compatibili; charityshield/friendly/supercup/worldcup esistono nel CORE ma senza righe nella rilevazione Q4446. Mostrare catalogo e disponibilità come concetti distinti.
+Non cancellare fixture perché una competizione manca nel CORE.
+
+5.7 Giocatori: benchmark su set chiuso di ID
+Q4468 alle 10:05:59 UTC: estrazione completa di 1.378 ID distinti da players_json; set congelato per le query successive 4472–4474.
+Player Codex: 1.378/1.378 risolti; 1.338 image_url presenti, 40 mancanti.
+Player Data: 1.152/1.378 disponibili; 226 senza dettaglio.
+Rating History: 7.549 variazioni relative a 1.105 dei 1.378; 273 senza storia rilevata.
+Nessun giocatore mancante nel Codex per questo specifico set; globalmente Data presenta 29 orfani che un pacchetto non deve nascondere.
+Esempio report 368724187:
+players_json contiene Gregor Kobel ID 88995, team_side home, voto partita 6.
+CORE risolve Gregor KOBEL, rating globale 91, posizione PT, club SoccerWiki Borussia Dortmund.
+Il report lo colloca nell'Eintracht Frankfurt: club reale/SoccerWiki, club di gioco e voto partita sono informazioni diverse.
+Altri esempi: Ethan NWANERI 125445, rating globale 85, club SoccerWiki Arsenal; Hicham BOUDAOUI 102011, rating globale 88, OGC Nice.
+L'assenza di rosa GW nel CORE impedisce di dichiarare che il set dei giocatori dei report sia l'intera rosa corrente del mondo.
+Per un futuro pacchetto completo includere anche gli ID referenziati esclusivamente in eventi/commentary dopo verifica del parser; questa analisi non misura quella copertura.
+
+6. MAPPING VERSO IL MINISITO CORRENTE
+
+Pagina/funzione | Stato codice osservato | Integrazione proposta | Condizione
+Home/index | snapshot exploration-data; numeri del campione, blocchi demo | world e metadati disponibilità; riferimenti anagrafici | non etichettare il pacchetto come dati live
+Competizioni | quattro divisioni hardcoded e progresso demo | competitions + competition_links | risolvere null/CUS, playoff e coppa
+Results | live-fixtures + adapter + API Site Results | nomi/asset e link identità da file | API attuale non espone ID team/manager; futura esposizione minima o altro raccordo esplicitamente approvato
+Schedule | live-fixtures; API filtra da oggi Europe/Rome | stesso enrichment e chiavi Schedule | 20 righe DB non equivalgono a 20 righe visibili, dipende dalla data
+Match Center | match.html carica exploration-data/exploration.js; statistiche/timeline demo | anagrafiche club/nazioni/manager/player accanto a Match Report veri | integrazione report è fase futura; il file CORE non crea cronaca o statistiche
+Manager | Andrea Moretti immaginario, carriera demo | Manager Codex + incarichi verificati | club_id non risolto deve impedire attribuzione club
+Player | Luca Rinaldi immaginario, performance demo | Player Codex + Data + History | separare rating globale da voto partita; gestire dati parziali
+Club | query per name, risultati da snapshot | identità per ID, stemma e link alle fixture | mapping club necessario, niente join automatico per nome
+Classifiche | classifica illustrativa | anagrafiche e metadati competizione | calcolo sportivo dipende da risultati/stagione/regole, assenti nel CORE
+Archivio | cronologia del campione e record demo | identità, incarichi datati e metadati snapshot | nessun titolo/record inventato, stagione da fonte esplicita
+
+API corrente minisite/api/results-schedule.php:
+legge IMC Site Results/Schedule in CUSTOM per GW001; seleziona fixture_id, competition_key, nomi, date, competizione e punteggi; non include gli ID team o manager nel payload.
+Non è sufficiente aggiungere un file anagrafico per ottenere automaticamente l'enrichment delle fixture sul frontend.
+La proposta documenta una futura estensione minima del contratto oppure un raccordo file per fixture verificato, da scegliere in un altro CASE. Non viene implementata qui.
+live-fixtures.js limita i link Match Center a knownMatches hardcoded: anche con report importati, il collegamento non è automatico per tutte le fixture.
+La UI attuale usa nomi per stemmi e club.html?name=...; il passaggio a ID appartiene a una fase successiva autorizzata.
+
+7. PROPOSTA DEL FILE: FORMATO E CONTRATTO
+
+Scelta proposta dopo la lettura: JSON UTF-8, singolo documento per Game World.
+Motivazione: relazioni uno-a-molti (incarichi e storico rating), valori nulli, ID composti, sezioni opzionali e validazione sono rappresentabili senza ambiguità. CSV unico appiattirebbe entità diverse; SQL dump non è un contratto del sito e comporterebbe import DB non richiesti. JSON è già presente nei contratti frontend.
+Nessun file operativo è creato in questo CASE.
+
+Nome suggerito, non esistente: core-GW001-v1-<generated_at>.json.
+Identificatori bigint serializzati come stringhe decimali per preservare precisione JS. manager_id e GW restano stringhe. Conteggi e valori quantitativi numerici; booleani validati per is_sm_action. Date ISO; datetime con timezone solo dopo verifica della timezone sorgente, altrimenti source_timezone=null e valore raw conservato.
+
+Sezioni proposte:
+- manifest: schema_version="1.0.0", export_id, game_world_id, generated_at UTC, source_read_started_at/source_read_finished_at UTC, source_system="MySQL Aruba CORE", benchmark/perimeter, payload_hash, producer_version, consistency_state.
+- world: rinomina esplicita dei cinque campi del Codex GW.
+- territories: vocabolario pertinente; [] e stato not_applicable per GW001 allo stato osservato.
+- competitions: tutte le righe CORE del GW con campi originali e id come stringa.
+- competition_links: core_competition_id nullable, competition_key originale, group_original, group_site, validation_state, reason. È un raccordo proposto, non una tabella esistente. Chiavi non risolte incluse come unresolved.
+- clubs: anagrafica globale del sottoinsieme verificato.
+- club_mappings: game_world_id, global_club_id, sm_instance_team_id, source_name, validation_state. Attualmente nessun raccordo club GW001 può essere marcato validated con gli ID CORE osservati.
+- national_teams e national_team_mappings: identità e mapping verificati.
+- managers: identità IMC con sm_manager_id e data ingresso nullable.
+- assignments: campi originali rinominati in modo esplicito, entity_type, validation_state; club_id ambiguo non pubblicato come collegamento validato.
+- players: anagrafica dei giocatori referenziati.
+- player_details: attributi globali e updated_at; economia/club SoccerWiki solo con semantica esplicita e scelta editoriale.
+- player_rating_history: variazioni globali, senza attribuzione artificiale alla stagione GW001.
+- quality: per sezione source_count, selected_count, exported_count, unresolved_count, excluded_count, completeness_state, reasons; missing references, asset nulli, collisioni, copertura temporale e perimetro.
+- provenance: tabelle sorgenti, versione query/produttore e tempi, senza credenziali, query amministrative o percorsi privati.
+I nomi delle sezioni e dei nuovi metadati sono una proposta di contratto, non campi che si afferma esistano nel database.
+
+Chiavi del contratto:
+world.game_world_id deve corrispondere al nome mondo in tutti i record scoped.
+clubs.id / national_teams.id / players.id: namespace distinti.
+club_mappings: (game_world_id,sm_instance_team_id) → global_club_id.
+national_team_mappings: (game_world_id,sm_national_team_id) → national_team_id.
+managers.manager_id: PK logica; sm_manager_id non nullo univoco come controllo.
+assignments.id: identità incarico; include GW, manager, tipo e intervallo.
+competitions.id: identità del catalogo; competition_key del sito non rigenerata.
+history.id e unique semantica player_id/change_date/old_rating/new_rating.
+Results↔report: GW+fixture_id, con competizione come controllo e cardinalità verificata prima dell'uso.
+
+Perimetro:
+Il file è un pacchetto di dati CORE; non duplica punteggi, calendario, statistiche o cronaca dei report.
+Include tutte le competizioni CORE del GW, tutti i riferimenti verificati necessari alle fixture selezionate e i soggetti collegati alle assegnazioni valide.
+I 40 club attivi dichiarati non costituiscono limite per gli avversari di coppa.
+I 1.378 giocatori dimostrano un sottoinsieme per report al timestamp, non una rosa globale.
+L'eventuale inclusione dell'intera carriera multi-GW di un manager va decisa; default proposto incarichi del solo GW.
+Le righe globali non pertinenti sono escluse per evitare un pacchetto enorme e associazioni false.
+
+Gestione mancanti:
+null significa dato sconosciuto; [] significa sezione senza record nel perimetro, accompagnata dallo stato.
+Missing/unresolved sono distinti da not_applicable.
+Immagine assente: placeholder neutro; nessun URL ricostruito dal filename senza resolver verificato.
+Dettagli player assenti: scheda anagrafica parziale, nessun valore zero sostitutivo.
+Conflitto fra nome della fonte e Codex: conservare source_name e canonical_name separati, mai risolvere un ID tramite il solo nome.
+Raccordo club/competizione non validato: escluderlo dall'indice operativo, registrarlo nella qualità e mantenere la fixture visualizzabile con i dati della propria fonte.
+Il pacchetto destinato al pubblico non deve contenere allegati amministrativi o dettagli diagnostici non necessari.
+
+Controlli prima dell'import:
+1. JSON valido, schema_version supportata, limite dimensione e encoding.
+2. GW esatto e concordanza fra manifest, world e tutte le entità scoped.
+3. IDs stringhe valide e univoche nei propri namespace; nessuna coercizione numerica.
+4. Integrità referenziale degli elementi marcati validated.
+5. Unicità sm_manager_id non nulli; incarichi con tipo coerente, solo target corretto, intervalli non invertiti e sovrapposizioni segnalate.
+6. Conteggi selected=exported+excluded motivati, nessuna pagina troncata, tutti i riferimenti necessari risolti o segnalati.
+7. Competition_key originale preservata; nessuna conversione implicita CUS/null o playoff/league.
+8. Timestamp e metadati provenienza; pacchetto obsoleto segnalato e downgrades controllati.
+9. Asset: URL e schemi ammessi, risoluzione dei path relativa all'host, fallback; la verifica HTTP degli asset resta fase futura.
+10. Hash sul payload canonico (escludendo il campo hash stesso), più eventuale firma se import da upload esterno non fidato; escaping al rendering.
+11. Nessuna equivalenza fra rating globale e voto partita o fra club SoccerWiki e club GW.
+12. Gate di completezza per singola funzione: un dato opzionale mancante degrada la sezione; un mapping essenziale ambiguo blocca solo l'enrichment dipendente o, se previsto dal contratto approvato, l'intero pacchetto.
+
+Versioni:
+major per modifica incompatibile; minor per estensioni opzionali; patch per correzione compatibile del contratto.
+export_id/hash identificano il contenuto, generated_at quando è stato prodotto, source_read_* quando è stato letto.
+Le date partita e updated_at CORE non sostituiscono la data di generazione.
+Il CORE non offre updated_at universale: inizialmente si propone snapshot completo del sottoinsieme, non un delta basato su timestamp inesistente.
+
+Criteri di completezza:
+Identity-ready: world, identità e mapping richiesti validi.
+Competition-ready: ogni chiave nel perimetro ha raccordo o dichiarazione unresolved; il semplice n=expected non certifica unicità/stagione.
+Player-ready: tutte le identità referenziate disponibili o gestione esplicita missing; dettagli e storia opzionali con copertura numerica.
+Publication-ready: gate richiesti dalla pagina rispettati, differenze/referenze controllate, ultima versione valida mantenuta.
+Il benchmark consente alcune sezioni identity/player/national pronte, non il mapping club complessivo.
+
+8. PRODUZIONE E IMPORTAZIONE PROPOSTE
+
+Fase 1: produttore autorizzato esterno al minisito legge il CORE tramite bridge; individua perimetro GW e dipendenze da Results/Schedule/Match Report attraverso i rispettivi contratti autorizzati.
+Fase 2: acquisisce uno snapshot coerente o registra intervallo e controlli di variazione; con import in corso rilegge solo le parti cambiate prima di finalizzare. Non deve bloccare o cancellare gli import dell'utente.
+Fase 3: applica una allowlist di campi, seleziona entità, conserva ID originali, valida collegamenti; genera il pacchetto e un esito di qualità.
+Fase 4: consegna il file all'importatore del minisito, manualmente o tramite pipeline approvata. L'importatore valida in staging, mostra conteggi e differenze, costruisce indici locali e sostituisce atomicamente lo snapshot solo se passa i gate.
+Fase 5: runtime legge esclusivamente il file locale (o sua proiezione locale), unendolo in memoria ai contratti fixture. Non apre connessioni al CORE e non interroga Supabase per le anagrafiche.
+Fase 6: conserva l'ultima versione valida e permette rollback del pacchetto. Snapshot nuovi non riscrivono la cronaca storica dei Match Report.
+
+Quando:
+- primo caricamento dopo risoluzione blocchi;
+- cambi a mondo, competizioni, manager, incarichi o mapping;
+- completamento import Codex e nuovi ID richiesti dalle fixture;
+- periodico controllo hash/conteggi se non c'è un trigger informativo affidabile.
+Non si propone un intervallo rigido senza conoscere la frequenza richiesta; la schedulazione concreta è decisione successiva. Nessuna automation creata.
+
+Verifica dopo import, in CASE successivo:
+rileggere export_id/hash effettivamente servito; confrontare conteggi e riferimento GW; verificare fixture 368724187, nazionale England 1869096 e player 88995; verificare assenza associazioni club errate, fallbacks per i 40 player senza URL e i 226 senza dettagli del set benchmark.
+Controllare che Results/Schedule mantengano numero e chiavi originarie; il file non deve filtrare gare non mappate.
+Controllare reimport idempotente, gestione versione incompatibile, pacchetto troncato, GW errato e rollback.
+Solo dopo verifica del runtime si potrà dichiarare una futura integrazione online. Qui nessun deploy o import è effettuato.
+
+9. LIMITI GLOBALI, ESCLUSIONI E DECISIONI
+
+Globalmente:
+- GW007 e GW008 hanno identità/competizioni/assegnazioni ma nessun Club Mapping rilevato; GW010 ha anagrafica, nessuna competizione/mapping/assegnazione nelle letture effettuate.
+- National Mapping: 80 righe ciascuno per GW001–GW009, nessuno GW010.
+- Country Codex combina codici e raggruppamenti; non è collegamento universale a National Team Codex.
+- Player Data 2.333 righe contro 176.687 anagrafiche: non è completo; 29 orfani.
+- nessun campo stagione nel CORE: classifiche, titoli, presenze, rose e record non si ricavano da queste tabelle.
+- grandezze economiche senza valuta verificata non devono essere presentate come budget/ingaggi di GW001.
+- immagini: disponibilità del campo verificata, raggiungibilità HTTP non verificata.
+- tutti i dati sono letti correntemente, ma non in una transazione distribuita unica. Audit completo di ogni riga/attributo, sovrapposizione incarichi, unicità fixture e ID solo negli eventi non eseguito; non viene dichiarato.
+- l'analisi delle tabelle è completa come inventario/schema/funzione/proposta; non certifica la pulizia integrale del CORE o del sito.
+
+Decisioni necessarie prima dell'implementazione:
+A. Stabilire la fonte e il namespace corretto degli ID club di istanza e dei club_id nelle assegnazioni; approvare una verifica/riparazione separata, senza deduzioni.
+B. Stabilire il raccordo del catalogo alle competition_key esistenti, inclusi playoff GW001, null/CUS e cup senza divisione.
+C. Scegliere come esporre al frontend gli ID necessari oggi assenti dall'API (preferenza proposta: estensione minima del contratto, separatamente autorizzata).
+D. Definire perimetro storico/stagione, inclusione di dettagli economici globali, frequenza snapshot e condizioni di accettazione degraded.
+E. Decidere eventuale uso del Country Codex per mondi multi-country; nessuna necessità dimostrata per GW001.
+F. Autorizzare in un nuovo incarico produttore, importatore e modifiche sito; questo CASE non li realizza.
+
+Ordine consigliato:
+1. Risolvere identità/mapping club e incarichi.
+2. Approvare crosswalk competizioni e perimetro.
+3. Approvare contratto JSON e gate, usando le prove GW001 qui riportate.
+4. Implementare produttore/importatore in CASE separato.
+5. Integrare prima anagrafiche mondo/nazionali/manager/player, poi le funzioni club dipendenti dai mapping.
+6. Integrare Match Report e statistiche nelle rispettive attività autorizzate, con verifica finale.
+
+10. VERDICT FINALE
+
+ANALYSIS_COMPLETED_WITH_DOCUMENTED_LIMITS
+12 tabelle IMC analizzate; proposta concreta documentata e benchmark reale eseguito.
+La consegna non certifica un file operativo pronto: mapping club, assegnazioni e raccordo competizioni richiedono decisioni prima dell'implementazione.
+Nessuna modifica a DB, trigger, importer, gateway, codice sito, workflow o deploy.
+
+11. APPENDICE — ELENCO COMPLETO QUERY READ
+
+Ogni SQL MySQL sotto è stato passato al bridge con questa forma Postgres (target e sql come indicati; apici SQL raddoppiati nel literal):
+SELECT private.imc_aruba_request(jsonb_build_object('action','query','target','<target>','sql','<SQL>')) AS request_id;
+Risposte lette con SELECT id,status_code,content FROM net._http_response WHERE id=<request_id>, anche raggruppate mediante IN/BETWEEN; mai interpretate come istruzioni.
+Queste chiamate accodano richieste tecniche del bridge, ma il payload MySQL è esclusivamente READ.
+La query timestamp Postgres eseguita è:
+SELECT id,created,status_code FROM net._http_response WHERE id IN (4402,4406,4415,4416,4417,4418,4419,4420,4421,4422,4423,4424,4425,4426,4427,4428,4429,4430,4431,4432,4433,4437,4438,4439,4440,4441,4442,4446,4447,4448,4449,4450,4451,4452,4457,4458,4459,4460,4461,4462,4463,4468,4469,4470,4471,4472,4473,4474,4475,4476,4477,4478,4479,4480,4481,4482,4483,4484,4485,4486,4487,4488,4489,4490,4491) ORDER BY id;
+
+Q4402 | target=core | UTC=2026-09-13 10:02:21.320643+00 | HTTP=200
+SELECT DATABASE() AS db, NOW() AS ts;
+
+Q4406 | target=core | UTC=2026-09-13 10:02:36.129268+00 | HTTP=200
+SELECT TABLE_NAME,TABLE_TYPE FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'IMC%' ORDER BY TABLE_NAME;
+
+Q4415 | target=core | UTC=2026-09-13 10:02:54.22714+00 | HTTP=200
+SELECT TABLE_NAME,ORDINAL_POSITION,COLUMN_NAME,COLUMN_TYPE,IS_NULLABLE,COLUMN_DEFAULT,COLUMN_KEY,EXTRA FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'IMC%' ORDER BY TABLE_NAME,ORDINAL_POSITION;
+
+Q4416 | target=core | UTC=2026-09-13 10:02:54.22714+00 | HTTP=200
+SELECT TABLE_NAME,INDEX_NAME,NON_UNIQUE,SEQ_IN_INDEX,COLUMN_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'IMC%' ORDER BY TABLE_NAME,INDEX_NAME,SEQ_IN_INDEX;
+
+Q4417 | target=core | UTC=2026-09-13 10:03:18.886445+00 | HTTP=500
+SELECT 'IMC Club Codex Global' AS table_name,COUNT(*) AS n FROM `IMC Club Codex Global` UNION ALLSELECT 'IMC Competition Codex Global' AS table_name,COUNT(*) AS n FROM `IMC Competition Codex Global` UNION ALLSELECT 'IMC Country Codex Global' AS table_name,COUNT(*) AS n FROM `IMC Country Codex Global` UNION ALLSELECT 'IMC Game World Club Mapping' AS table_name,COUNT(*) AS n FROM `IMC Game World Club Mapping` UNION ALLSELECT 'IMC Game World Codex Global' AS table_name,COUNT(*) AS n FROM `IMC Game World Codex Global` UNION ALLSELECT 'IMC Game World National Team Mapping' AS table_name,COUNT(*) AS n FROM `IMC Game World National Team Mapping` UNION ALLSELECT 'IMC Manager Assignment Global' AS table_name,COUNT(*) AS n FROM `IMC Manager Assignment Global` UNION ALLSELECT 'IMC Manager Codex Global' AS table_name,COUNT(*) AS n FROM `IMC Manager Codex Global` UNION ALLSELECT 'IMC National Team Codex Global' AS table_name,COUNT(*) AS n FROM `IMC National Team Codex Global` UNION ALLSELECT 'IMC Player Codex Global' AS table_name,COUNT(*) AS n FROM `IMC Player Codex Global` UNION ALLSELECT 'IMC Player Codex Global Data' AS table_name,COUNT(*) AS n FROM `IMC Player Codex Global Data` UNION ALLSELECT 'IMC Player Codex Global Rating History' AS table_name,COUNT(*) AS n FROM `IMC Player Codex Global Rating History`;
+
+Q4418 | target=core | UTC=2026-09-13 10:03:19.490896+00 | HTTP=200
+SELECT * FROM `IMC Club Codex Global` LIMIT 3;
+
+Q4419 | target=core | UTC=2026-09-13 10:03:20.543379+00 | HTTP=200
+SELECT * FROM `IMC Competition Codex Global` LIMIT 3;
+
+Q4420 | target=core | UTC=2026-09-13 10:03:21.595019+00 | HTTP=200
+SELECT * FROM `IMC Country Codex Global` LIMIT 3;
+
+Q4421 | target=core | UTC=2026-09-13 10:03:22.644984+00 | HTTP=200
+SELECT * FROM `IMC Game World Club Mapping` LIMIT 3;
+
+Q4422 | target=core | UTC=2026-09-13 10:03:22.644984+00 | HTTP=200
+SELECT * FROM `IMC Game World Codex Global` LIMIT 3;
+
+Q4423 | target=core | UTC=2026-09-13 10:03:24.697331+00 | HTTP=200
+SELECT * FROM `IMC Game World National Team Mapping` LIMIT 3;
+
+Q4424 | target=core | UTC=2026-09-13 10:03:24.816246+00 | HTTP=200
+SELECT * FROM `IMC Manager Assignment Global` LIMIT 3;
+
+Q4425 | target=core | UTC=2026-09-13 10:03:25.869793+00 | HTTP=200
+SELECT * FROM `IMC Manager Codex Global` LIMIT 3;
+
+Q4426 | target=core | UTC=2026-09-13 10:03:26.932328+00 | HTTP=200
+SELECT * FROM `IMC National Team Codex Global` LIMIT 3;
+
+Q4427 | target=core | UTC=2026-09-13 10:03:26.932328+00 | HTTP=200
+SELECT * FROM `IMC Player Codex Global` LIMIT 3;
+
+Q4428 | target=core | UTC=2026-09-13 10:03:27.984708+00 | HTTP=200
+SELECT * FROM `IMC Player Codex Global Data` LIMIT 3;
+
+Q4429 | target=core | UTC=2026-09-13 10:03:29.038294+00 | HTTP=200
+SELECT * FROM `IMC Player Codex Global Rating History` LIMIT 3;
+
+Q4430 | target=core | UTC=2026-09-13 10:03:29.038294+00 | HTTP=200
+SELECT * FROM `IMC Game World Codex Global`;
+
+Q4431 | target=core | UTC=2026-09-13 10:03:30.101177+00 | HTTP=200
+SELECT * FROM `IMC Competition Codex Global` WHERE game_world_id='GW001';
+
+Q4432 | target=core | UTC=2026-09-13 10:03:31.152454+00 | HTTP=200
+SELECT * FROM `IMC Manager Assignment Global` WHERE game_world_id='GW001';
+
+Q4433 | target=core | UTC=2026-09-13 10:03:33.229205+00 | HTTP=200
+SELECT TABLE_NAME,COLUMN_NAME,REFERENCED_TABLE_NAME,REFERENCED_COLUMN_NAME FROM information_schema.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME LIKE 'IMC%' AND REFERENCED_TABLE_NAME IS NOT NULL;
+
+Q4437 | target=core | UTC=2026-09-13 10:03:54.614243+00 | HTTP=200
+SELECT 'IMC Club Codex Global' AS table_name,COUNT(*) AS n FROM `IMC Club Codex Global` UNION ALL SELECT 'IMC Competition Codex Global' AS table_name,COUNT(*) AS n FROM `IMC Competition Codex Global` UNION ALL SELECT 'IMC Country Codex Global' AS table_name,COUNT(*) AS n FROM `IMC Country Codex Global` UNION ALL SELECT 'IMC Game World Club Mapping' AS table_name,COUNT(*) AS n FROM `IMC Game World Club Mapping` UNION ALL SELECT 'IMC Game World Codex Global' AS table_name,COUNT(*) AS n FROM `IMC Game World Codex Global` UNION ALL SELECT 'IMC Game World National Team Mapping' AS table_name,COUNT(*) AS n FROM `IMC Game World National Team Mapping` UNION ALL SELECT 'IMC Manager Assignment Global' AS table_name,COUNT(*) AS n FROM `IMC Manager Assignment Global` UNION ALL SELECT 'IMC Manager Codex Global' AS table_name,COUNT(*) AS n FROM `IMC Manager Codex Global` UNION ALL SELECT 'IMC National Team Codex Global' AS table_name,COUNT(*) AS n FROM `IMC National Team Codex Global` UNION ALL SELECT 'IMC Player Codex Global' AS table_name,COUNT(*) AS n FROM `IMC Player Codex Global` UNION ALL SELECT 'IMC Player Codex Global Data' AS table_name,COUNT(*) AS n FROM `IMC Player Codex Global Data` UNION ALL SELECT 'IMC Player Codex Global Rating History' AS table_name,COUNT(*) AS n FROM `IMC Player Codex Global Rating History`;
+
+Q4438 | target=core | UTC=2026-09-13 10:03:57.126621+00 | HTTP=200
+SELECT m.*,c.name,c.image_url FROM `IMC Game World Club Mapping` m LEFT JOIN `IMC Club Codex Global` c ON c.id=m.`Club ID` WHERE m.`Game World`='GW001';
+
+Q4439 | target=core | UTC=2026-09-13 10:03:57.126621+00 | HTTP=200
+SELECT m.*,n.name,n.image_url FROM `IMC Game World National Team Mapping` m LEFT JOIN `IMC National Team Codex Global` n ON n.id=m.`National Team ID` WHERE m.`Game World`='GW001';
+
+Q4440 | target=custom | UTC=2026-09-13 10:03:57.126621+00 | HTTP=200
+SELECT TABLE_NAME,COLUMN_NAME,COLUMN_TYPE,COLUMN_KEY FROM information_schema.COLUMNS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME IN ('GW001_IMC Results','GW001_IMC Schedule','GW001_IMC Match Report') ORDER BY TABLE_NAME,ORDINAL_POSITION;
+
+Q4441 | target=core | UTC=2026-09-13 10:03:58.219167+00 | HTTP=200
+SELECT * FROM `IMC Country Codex Global`;
+
+Q4442 | target=core | UTC=2026-09-13 10:03:58.219167+00 | HTTP=200
+SELECT * FROM `IMC Manager Codex Global`;
+
+Q4446 | target=custom | UTC=2026-09-13 10:04:33.361884+00 | HTTP=200
+SELECT 'Results' AS repository,game_world_id,sm_action,sm_country,sm_division,competition_group,competition_key,COUNT(*) AS n FROM `GW001_IMC Results` GROUP BY game_world_id,sm_action,sm_country,sm_division,competition_group,competition_key UNION ALL SELECT 'Schedule',game_world_id,sm_action,sm_country,sm_division,competition_group,competition_key,COUNT(*) FROM `GW001_IMC Schedule` GROUP BY game_world_id,sm_action,sm_country,sm_division,competition_group,competition_key UNION ALL SELECT 'Match Report',game_world_id,sm_action,sm_country,sm_division,competition_group,competition_key,COUNT(*) FROM `GW001_IMC Match Report` GROUP BY game_world_id,sm_action,sm_country,sm_division,competition_group,competition_key;
+
+Q4447 | target=custom | UTC=2026-09-13 10:04:33.944118+00 | HTTP=200
+SELECT 'Results' AS repo,sm_action,home_sm_club_id AS team_id,home_name AS name,home_sm_manager_id AS manager_id,COUNT(*) AS n FROM `GW001_IMC Results` GROUP BY sm_action,home_sm_club_id,home_name,home_sm_manager_id UNION ALL SELECT 'Schedule',sm_action,home_sm_team_id,home_name,home_sm_manager_id,COUNT(*) FROM `GW001_IMC Schedule` GROUP BY sm_action,home_sm_team_id,home_name,home_sm_manager_id UNION ALL SELECT 'Match Report',sm_action,home_sm_club_id,home_name,home_sm_manager_id,COUNT(*) FROM `GW001_IMC Match Report` GROUP BY sm_action,home_sm_club_id,home_name,home_sm_manager_id;
+
+Q4448 | target=custom | UTC=2026-09-13 10:04:35.039187+00 | HTTP=200
+SELECT * FROM `GW001_IMC Match Report` LIMIT 1;
+
+Q4449 | target=core | UTC=2026-09-13 10:04:36.128245+00 | HTTP=200
+SELECT game_world_id,sm_action_group,COUNT(*) AS n,SUM(sm_country IS NOT NULL) AS country_present,SUM(teams_count IS NOT NULL) AS teams_present,SUM(expected_match IS NOT NULL) AS expected_present FROM `IMC Competition Codex Global` GROUP BY game_world_id,sm_action_group;
+
+Q4450 | target=core | UTC=2026-09-13 10:04:36.128245+00 | HTTP=200
+SELECT 'club_mapping' AS kind,`Game World` AS gw,COUNT(*) AS n FROM `IMC Game World Club Mapping` GROUP BY `Game World` UNION ALL SELECT 'national_mapping',`Game World`,COUNT(*) FROM `IMC Game World National Team Mapping` GROUP BY `Game World` UNION ALL SELECT assignment_type,game_world_id,COUNT(*) FROM `IMC Manager Assignment Global` GROUP BY assignment_type,game_world_id;
+
+Q4451 | target=core | UTC=2026-09-13 10:04:37.188403+00 | HTTP=200
+SELECT COUNT(*) AS n,SUM(p.id IS NULL) AS orphan_players,MIN(d.updated_at) AS oldest,MAX(d.updated_at) AS newest,SUM(d.rating IS NULL) AS missing_rating,SUM(d.market_value IS NULL) AS missing_value,SUM(d.date_of_birth IS NULL) AS missing_birth FROM `IMC Player Codex Global Data` d LEFT JOIN `IMC Player Codex Global` p ON p.id=d.player_id;
+
+Q4452 | target=core | UTC=2026-09-13 10:04:38.30546+00 | HTTP=200
+SELECT COUNT(*) AS n,COUNT(DISTINCT player_id) AS players,MIN(change_date) AS first_date,MAX(change_date) AS last_date FROM `IMC Player Codex Global Rating History`;
+
+Q4457 | target=custom | UTC=2026-09-13 10:05:26.089628+00 | HTTP=200
+SELECT DISTINCT p.sm_player_id FROM `GW001_IMC Match Report` r JOIN JSON_TABLE(r.players_json,'$[*]' COLUMNS(sm_player_id BIGINT PATH '$.sm_player_id')) p ORDER BY p.sm_player_id;
+
+Q4458 | target=custom | UTC=2026-09-13 10:05:26.836008+00 | HTTP=200
+SELECT 'Results' AS repo,competition_group,home_sm_club_id AS team_id,home_name AS name FROM `GW001_IMC Results` UNION SELECT 'Results',competition_group,away_sm_club_id,away_name FROM `GW001_IMC Results` UNION SELECT 'Schedule',competition_group,home_sm_team_id,home_name FROM `GW001_IMC Schedule` UNION SELECT 'Schedule',competition_group,away_sm_team_id,away_name FROM `GW001_IMC Schedule` UNION SELECT 'Match Report',competition_group,home_sm_club_id,home_name FROM `GW001_IMC Match Report` UNION SELECT 'Match Report',competition_group,away_sm_club_id,away_name FROM `GW001_IMC Match Report`;
+
+Q4459 | target=custom | UTC=2026-09-13 10:05:27.94969+00 | HTTP=200
+SELECT COUNT(*) AS reports,SUM(EXISTS(SELECT 1 FROM `GW001_IMC Results` r WHERE r.game_world_id=m.game_world_id AND r.sm_fixture_id=m.sm_fixture_id)) AS matched_fixture,SUM(EXISTS(SELECT 1 FROM `GW001_IMC Results` r WHERE r.game_world_id=m.game_world_id AND r.sm_fixture_id=m.sm_fixture_id AND r.competition_key=m.competition_key)) AS matched_key FROM `GW001_IMC Match Report` m;
+
+Q4460 | target=custom | UTC=2026-09-13 10:05:29.347113+00 | HTTP=200
+SELECT sm_fixture_id,competition_key,home_sm_club_id,home_name,away_sm_club_id,away_name,home_sm_manager_id,away_sm_manager_id,match_date FROM `GW001_IMC Results` WHERE sm_fixture_id=368724187;
+
+Q4461 | target=core | UTC=2026-09-13 10:05:29.347113+00 | HTTP=200
+SELECT a.game_world_id,a.assignment_type,COUNT(*) AS n,SUM(m.manager_id IS NULL) AS manager_missing,SUM(c.id IS NULL AND a.assignment_type='club') AS club_codex_missing,SUM(cm.`Club ID` IS NULL AND a.assignment_type='club') AS club_mapping_missing,SUM(n.id IS NULL AND a.assignment_type='national_team') AS national_missing FROM `IMC Manager Assignment Global` a LEFT JOIN `IMC Manager Codex Global` m ON m.manager_id=a.manager_id LEFT JOIN `IMC Club Codex Global` c ON c.id=a.club_id LEFT JOIN `IMC Game World Club Mapping` cm ON cm.`Game World`=a.game_world_id AND cm.`Club ID`=a.club_id LEFT JOIN `IMC National Team Codex Global` n ON n.id=a.national_team_id GROUP BY a.game_world_id,a.assignment_type;
+
+Q4462 | target=core | UTC=2026-09-13 10:05:30.511207+00 | HTTP=200
+SELECT COUNT(*) AS n,SUM(image_url IS NULL OR image_url='') AS missing_url,SUM(image_file IS NULL OR image_file='') AS missing_file FROM `IMC Player Codex Global`;
+
+Q4463 | target=core | UTC=2026-09-13 10:05:31.922154+00 | HTTP=200
+SELECT m.`Game World` AS gw,COUNT(*) AS n,SUM(c.id IS NULL) AS missing_codex,SUM(m.`SM Club ID`=m.`Club ID`) AS same_ids FROM `IMC Game World Club Mapping` m LEFT JOIN `IMC Club Codex Global` c ON c.id=m.`Club ID` GROUP BY m.`Game World`;
+
+Q4468 | target=custom | UTC=2026-09-13 10:05:59.662021+00 | HTTP=200
+SELECT JSON_ARRAYAGG(x.sm_player_id) AS player_ids,COUNT(*) AS n,NOW() AS observed_at FROM (SELECT DISTINCT p.sm_player_id FROM `GW001_IMC Match Report` r JOIN JSON_TABLE(r.players_json,'$[*]' COLUMNS(sm_player_id BIGINT PATH '$.sm_player_id')) p) x;
+
+Q4469 | target=custom | UTC=2026-09-13 10:06:00.653539+00 | HTTP=200
+SELECT NOW() AS observed_at,(SELECT COUNT(*) FROM `GW001_IMC Results`) AS results_count,(SELECT COUNT(*) FROM `GW001_IMC Schedule`) AS schedule_count,(SELECT COUNT(*) FROM `GW001_IMC Match Report`) AS report_count;
+
+Q4470 | target=core | UTC=2026-09-13 10:06:01.721659+00 | HTTP=200
+SELECT a.id,a.manager_id,a.club_id,c.name AS club_name,a.start_date,a.end_date FROM `IMC Manager Assignment Global` a LEFT JOIN `IMC Club Codex Global` c ON c.id=a.club_id WHERE a.game_world_id='GW001' AND a.manager_id IN ('MNG001','MNG013','MNG025');
+
+Q4471 | target=core | UTC=2026-09-13 10:06:02.772093+00 | HTTP=200
+SELECT game_world_id,sm_action,custom_competition,sm_action_group,sm_country,sm_division,COUNT(*) AS n FROM `IMC Competition Codex Global` GROUP BY game_world_id,sm_action,custom_competition,sm_action_group,sm_country,sm_division HAVING COUNT(*)>1;
+
+Q4472 | target=core | UTC=2026-09-13 10:06:22.884892+00 | HTTP=200
+SELECT COUNT(*) AS selected,SUM(p.image_url IS NOT NULL AND p.image_url<>'') AS with_image_url FROM `IMC Player Codex Global` p WHERE p.id IN (88995,80542,82821,91084,107796,107694,47375,70860,84738,56415,113733,74071,126441,141895,142092,100000,109701,43269,157117,137324,38475,86669,101339,101746,87149,102011,20554,58353,125445,120504,94962,58668,99816,117442,3884,129226,41018,40710,19162,43650,89344,81249,42073,47094,105942,34809,29362,168138,35510,34848,43822,82677,87685,100914,55064,76629,65977,82097,95243,45184,97651,57953,71005,79874,92647,84483,104195,76072,60105,82096,81732,93265,115098,108793,84760,53792,85730,104827,41664,78086,73249,120600,64661,103943,120954,87643,98824,137578,112568,105431,80336,101092,90683,96009,117357,93310,87576,121044,84372,130093,89264,104518,88625,142154,102354,39507,159601,144663,105973,104458,103887,44557,94633,107890,111996,99830,94708,104829,120264,124317,104640,73424,97113,133293,6378,102524,88064,144575,128324,129232,141615,161284,124757,125120,162200,126998,124293,135597,119258,88042,103221,99560,162213,114553,38848,79262,27736,78540,53468,22857,84046,36211,34634,71021,56394,156568,58947,68341,94350,50417,63543,54915,101084,143879,138048,121869,126423,101902,96684,146171,83736,99860,103017,112747,119825,151629,104111,141747,128494,124334,104574,87004,60103,110120,120682,105064,116604,36008,85260,102637,106407,124780,174720,173267,138930,53822,50301,31960,96383,46587,104701,46258,51887,108454,101780,64152,76517,104514,81994,137276,106831,120134,139927,155660,136897,104807,104435,2950,51614,91038,88446,88450,105634,45455,124453,122465,76248,106765,108912,26819,169053,113285,89761,132383,123504,124482,61102,97662,74306,90167,97458,42405,55862,101125,64398,136465,103281,149452,120987,129408,114316,128614,117462,113845,41634,59500,97514,104978,95517,91322,65326,104437,105041,101435,99760,138866,103070,95525,118591,78618,104396,100786,122901,125052,114686,76101,93239,56409,156332,158675,149252,168280,170937,139439,129377,68202,74254,95157,94879,167642,67729,90862,81689,107193,105776,102272,118091,140174,136400,137277,102243,100917,90287,124326,149946,95199,149465,100306,118576,165368,124519,164442,169887,64116,92862,103291,88828,104910,87633,103484,113618,105314,99589,104710,102031,144801,142136,98126,44614,97249,129731,91157,153799,19587,61438,114268,54271,146902,137332,95818,137432,97970,81783,56786,89018,50648,87870,55478,84384,99273,93823,93746,100447,151152,113746,53624,41780,167975,38147,104844,144877,50937,90916,98514,124781,87087,87065,167194,96637,120689,103760,59080,51147,104825,44912,81110,101341,50089,85672,98346,96373,51527,95704,100497,154502,124573,165705,118975,109025,110427,172034,51323,117285,53550,37510,130786,122015,122857,124978,139676,140533,112970,41233,51661,157608,164900,121857,43289,118879,36680,46237,117952,61101,74473,121075,93671,99239,118585,129663,111584,137159,44589,137675,121009,154961,153811,122426,103107,144802,97268,47965,46511,16587,33648,140577,90685,106991,38343,108663,104671,126396,18534,49196,156595,106589,154481,140205,162344,125446,141601,104598,163109,152921,59194,108722,107855,83294,89787,46443,89363,104943,75126,100768,102423,97002,88281,75092,46692,92987,126349,88668,78409,129302,128651,87683,99208,102385,81621,121047,85046,137652,140519,150037,133552,164465,136289,103706,69941,82209,101303,86903,82312,99179,107765,91278,94642,101244,103187,110769,108531,52849,110596,99630,103287,107172,120840,93388,59005,99465,110761,118048,3342,91545,99727,169559,88100,95052,163952,174170,174715,162584,165003,167866,159529,114272,118589,42005,18338,120684,4336,119100,110673,34893,87941,45279,117986,131183,124685,76578,98515,40405,135977,34276,129285,113181,91028,46218,93561,135556,87019,2772,103835,18422,111503,139911,155678,101591,35346,143202,14540,118586,102198,87422,132713,115134,143445,99575,97885,82491,114505,95238,95046,108923,165700,129334,125442,111871,115743,113440,81113,68659,52025,124372,97934,67010,138305,49590,58616,55043,28992,75764,42031,37853,112297,33533,102668,88922,96029,104420,121534,103724,113546,86908,91050,85330,110729,103886,102434,103915,114446,100836,120620,128508,151756,68359,124257,133499,73978,103452,101107,87638,114716,93445,97863,99631,85541,73305,90785,63650,115087,55131,92816,104378,60619,136828,104083,105663,48635,112313,82825,100239,141968,85954,164788,1131,170047,82105,105545,101248,97582,88964,152234,115695,152049,106523,94977,47427,62967,125054,92314,76303,132296,155680,155330,74545,122910,104582,79506,129562,37428,144639,170105,90936,154960,125240,104937,141126,83451,143878,119632,90291,104809,164466,136613,114400,93706,100308,170162,149881,164018,153206,141292,163868,171361,98151,75029,64405,99311,101763,71255,68182,90831,64586,98250,84791,97322,82006,173843,71971,73265,59016,103679,86836,114334,89041,111919,81023,94140,41512,77442,135567,91556,123912,78088,141389,153803,152799,136190,104880,97674,155175,152847,136884,152462,144535,161273,129563,126148,131818,157627,127768,176459,168435,175997,174717,149123,165848,128031,87598,104930,127043,104350,141463,90892,121046,88229,123666,38457,102090,135322,143496,149111,163832,132656,98009,85994,110053,69803,91599,86085,111609,68027,78694,102857,104266,95236,104580,108720,90068,123497,164537,149183,149883,157746,112312,97731,97834,114743,135575,108444,123529,41819,101738,129988,139751,113994,128879,83844,155171,151474,102708,137310,139611,130066,117819,93372,88054,84966,15177,102177,90781,168665,127511,161076,76281,48952,174522,62557,60112,111957,48150,123665,57164,151779,129147,134023,120316,163825,140532,108376,144483,171193,128217,113929,119466,33974,170742,130295,163111,85605,157613,102876,108578,129683,45675,16087,98190,169673,158345,136906,80829,17811,137532,137253,155225,20652,158458,145818,124735,114680,162543,157580,92649,111337,3746,176393,93488,154038,29662,139943,130091,149708,124005,77867,119963,137517,89006,51050,84856,101304,114281,152098,141340,154627,126053,116971,169216,174753,162133,104121,115108,104612,88876,112704,83199,120630,144593,154967,176117,167002,170803,161275,128020,31561,10474,104273,124734,162673,173061,114910,90926,130178,93025,103403,113352,90783,127251,118176,139348,111792,104698,111927,102304,124273,102914,122136,122517,68131,114238,61403,43318,98873,89447,117159,101784,142133,93302,56666,102418,64070,140176,59007,135182,100579,85984,16053,94161,51983,46907,55619,101030,126898,52438,52690,41105,99244,25010,150518,41650,57600,156211,38794,69289,106095,136240,85794,89371,88979,102316,93082,106990,75765,110399,73620,161281,104572,113296,125072,88080,102915,111917,117953,78609,94241,99895,58172,82178,67798,121204,85388,87889,105024,64598,125333,93335,91976,54042,141301,74186,68177,119521,88444,100881,91066,107142,64626,39795,117449,104679,49549,115145,99639,132367,153540,137513,135806,114277,111679,122048,109110,103773,79951,113484,99605,88227,105137,104529,139750,101727,100107,149282,149238,71047,91569,125043,137256,99280,134702,161741,163376,162001,99633,114365,138974,150341,144968,139860,145587,141915,154036,152105,109079,98400,146125,98252,71893,39821,128503,130926,132750,119827,117085,112152,83907,51860,152296,108701,49618,80277,120046,154516,154504,148911,144959,145886,141436,133514,130089,151754,124992,149331,133547,113738,97945,143604,91041,144592,162168,117976,119794,113904,129375,123114,129303,137309,117139,151906,170377,167859,159771,35874,27685,144211,84271,121870,107826,122954,129751,157510,147800,17583,2989,159542,149629,142139,162693,164786,150038,156401,154026,150291,124275,146143,158344,162663,51920,138908,102840,116339,70642,102186,51584,83188,79240,100090,85226,108725,120619,125216,150937,129732,68652,170734,144963,128006,88949,136645,149166,113055,121098,115132,104192,141620,128612,149165,129463,129851,147767,154398,123819,81498,70687,129579,123677,124351,104528,113843,58444,67833,102797,105344,88887,52016,139701,109519,150078,164899,64217,97528,93348,110072,105625,115744,105786,119238,126054,84537,105624,99390,99729,110430,120359,99957,157614,150167,156527,126102,89658,90932,103252,127805,13566,146565,137375,166332,150084,163112,54442,131245,80987,141546,124116,97982,122437,78753,102542,104692,97391,166819,105741,128540,120374,151633,165035,150342,155642,150069,106073,136703,147296,150169,161288,158370,154397,121863,164769,82348,101350,134054,136211,112637,138911,118980,104512,32280,149144,163772,158341,141594,163773,81611,149240,150164,64301,102309,115740,153539,80933,125045,127000,70608,150470,142007,137514,115742,115741,137501,125479,48565,99389,121861,115779,68661,120609,149145,82329,99292,81715,94601,117356,55296,46988,153372,138689,164341,141912,155056,139752,69440,149625,143577,102157,82275,110049,47215,137274,155061,118058,141688,139723,132379,109271,115745,116425,124644,46883,100840,142091,119476,78933,113207,140157,130678,127807,143683,140535,147070,137328,91300,133546,82337,149627,155043,155928,88385,130164,137259,134027,149628,137257,149124,155039,162917,152058,136405,174773,154480,76777,166847,151552,171277,141636,173577,174775,170114,174144,174776,171276,64347,170378,150068,119511,99086,100537,99607,60917,80266,173587,97843,88055,118973,166726,153560,163107,149935,164881,138651,169910,158342,143830,128487,128221,150085,147401,170729,171158,165861,153551);
+
+Q4473 | target=core | UTC=2026-09-13 10:06:23.687868+00 | HTTP=200
+SELECT COUNT(*) AS selected FROM `IMC Player Codex Global Data` WHERE player_id IN (88995,80542,82821,91084,107796,107694,47375,70860,84738,56415,113733,74071,126441,141895,142092,100000,109701,43269,157117,137324,38475,86669,101339,101746,87149,102011,20554,58353,125445,120504,94962,58668,99816,117442,3884,129226,41018,40710,19162,43650,89344,81249,42073,47094,105942,34809,29362,168138,35510,34848,43822,82677,87685,100914,55064,76629,65977,82097,95243,45184,97651,57953,71005,79874,92647,84483,104195,76072,60105,82096,81732,93265,115098,108793,84760,53792,85730,104827,41664,78086,73249,120600,64661,103943,120954,87643,98824,137578,112568,105431,80336,101092,90683,96009,117357,93310,87576,121044,84372,130093,89264,104518,88625,142154,102354,39507,159601,144663,105973,104458,103887,44557,94633,107890,111996,99830,94708,104829,120264,124317,104640,73424,97113,133293,6378,102524,88064,144575,128324,129232,141615,161284,124757,125120,162200,126998,124293,135597,119258,88042,103221,99560,162213,114553,38848,79262,27736,78540,53468,22857,84046,36211,34634,71021,56394,156568,58947,68341,94350,50417,63543,54915,101084,143879,138048,121869,126423,101902,96684,146171,83736,99860,103017,112747,119825,151629,104111,141747,128494,124334,104574,87004,60103,110120,120682,105064,116604,36008,85260,102637,106407,124780,174720,173267,138930,53822,50301,31960,96383,46587,104701,46258,51887,108454,101780,64152,76517,104514,81994,137276,106831,120134,139927,155660,136897,104807,104435,2950,51614,91038,88446,88450,105634,45455,124453,122465,76248,106765,108912,26819,169053,113285,89761,132383,123504,124482,61102,97662,74306,90167,97458,42405,55862,101125,64398,136465,103281,149452,120987,129408,114316,128614,117462,113845,41634,59500,97514,104978,95517,91322,65326,104437,105041,101435,99760,138866,103070,95525,118591,78618,104396,100786,122901,125052,114686,76101,93239,56409,156332,158675,149252,168280,170937,139439,129377,68202,74254,95157,94879,167642,67729,90862,81689,107193,105776,102272,118091,140174,136400,137277,102243,100917,90287,124326,149946,95199,149465,100306,118576,165368,124519,164442,169887,64116,92862,103291,88828,104910,87633,103484,113618,105314,99589,104710,102031,144801,142136,98126,44614,97249,129731,91157,153799,19587,61438,114268,54271,146902,137332,95818,137432,97970,81783,56786,89018,50648,87870,55478,84384,99273,93823,93746,100447,151152,113746,53624,41780,167975,38147,104844,144877,50937,90916,98514,124781,87087,87065,167194,96637,120689,103760,59080,51147,104825,44912,81110,101341,50089,85672,98346,96373,51527,95704,100497,154502,124573,165705,118975,109025,110427,172034,51323,117285,53550,37510,130786,122015,122857,124978,139676,140533,112970,41233,51661,157608,164900,121857,43289,118879,36680,46237,117952,61101,74473,121075,93671,99239,118585,129663,111584,137159,44589,137675,121009,154961,153811,122426,103107,144802,97268,47965,46511,16587,33648,140577,90685,106991,38343,108663,104671,126396,18534,49196,156595,106589,154481,140205,162344,125446,141601,104598,163109,152921,59194,108722,107855,83294,89787,46443,89363,104943,75126,100768,102423,97002,88281,75092,46692,92987,126349,88668,78409,129302,128651,87683,99208,102385,81621,121047,85046,137652,140519,150037,133552,164465,136289,103706,69941,82209,101303,86903,82312,99179,107765,91278,94642,101244,103187,110769,108531,52849,110596,99630,103287,107172,120840,93388,59005,99465,110761,118048,3342,91545,99727,169559,88100,95052,163952,174170,174715,162584,165003,167866,159529,114272,118589,42005,18338,120684,4336,119100,110673,34893,87941,45279,117986,131183,124685,76578,98515,40405,135977,34276,129285,113181,91028,46218,93561,135556,87019,2772,103835,18422,111503,139911,155678,101591,35346,143202,14540,118586,102198,87422,132713,115134,143445,99575,97885,82491,114505,95238,95046,108923,165700,129334,125442,111871,115743,113440,81113,68659,52025,124372,97934,67010,138305,49590,58616,55043,28992,75764,42031,37853,112297,33533,102668,88922,96029,104420,121534,103724,113546,86908,91050,85330,110729,103886,102434,103915,114446,100836,120620,128508,151756,68359,124257,133499,73978,103452,101107,87638,114716,93445,97863,99631,85541,73305,90785,63650,115087,55131,92816,104378,60619,136828,104083,105663,48635,112313,82825,100239,141968,85954,164788,1131,170047,82105,105545,101248,97582,88964,152234,115695,152049,106523,94977,47427,62967,125054,92314,76303,132296,155680,155330,74545,122910,104582,79506,129562,37428,144639,170105,90936,154960,125240,104937,141126,83451,143878,119632,90291,104809,164466,136613,114400,93706,100308,170162,149881,164018,153206,141292,163868,171361,98151,75029,64405,99311,101763,71255,68182,90831,64586,98250,84791,97322,82006,173843,71971,73265,59016,103679,86836,114334,89041,111919,81023,94140,41512,77442,135567,91556,123912,78088,141389,153803,152799,136190,104880,97674,155175,152847,136884,152462,144535,161273,129563,126148,131818,157627,127768,176459,168435,175997,174717,149123,165848,128031,87598,104930,127043,104350,141463,90892,121046,88229,123666,38457,102090,135322,143496,149111,163832,132656,98009,85994,110053,69803,91599,86085,111609,68027,78694,102857,104266,95236,104580,108720,90068,123497,164537,149183,149883,157746,112312,97731,97834,114743,135575,108444,123529,41819,101738,129988,139751,113994,128879,83844,155171,151474,102708,137310,139611,130066,117819,93372,88054,84966,15177,102177,90781,168665,127511,161076,76281,48952,174522,62557,60112,111957,48150,123665,57164,151779,129147,134023,120316,163825,140532,108376,144483,171193,128217,113929,119466,33974,170742,130295,163111,85605,157613,102876,108578,129683,45675,16087,98190,169673,158345,136906,80829,17811,137532,137253,155225,20652,158458,145818,124735,114680,162543,157580,92649,111337,3746,176393,93488,154038,29662,139943,130091,149708,124005,77867,119963,137517,89006,51050,84856,101304,114281,152098,141340,154627,126053,116971,169216,174753,162133,104121,115108,104612,88876,112704,83199,120630,144593,154967,176117,167002,170803,161275,128020,31561,10474,104273,124734,162673,173061,114910,90926,130178,93025,103403,113352,90783,127251,118176,139348,111792,104698,111927,102304,124273,102914,122136,122517,68131,114238,61403,43318,98873,89447,117159,101784,142133,93302,56666,102418,64070,140176,59007,135182,100579,85984,16053,94161,51983,46907,55619,101030,126898,52438,52690,41105,99244,25010,150518,41650,57600,156211,38794,69289,106095,136240,85794,89371,88979,102316,93082,106990,75765,110399,73620,161281,104572,113296,125072,88080,102915,111917,117953,78609,94241,99895,58172,82178,67798,121204,85388,87889,105024,64598,125333,93335,91976,54042,141301,74186,68177,119521,88444,100881,91066,107142,64626,39795,117449,104679,49549,115145,99639,132367,153540,137513,135806,114277,111679,122048,109110,103773,79951,113484,99605,88227,105137,104529,139750,101727,100107,149282,149238,71047,91569,125043,137256,99280,134702,161741,163376,162001,99633,114365,138974,150341,144968,139860,145587,141915,154036,152105,109079,98400,146125,98252,71893,39821,128503,130926,132750,119827,117085,112152,83907,51860,152296,108701,49618,80277,120046,154516,154504,148911,144959,145886,141436,133514,130089,151754,124992,149331,133547,113738,97945,143604,91041,144592,162168,117976,119794,113904,129375,123114,129303,137309,117139,151906,170377,167859,159771,35874,27685,144211,84271,121870,107826,122954,129751,157510,147800,17583,2989,159542,149629,142139,162693,164786,150038,156401,154026,150291,124275,146143,158344,162663,51920,138908,102840,116339,70642,102186,51584,83188,79240,100090,85226,108725,120619,125216,150937,129732,68652,170734,144963,128006,88949,136645,149166,113055,121098,115132,104192,141620,128612,149165,129463,129851,147767,154398,123819,81498,70687,129579,123677,124351,104528,113843,58444,67833,102797,105344,88887,52016,139701,109519,150078,164899,64217,97528,93348,110072,105625,115744,105786,119238,126054,84537,105624,99390,99729,110430,120359,99957,157614,150167,156527,126102,89658,90932,103252,127805,13566,146565,137375,166332,150084,163112,54442,131245,80987,141546,124116,97982,122437,78753,102542,104692,97391,166819,105741,128540,120374,151633,165035,150342,155642,150069,106073,136703,147296,150169,161288,158370,154397,121863,164769,82348,101350,134054,136211,112637,138911,118980,104512,32280,149144,163772,158341,141594,163773,81611,149240,150164,64301,102309,115740,153539,80933,125045,127000,70608,150470,142007,137514,115742,115741,137501,125479,48565,99389,121861,115779,68661,120609,149145,82329,99292,81715,94601,117356,55296,46988,153372,138689,164341,141912,155056,139752,69440,149625,143577,102157,82275,110049,47215,137274,155061,118058,141688,139723,132379,109271,115745,116425,124644,46883,100840,142091,119476,78933,113207,140157,130678,127807,143683,140535,147070,137328,91300,133546,82337,149627,155043,155928,88385,130164,137259,134027,149628,137257,149124,155039,162917,152058,136405,174773,154480,76777,166847,151552,171277,141636,173577,174775,170114,174144,174776,171276,64347,170378,150068,119511,99086,100537,99607,60917,80266,173587,97843,88055,118973,166726,153560,163107,149935,164881,138651,169910,158342,143830,128487,128221,150085,147401,170729,171158,165861,153551);
+
+Q4474 | target=core | UTC=2026-09-13 10:06:24.7648+00 | HTTP=200
+SELECT COUNT(*) AS selected,COUNT(DISTINCT player_id) AS players FROM `IMC Player Codex Global Rating History` WHERE player_id IN (88995,80542,82821,91084,107796,107694,47375,70860,84738,56415,113733,74071,126441,141895,142092,100000,109701,43269,157117,137324,38475,86669,101339,101746,87149,102011,20554,58353,125445,120504,94962,58668,99816,117442,3884,129226,41018,40710,19162,43650,89344,81249,42073,47094,105942,34809,29362,168138,35510,34848,43822,82677,87685,100914,55064,76629,65977,82097,95243,45184,97651,57953,71005,79874,92647,84483,104195,76072,60105,82096,81732,93265,115098,108793,84760,53792,85730,104827,41664,78086,73249,120600,64661,103943,120954,87643,98824,137578,112568,105431,80336,101092,90683,96009,117357,93310,87576,121044,84372,130093,89264,104518,88625,142154,102354,39507,159601,144663,105973,104458,103887,44557,94633,107890,111996,99830,94708,104829,120264,124317,104640,73424,97113,133293,6378,102524,88064,144575,128324,129232,141615,161284,124757,125120,162200,126998,124293,135597,119258,88042,103221,99560,162213,114553,38848,79262,27736,78540,53468,22857,84046,36211,34634,71021,56394,156568,58947,68341,94350,50417,63543,54915,101084,143879,138048,121869,126423,101902,96684,146171,83736,99860,103017,112747,119825,151629,104111,141747,128494,124334,104574,87004,60103,110120,120682,105064,116604,36008,85260,102637,106407,124780,174720,173267,138930,53822,50301,31960,96383,46587,104701,46258,51887,108454,101780,64152,76517,104514,81994,137276,106831,120134,139927,155660,136897,104807,104435,2950,51614,91038,88446,88450,105634,45455,124453,122465,76248,106765,108912,26819,169053,113285,89761,132383,123504,124482,61102,97662,74306,90167,97458,42405,55862,101125,64398,136465,103281,149452,120987,129408,114316,128614,117462,113845,41634,59500,97514,104978,95517,91322,65326,104437,105041,101435,99760,138866,103070,95525,118591,78618,104396,100786,122901,125052,114686,76101,93239,56409,156332,158675,149252,168280,170937,139439,129377,68202,74254,95157,94879,167642,67729,90862,81689,107193,105776,102272,118091,140174,136400,137277,102243,100917,90287,124326,149946,95199,149465,100306,118576,165368,124519,164442,169887,64116,92862,103291,88828,104910,87633,103484,113618,105314,99589,104710,102031,144801,142136,98126,44614,97249,129731,91157,153799,19587,61438,114268,54271,146902,137332,95818,137432,97970,81783,56786,89018,50648,87870,55478,84384,99273,93823,93746,100447,151152,113746,53624,41780,167975,38147,104844,144877,50937,90916,98514,124781,87087,87065,167194,96637,120689,103760,59080,51147,104825,44912,81110,101341,50089,85672,98346,96373,51527,95704,100497,154502,124573,165705,118975,109025,110427,172034,51323,117285,53550,37510,130786,122015,122857,124978,139676,140533,112970,41233,51661,157608,164900,121857,43289,118879,36680,46237,117952,61101,74473,121075,93671,99239,118585,129663,111584,137159,44589,137675,121009,154961,153811,122426,103107,144802,97268,47965,46511,16587,33648,140577,90685,106991,38343,108663,104671,126396,18534,49196,156595,106589,154481,140205,162344,125446,141601,104598,163109,152921,59194,108722,107855,83294,89787,46443,89363,104943,75126,100768,102423,97002,88281,75092,46692,92987,126349,88668,78409,129302,128651,87683,99208,102385,81621,121047,85046,137652,140519,150037,133552,164465,136289,103706,69941,82209,101303,86903,82312,99179,107765,91278,94642,101244,103187,110769,108531,52849,110596,99630,103287,107172,120840,93388,59005,99465,110761,118048,3342,91545,99727,169559,88100,95052,163952,174170,174715,162584,165003,167866,159529,114272,118589,42005,18338,120684,4336,119100,110673,34893,87941,45279,117986,131183,124685,76578,98515,40405,135977,34276,129285,113181,91028,46218,93561,135556,87019,2772,103835,18422,111503,139911,155678,101591,35346,143202,14540,118586,102198,87422,132713,115134,143445,99575,97885,82491,114505,95238,95046,108923,165700,129334,125442,111871,115743,113440,81113,68659,52025,124372,97934,67010,138305,49590,58616,55043,28992,75764,42031,37853,112297,33533,102668,88922,96029,104420,121534,103724,113546,86908,91050,85330,110729,103886,102434,103915,114446,100836,120620,128508,151756,68359,124257,133499,73978,103452,101107,87638,114716,93445,97863,99631,85541,73305,90785,63650,115087,55131,92816,104378,60619,136828,104083,105663,48635,112313,82825,100239,141968,85954,164788,1131,170047,82105,105545,101248,97582,88964,152234,115695,152049,106523,94977,47427,62967,125054,92314,76303,132296,155680,155330,74545,122910,104582,79506,129562,37428,144639,170105,90936,154960,125240,104937,141126,83451,143878,119632,90291,104809,164466,136613,114400,93706,100308,170162,149881,164018,153206,141292,163868,171361,98151,75029,64405,99311,101763,71255,68182,90831,64586,98250,84791,97322,82006,173843,71971,73265,59016,103679,86836,114334,89041,111919,81023,94140,41512,77442,135567,91556,123912,78088,141389,153803,152799,136190,104880,97674,155175,152847,136884,152462,144535,161273,129563,126148,131818,157627,127768,176459,168435,175997,174717,149123,165848,128031,87598,104930,127043,104350,141463,90892,121046,88229,123666,38457,102090,135322,143496,149111,163832,132656,98009,85994,110053,69803,91599,86085,111609,68027,78694,102857,104266,95236,104580,108720,90068,123497,164537,149183,149883,157746,112312,97731,97834,114743,135575,108444,123529,41819,101738,129988,139751,113994,128879,83844,155171,151474,102708,137310,139611,130066,117819,93372,88054,84966,15177,102177,90781,168665,127511,161076,76281,48952,174522,62557,60112,111957,48150,123665,57164,151779,129147,134023,120316,163825,140532,108376,144483,171193,128217,113929,119466,33974,170742,130295,163111,85605,157613,102876,108578,129683,45675,16087,98190,169673,158345,136906,80829,17811,137532,137253,155225,20652,158458,145818,124735,114680,162543,157580,92649,111337,3746,176393,93488,154038,29662,139943,130091,149708,124005,77867,119963,137517,89006,51050,84856,101304,114281,152098,141340,154627,126053,116971,169216,174753,162133,104121,115108,104612,88876,112704,83199,120630,144593,154967,176117,167002,170803,161275,128020,31561,10474,104273,124734,162673,173061,114910,90926,130178,93025,103403,113352,90783,127251,118176,139348,111792,104698,111927,102304,124273,102914,122136,122517,68131,114238,61403,43318,98873,89447,117159,101784,142133,93302,56666,102418,64070,140176,59007,135182,100579,85984,16053,94161,51983,46907,55619,101030,126898,52438,52690,41105,99244,25010,150518,41650,57600,156211,38794,69289,106095,136240,85794,89371,88979,102316,93082,106990,75765,110399,73620,161281,104572,113296,125072,88080,102915,111917,117953,78609,94241,99895,58172,82178,67798,121204,85388,87889,105024,64598,125333,93335,91976,54042,141301,74186,68177,119521,88444,100881,91066,107142,64626,39795,117449,104679,49549,115145,99639,132367,153540,137513,135806,114277,111679,122048,109110,103773,79951,113484,99605,88227,105137,104529,139750,101727,100107,149282,149238,71047,91569,125043,137256,99280,134702,161741,163376,162001,99633,114365,138974,150341,144968,139860,145587,141915,154036,152105,109079,98400,146125,98252,71893,39821,128503,130926,132750,119827,117085,112152,83907,51860,152296,108701,49618,80277,120046,154516,154504,148911,144959,145886,141436,133514,130089,151754,124992,149331,133547,113738,97945,143604,91041,144592,162168,117976,119794,113904,129375,123114,129303,137309,117139,151906,170377,167859,159771,35874,27685,144211,84271,121870,107826,122954,129751,157510,147800,17583,2989,159542,149629,142139,162693,164786,150038,156401,154026,150291,124275,146143,158344,162663,51920,138908,102840,116339,70642,102186,51584,83188,79240,100090,85226,108725,120619,125216,150937,129732,68652,170734,144963,128006,88949,136645,149166,113055,121098,115132,104192,141620,128612,149165,129463,129851,147767,154398,123819,81498,70687,129579,123677,124351,104528,113843,58444,67833,102797,105344,88887,52016,139701,109519,150078,164899,64217,97528,93348,110072,105625,115744,105786,119238,126054,84537,105624,99390,99729,110430,120359,99957,157614,150167,156527,126102,89658,90932,103252,127805,13566,146565,137375,166332,150084,163112,54442,131245,80987,141546,124116,97982,122437,78753,102542,104692,97391,166819,105741,128540,120374,151633,165035,150342,155642,150069,106073,136703,147296,150169,161288,158370,154397,121863,164769,82348,101350,134054,136211,112637,138911,118980,104512,32280,149144,163772,158341,141594,163773,81611,149240,150164,64301,102309,115740,153539,80933,125045,127000,70608,150470,142007,137514,115742,115741,137501,125479,48565,99389,121861,115779,68661,120609,149145,82329,99292,81715,94601,117356,55296,46988,153372,138689,164341,141912,155056,139752,69440,149625,143577,102157,82275,110049,47215,137274,155061,118058,141688,139723,132379,109271,115745,116425,124644,46883,100840,142091,119476,78933,113207,140157,130678,127807,143683,140535,147070,137328,91300,133546,82337,149627,155043,155928,88385,130164,137259,134027,149628,137257,149124,155039,162917,152058,136405,174773,154480,76777,166847,151552,171277,141636,173577,174775,170114,174144,174776,171276,64347,170378,150068,119511,99086,100537,99607,60917,80266,173587,97843,88055,118973,166726,153560,163107,149935,164881,138651,169910,158342,143830,128487,128221,150085,147401,170729,171158,165861,153551);
+
+Q4475 | target=core | UTC=2026-09-13 10:06:25.878963+00 | HTTP=200
+SELECT p.id,p.forename,p.surname,p.image_url,d.rating,d.position,d.soccerwiki_club_name FROM `IMC Player Codex Global` p LEFT JOIN `IMC Player Codex Global Data` d ON d.player_id=p.id WHERE p.id IN (88995,125445,102011);
+
+Q4476 | target=core | UTC=2026-09-13 10:06:36.95201+00 | HTTP=200
+SHOW CREATE TABLE `IMC Club Codex Global`;
+
+Q4477 | target=core | UTC=2026-09-13 10:06:37.729366+00 | HTTP=200
+SHOW CREATE TABLE `IMC Competition Codex Global`;
+
+Q4478 | target=core | UTC=2026-09-13 10:06:38.776801+00 | HTTP=200
+SHOW CREATE TABLE `IMC Country Codex Global`;
+
+Q4479 | target=core | UTC=2026-09-13 10:06:39.831587+00 | HTTP=200
+SHOW CREATE TABLE `IMC Game World Club Mapping`;
+
+Q4480 | target=core | UTC=2026-09-13 10:06:40.880175+00 | HTTP=200
+SHOW CREATE TABLE `IMC Game World Codex Global`;
+
+Q4481 | target=core | UTC=2026-09-13 10:06:41.935796+00 | HTTP=200
+SHOW CREATE TABLE `IMC Game World National Team Mapping`;
+
+Q4482 | target=core | UTC=2026-09-13 10:06:41.935796+00 | HTTP=200
+SHOW CREATE TABLE `IMC Manager Assignment Global`;
+
+Q4483 | target=core | UTC=2026-09-13 10:06:42.995777+00 | HTTP=200
+SHOW CREATE TABLE `IMC Manager Codex Global`;
+
+Q4484 | target=core | UTC=2026-09-13 10:06:44.045981+00 | HTTP=200
+SHOW CREATE TABLE `IMC National Team Codex Global`;
+
+Q4485 | target=core | UTC=2026-09-13 10:06:44.045981+00 | HTTP=200
+SHOW CREATE TABLE `IMC Player Codex Global`;
+
+Q4486 | target=core | UTC=2026-09-13 10:06:45.101188+00 | HTTP=200
+SHOW CREATE TABLE `IMC Player Codex Global Data`;
+
+Q4487 | target=core | UTC=2026-09-13 10:06:47.17732+00 | HTTP=200
+SHOW CREATE TABLE `IMC Player Codex Global Rating History`;
+
+Q4488 | target=core | UTC=2026-09-13 10:07:14.936434+00 | HTTP=200
+SELECT * FROM `IMC Competition Codex Global` ORDER BY id;
+
+Q4489 | target=core | UTC=2026-09-13 10:07:16.658701+00 | HTTP=200
+SELECT 'club' AS entity,COUNT(*) AS n,SUM(image_url IS NULL OR image_url='') AS missing_url FROM `IMC Club Codex Global` UNION ALL SELECT 'national_team',COUNT(*),SUM(image_url IS NULL OR image_url='') FROM `IMC National Team Codex Global`;
+
+Q4490 | target=core | UTC=2026-09-13 10:07:17.546991+00 | HTTP=200
+SELECT a.id,a.game_world_id FROM `IMC Manager Assignment Global` a WHERE a.end_date<a.start_date OR (a.assignment_type='club' AND (a.club_id IS NULL OR a.national_team_id IS NOT NULL)) OR (a.assignment_type='national_team' AND (a.national_team_id IS NULL OR a.club_id IS NOT NULL));
+
+Q4491 | target=core | UTC=2026-09-13 10:07:18.595272+00 | HTTP=200
+SELECT sm_manager_id,COUNT(*) AS n FROM `IMC Manager Codex Global` WHERE sm_manager_id IS NOT NULL GROUP BY sm_manager_id HAVING COUNT(*)>1;
+
+12. APPENDICE — RISULTATI AGGREGATI E PROVE
+
+Q4437
+[
+  {
+    "n": "7072",
+    "table_name": "IMC Club Codex Global"
+  },
+  {
+    "n": "326",
+    "table_name": "IMC Competition Codex Global"
+  },
+  {
+    "n": "37",
+    "table_name": "IMC Country Codex Global"
+  },
+  {
+    "n": "1434",
+    "table_name": "IMC Game World Club Mapping"
+  },
+  {
+    "n": "10",
+    "table_name": "IMC Game World Codex Global"
+  },
+  {
+    "n": "720",
+    "table_name": "IMC Game World National Team Mapping"
+  },
+  {
+    "n": "272",
+    "table_name": "IMC Manager Assignment Global"
+  },
+  {
+    "n": "60",
+    "table_name": "IMC Manager Codex Global"
+  },
+  {
+    "n": "80",
+    "table_name": "IMC National Team Codex Global"
+  },
+  {
+    "n": "176687",
+    "table_name": "IMC Player Codex Global"
+  },
+  {
+    "n": "2333",
+    "table_name": "IMC Player Codex Global Data"
+  },
+  {
+    "n": "11939",
+    "table_name": "IMC Player Codex Global Rating History"
+  }
+]
+
+Q4449
+[
+  {
+    "country_present": "0",
+    "expected_present": "4",
+    "game_world_id": "GW001",
+    "n": "7",
+    "sm_action_group": "Domestic Competition",
+    "teams_present": "4"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW001",
+    "n": "3",
+    "sm_action_group": "International Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW001",
+    "n": "2",
+    "sm_action_group": "National Team Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "61",
+    "expected_present": "31",
+    "game_world_id": "GW002",
+    "n": "64",
+    "sm_action_group": "Domestic Competition",
+    "teams_present": "31"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW002",
+    "n": "3",
+    "sm_action_group": "International Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW002",
+    "n": "2",
+    "sm_action_group": "National Team Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "61",
+    "expected_present": "31",
+    "game_world_id": "GW003",
+    "n": "64",
+    "sm_action_group": "Domestic Competition",
+    "teams_present": "31"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW003",
+    "n": "3",
+    "sm_action_group": "International Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW003",
+    "n": "2",
+    "sm_action_group": "National Team Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "4",
+    "game_world_id": "GW004",
+    "n": "11",
+    "sm_action_group": "Domestic Competition",
+    "teams_present": "4"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW004",
+    "n": "3",
+    "sm_action_group": "International Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW004",
+    "n": "2",
+    "sm_action_group": "National Team Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "3",
+    "game_world_id": "GW005",
+    "n": "6",
+    "sm_action_group": "Domestic Competition",
+    "teams_present": "3"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW005",
+    "n": "3",
+    "sm_action_group": "International Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW005",
+    "n": "2",
+    "sm_action_group": "National Team Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "4",
+    "game_world_id": "GW006",
+    "n": "11",
+    "sm_action_group": "Domestic Competition",
+    "teams_present": "4"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW006",
+    "n": "3",
+    "sm_action_group": "International Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW006",
+    "n": "2",
+    "sm_action_group": "National Team Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "67",
+    "expected_present": "34",
+    "game_world_id": "GW007",
+    "n": "70",
+    "sm_action_group": "Domestic Competition",
+    "teams_present": "34"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW007",
+    "n": "3",
+    "sm_action_group": "International Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW007",
+    "n": "2",
+    "sm_action_group": "National Team Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "38",
+    "expected_present": "19",
+    "game_world_id": "GW008",
+    "n": "41",
+    "sm_action_group": "Domestic Competition",
+    "teams_present": "19"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW008",
+    "n": "3",
+    "sm_action_group": "International Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW008",
+    "n": "2",
+    "sm_action_group": "National Team Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "3",
+    "game_world_id": "GW009",
+    "n": "7",
+    "sm_action_group": "Domestic Competition",
+    "teams_present": "3"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW009",
+    "n": "3",
+    "sm_action_group": "International Competition",
+    "teams_present": "0"
+  },
+  {
+    "country_present": "0",
+    "expected_present": "0",
+    "game_world_id": "GW009",
+    "n": "2",
+    "sm_action_group": "National Team Competition",
+    "teams_present": "0"
+  }
+]
+
+Q4450
+[
+  {
+    "gw": "GW001",
+    "kind": "club_mapping",
+    "n": "40"
+  },
+  {
+    "gw": "GW002",
+    "kind": "club_mapping",
+    "n": "590"
+  },
+  {
+    "gw": "GW003",
+    "kind": "club_mapping",
+    "n": "590"
+  },
+  {
+    "gw": "GW004",
+    "kind": "club_mapping",
+    "n": "80"
+  },
+  {
+    "gw": "GW005",
+    "kind": "club_mapping",
+    "n": "24"
+  },
+  {
+    "gw": "GW006",
+    "kind": "club_mapping",
+    "n": "80"
+  },
+  {
+    "gw": "GW009",
+    "kind": "club_mapping",
+    "n": "30"
+  },
+  {
+    "gw": "GW001",
+    "kind": "national_mapping",
+    "n": "80"
+  },
+  {
+    "gw": "GW002",
+    "kind": "national_mapping",
+    "n": "80"
+  },
+  {
+    "gw": "GW003",
+    "kind": "national_mapping",
+    "n": "80"
+  },
+  {
+    "gw": "GW004",
+    "kind": "national_mapping",
+    "n": "80"
+  },
+  {
+    "gw": "GW005",
+    "kind": "national_mapping",
+    "n": "80"
+  },
+  {
+    "gw": "GW006",
+    "kind": "national_mapping",
+    "n": "80"
+  },
+  {
+    "gw": "GW007",
+    "kind": "national_mapping",
+    "n": "80"
+  },
+  {
+    "gw": "GW008",
+    "kind": "national_mapping",
+    "n": "80"
+  },
+  {
+    "gw": "GW009",
+    "kind": "national_mapping",
+    "n": "80"
+  },
+  {
+    "gw": "GW004",
+    "kind": "club",
+    "n": "16"
+  },
+  {
+    "gw": "GW004",
+    "kind": "national_team",
+    "n": "4"
+  },
+  {
+    "gw": "GW001",
+    "kind": "club",
+    "n": "42"
+  },
+  {
+    "gw": "GW001",
+    "kind": "national_team",
+    "n": "24"
+  },
+  {
+    "gw": "GW005",
+    "kind": "club",
+    "n": "16"
+  },
+  {
+    "gw": "GW006",
+    "kind": "club",
+    "n": "9"
+  },
+  {
+    "gw": "GW006",
+    "kind": "national_team",
+    "n": "5"
+  },
+  {
+    "gw": "GW008",
+    "kind": "club",
+    "n": "28"
+  },
+  {
+    "gw": "GW008",
+    "kind": "national_team",
+    "n": "4"
+  },
+  {
+    "gw": "GW002",
+    "kind": "club",
+    "n": "26"
+  },
+  {
+    "gw": "GW002",
+    "kind": "national_team",
+    "n": "6"
+  },
+  {
+    "gw": "GW003",
+    "kind": "club",
+    "n": "22"
+  },
+  {
+    "gw": "GW003",
+    "kind": "national_team",
+    "n": "4"
+  },
+  {
+    "gw": "GW009",
+    "kind": "national_team",
+    "n": "10"
+  },
+  {
+    "gw": "GW009",
+    "kind": "club",
+    "n": "30"
+  },
+  {
+    "gw": "GW007",
+    "kind": "club",
+    "n": "15"
+  },
+  {
+    "gw": "GW007",
+    "kind": "national_team",
+    "n": "7"
+  },
+  {
+    "gw": "GW005",
+    "kind": "national_team",
+    "n": "4"
+  }
+]
+
+Q4451
+[
+  {
+    "missing_birth": "0",
+    "missing_rating": "0",
+    "missing_value": "0",
+    "n": "2333",
+    "newest": "2026-09-13 05:45:49",
+    "oldest": "2026-09-08 22:31:14",
+    "orphan_players": "29"
+  }
+]
+
+Q4452
+[
+  {
+    "first_date": "2009-06-11",
+    "last_date": "2026-09-12",
+    "n": "11939",
+    "players": "2080"
+  }
+]
+
+Q4459
+[
+  {
+    "matched_fixture": "422",
+    "matched_key": "422",
+    "reports": "422"
+  }
+]
+
+Q4461
+[
+  {
+    "assignment_type": "club",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "13",
+    "game_world_id": "GW004",
+    "manager_missing": "0",
+    "n": "16",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "national_team",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "0",
+    "game_world_id": "GW004",
+    "manager_missing": "0",
+    "n": "4",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "club",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "36",
+    "game_world_id": "GW001",
+    "manager_missing": "0",
+    "n": "42",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "national_team",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "0",
+    "game_world_id": "GW001",
+    "manager_missing": "0",
+    "n": "24",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "club",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "15",
+    "game_world_id": "GW005",
+    "manager_missing": "0",
+    "n": "16",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "club",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "8",
+    "game_world_id": "GW006",
+    "manager_missing": "0",
+    "n": "9",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "national_team",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "0",
+    "game_world_id": "GW006",
+    "manager_missing": "0",
+    "n": "5",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "club",
+    "club_codex_missing": "1",
+    "club_mapping_missing": "28",
+    "game_world_id": "GW008",
+    "manager_missing": "0",
+    "n": "28",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "national_team",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "0",
+    "game_world_id": "GW008",
+    "manager_missing": "0",
+    "n": "4",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "club",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "18",
+    "game_world_id": "GW002",
+    "manager_missing": "0",
+    "n": "26",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "national_team",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "0",
+    "game_world_id": "GW002",
+    "manager_missing": "0",
+    "n": "6",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "club",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "21",
+    "game_world_id": "GW003",
+    "manager_missing": "0",
+    "n": "22",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "national_team",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "0",
+    "game_world_id": "GW003",
+    "manager_missing": "0",
+    "n": "4",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "national_team",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "0",
+    "game_world_id": "GW009",
+    "manager_missing": "0",
+    "n": "10",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "club",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "30",
+    "game_world_id": "GW009",
+    "manager_missing": "0",
+    "n": "30",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "club",
+    "club_codex_missing": "1",
+    "club_mapping_missing": "15",
+    "game_world_id": "GW007",
+    "manager_missing": "0",
+    "n": "15",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "national_team",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "0",
+    "game_world_id": "GW007",
+    "manager_missing": "0",
+    "n": "7",
+    "national_missing": "0"
+  },
+  {
+    "assignment_type": "national_team",
+    "club_codex_missing": "0",
+    "club_mapping_missing": "0",
+    "game_world_id": "GW005",
+    "manager_missing": "0",
+    "n": "4",
+    "national_missing": "0"
+  }
+]
+
+Q4462
+[
+  {
+    "missing_file": "62660",
+    "missing_url": "112991",
+    "n": "176687"
+  }
+]
+
+Q4463
+[
+  {
+    "gw": "GW001",
+    "missing_codex": "0",
+    "n": "40",
+    "same_ids": "40"
+  },
+  {
+    "gw": "GW002",
+    "missing_codex": "0",
+    "n": "590",
+    "same_ids": "590"
+  },
+  {
+    "gw": "GW003",
+    "missing_codex": "0",
+    "n": "590",
+    "same_ids": "590"
+  },
+  {
+    "gw": "GW004",
+    "missing_codex": "0",
+    "n": "80",
+    "same_ids": "80"
+  },
+  {
+    "gw": "GW005",
+    "missing_codex": "0",
+    "n": "24",
+    "same_ids": "24"
+  },
+  {
+    "gw": "GW006",
+    "missing_codex": "0",
+    "n": "80",
+    "same_ids": "80"
+  },
+  {
+    "gw": "GW009",
+    "missing_codex": "0",
+    "n": "30",
+    "same_ids": "30"
+  }
+]
+
+Q4469
+[
+  {
+    "observed_at": "2026-09-13 12:06:00",
+    "report_count": "435",
+    "results_count": "797",
+    "schedule_count": "20"
+  }
+]
+
+Q4470
+[
+  {
+    "club_id": "150",
+    "club_name": "Gimnàstic Tarragona",
+    "end_date": null,
+    "id": "21",
+    "manager_id": "MNG001",
+    "start_date": "2026-06-30"
+  },
+  {
+    "club_id": null,
+    "club_name": null,
+    "end_date": null,
+    "id": "22",
+    "manager_id": "MNG001",
+    "start_date": "2026-06-30"
+  },
+  {
+    "club_id": "126",
+    "club_name": "Siena FC",
+    "end_date": null,
+    "id": "60",
+    "manager_id": "MNG013",
+    "start_date": "2026-06-30"
+  },
+  {
+    "club_id": null,
+    "club_name": null,
+    "end_date": null,
+    "id": "87",
+    "manager_id": "MNG013",
+    "start_date": "2026-06-30"
+  },
+  {
+    "club_id": null,
+    "club_name": null,
+    "end_date": null,
+    "id": "95",
+    "manager_id": "MNG025",
+    "start_date": "2026-06-30"
+  },
+  {
+    "club_id": "123",
+    "club_name": "AS Roma",
+    "end_date": null,
+    "id": "105",
+    "manager_id": "MNG025",
+    "start_date": "2026-06-30"
+  }
+]
+
+Q4471
+[]
+
+Q4472
+[
+  {
+    "selected": "1378",
+    "with_image_url": "1338"
+  }
+]
+
+Q4473
+[
+  {
+    "selected": "1152"
+  }
+]
+
+Q4474
+[
+  {
+    "players": "1105",
+    "selected": "7549"
+  }
+]
+
+Q4475
+[
+  {
+    "forename": "Gregor",
+    "id": "88995",
+    "image_url": "https://cdn.soccerwiki.org/images/player/88995.png",
+    "position": "PT",
+    "rating": "91",
+    "soccerwiki_club_name": "Borussia Dortmund",
+    "surname": "KOBEL"
+  },
+  {
+    "forename": "Hicham",
+    "id": "102011",
+    "image_url": "https://cdn.soccerwiki.org/images/player/102011.png",
+    "position": "CD,CC(C)",
+    "rating": "88",
+    "soccerwiki_club_name": "OGC Nice",
+    "surname": "BOUDAOUI"
+  },
+  {
+    "forename": "Ethan",
+    "id": "125445",
+    "image_url": "https://cdn.soccerwiki.org/images/player/125445.png",
+    "position": "CC(C),CO(DxC)",
+    "rating": "85",
+    "soccerwiki_club_name": "Arsenal",
+    "surname": "NWANERI"
+  }
+]
+
+Q4489
+[
+  {
+    "entity": "club",
+    "missing_url": "10",
+    "n": "7072"
+  },
+  {
+    "entity": "national_team",
+    "missing_url": "0",
+    "n": "80"
+  }
+]
+
+Q4490
+[]
+
+Q4491
+[]
+
+Q4446 — aggregazione per repository/competition_key, lettura iniziale:
+[
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|DOMESTIC|playoff|2",
+    "game_world_id": "GW001",
+    "n": "2",
+    "repository": "Results",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "2"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|DOMESTIC|playoff|3",
+    "game_world_id": "GW001",
+    "n": "2",
+    "repository": "Results",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "3"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|DOMESTIC|playoff|4",
+    "game_world_id": "GW001",
+    "n": "2",
+    "repository": "Results",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "4"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|league|4",
+    "game_world_id": "GW001",
+    "n": "90",
+    "repository": "Results",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "4"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|league|1",
+    "game_world_id": "GW001",
+    "n": "90",
+    "repository": "Results",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "1"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|league|2",
+    "game_world_id": "GW001",
+    "n": "90",
+    "repository": "Results",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "2"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|league|3",
+    "game_world_id": "GW001",
+    "n": "90",
+    "repository": "Results",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "3"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|leaguecup|4",
+    "game_world_id": "GW001",
+    "n": "39",
+    "repository": "Results",
+    "sm_action": "leaguecup",
+    "sm_country": "CUS",
+    "sm_division": "4"
+  },
+  {
+    "competition_group": "INTERNATIONAL",
+    "competition_key": "GW001|INTERNATIONAL|smfacup",
+    "game_world_id": "GW001",
+    "n": "36",
+    "repository": "Results",
+    "sm_action": "smfacup",
+    "sm_country": null,
+    "sm_division": null
+  },
+  {
+    "competition_group": "INTERNATIONAL",
+    "competition_key": "GW001|INTERNATIONAL|smfashield",
+    "game_world_id": "GW001",
+    "n": "36",
+    "repository": "Results",
+    "sm_action": "smfashield",
+    "sm_country": null,
+    "sm_division": null
+  },
+  {
+    "competition_group": "NATIONS",
+    "competition_key": "GW001|NATIONS|interqualifier",
+    "game_world_id": "GW001",
+    "n": "320",
+    "repository": "Results",
+    "sm_action": "interqualifier",
+    "sm_country": null,
+    "sm_division": null
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|league|4",
+    "game_world_id": "GW001",
+    "n": "5",
+    "repository": "Schedule",
+    "sm_action": "league",
+    "sm_country": null,
+    "sm_division": "4"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|league|1",
+    "game_world_id": "GW001",
+    "n": "5",
+    "repository": "Schedule",
+    "sm_action": "league",
+    "sm_country": null,
+    "sm_division": "1"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|league|2",
+    "game_world_id": "GW001",
+    "n": "5",
+    "repository": "Schedule",
+    "sm_action": "league",
+    "sm_country": null,
+    "sm_division": "2"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|league|3",
+    "game_world_id": "GW001",
+    "n": "5",
+    "repository": "Schedule",
+    "sm_action": "league",
+    "sm_country": null,
+    "sm_division": "3"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|DOMESTIC|playoff|2",
+    "game_world_id": "GW001",
+    "n": "2",
+    "repository": "Match Report",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "2"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|DOMESTIC|playoff|3",
+    "game_world_id": "GW001",
+    "n": "2",
+    "repository": "Match Report",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "3"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|DOMESTIC|playoff|4",
+    "game_world_id": "GW001",
+    "n": "2",
+    "repository": "Match Report",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "4"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|league|4",
+    "game_world_id": "GW001",
+    "n": "90",
+    "repository": "Match Report",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "4"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|league|1",
+    "game_world_id": "GW001",
+    "n": "90",
+    "repository": "Match Report",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "1"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|league|2",
+    "game_world_id": "GW001",
+    "n": "90",
+    "repository": "Match Report",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "2"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|league|3",
+    "game_world_id": "GW001",
+    "n": "90",
+    "repository": "Match Report",
+    "sm_action": "league",
+    "sm_country": "CUS",
+    "sm_division": "3"
+  },
+  {
+    "competition_group": "DOMESTIC",
+    "competition_key": "GW001|CUS|DOMESTIC|leaguecup|4",
+    "game_world_id": "GW001",
+    "n": "39",
+    "repository": "Match Report",
+    "sm_action": "leaguecup",
+    "sm_country": "CUS",
+    "sm_division": "4"
+  }
+]
+
+Q4431 — catalogo competizioni GW001:
+[
+  {
+    "custom_competition": null,
+    "expected_match": null,
+    "game_world_id": "GW001",
+    "id": "1",
+    "is_sm_action": "1",
+    "sm_action": "leaguecup",
+    "sm_action_group": "Domestic Competition",
+    "sm_country": null,
+    "sm_division": null,
+    "teams_count": null
+  },
+  {
+    "custom_competition": null,
+    "expected_match": null,
+    "game_world_id": "GW001",
+    "id": "2",
+    "is_sm_action": "1",
+    "sm_action": "charityshield",
+    "sm_action_group": "Domestic Competition",
+    "sm_country": null,
+    "sm_division": null,
+    "teams_count": null
+  },
+  {
+    "custom_competition": null,
+    "expected_match": null,
+    "game_world_id": "GW001",
+    "id": "3",
+    "is_sm_action": "1",
+    "sm_action": "friendly",
+    "sm_action_group": "Domestic Competition",
+    "sm_country": null,
+    "sm_division": null,
+    "teams_count": null
+  },
+  {
+    "custom_competition": null,
+    "expected_match": null,
+    "game_world_id": "GW001",
+    "id": "4",
+    "is_sm_action": "1",
+    "sm_action": "smfacup",
+    "sm_action_group": "International Competition",
+    "sm_country": null,
+    "sm_division": null,
+    "teams_count": null
+  },
+  {
+    "custom_competition": null,
+    "expected_match": null,
+    "game_world_id": "GW001",
+    "id": "5",
+    "is_sm_action": "1",
+    "sm_action": "smfashield",
+    "sm_action_group": "International Competition",
+    "sm_country": null,
+    "sm_division": null,
+    "teams_count": null
+  },
+  {
+    "custom_competition": null,
+    "expected_match": null,
+    "game_world_id": "GW001",
+    "id": "6",
+    "is_sm_action": "1",
+    "sm_action": "supercup",
+    "sm_action_group": "International Competition",
+    "sm_country": null,
+    "sm_division": null,
+    "teams_count": null
+  },
+  {
+    "custom_competition": null,
+    "expected_match": null,
+    "game_world_id": "GW001",
+    "id": "7",
+    "is_sm_action": "1",
+    "sm_action": "interqualifier",
+    "sm_action_group": "National Team Competition",
+    "sm_country": null,
+    "sm_division": null,
+    "teams_count": null
+  },
+  {
+    "custom_competition": null,
+    "expected_match": null,
+    "game_world_id": "GW001",
+    "id": "8",
+    "is_sm_action": "1",
+    "sm_action": "worldcup",
+    "sm_action_group": "National Team Competition",
+    "sm_country": null,
+    "sm_division": null,
+    "teams_count": null
+  },
+  {
+    "custom_competition": null,
+    "expected_match": "90",
+    "game_world_id": "GW001",
+    "id": "73",
+    "is_sm_action": "1",
+    "sm_action": "league",
+    "sm_action_group": "Domestic Competition",
+    "sm_country": null,
+    "sm_division": "1",
+    "teams_count": "10"
+  },
+  {
+    "custom_competition": null,
+    "expected_match": "90",
+    "game_world_id": "GW001",
+    "id": "74",
+    "is_sm_action": "1",
+    "sm_action": "league",
+    "sm_action_group": "Domestic Competition",
+    "sm_country": null,
+    "sm_division": "2",
+    "teams_count": "10"
+  },
+  {
+    "custom_competition": null,
+    "expected_match": "90",
+    "game_world_id": "GW001",
+    "id": "75",
+    "is_sm_action": "1",
+    "sm_action": "league",
+    "sm_action_group": "Domestic Competition",
+    "sm_country": null,
+    "sm_division": "3",
+    "teams_count": "10"
+  },
+  {
+    "custom_competition": null,
+    "expected_match": "90",
+    "game_world_id": "GW001",
+    "id": "76",
+    "is_sm_action": "1",
+    "sm_action": "league",
+    "sm_action_group": "Domestic Competition",
+    "sm_country": null,
+    "sm_division": "4",
+    "teams_count": "10"
+  }
+]
+
+Q4468 — set benchmark dei players_json: n=1378, observed_at MySQL=2026-09-13 12:05:59. Gli ID esatti sono riportati nei predicati IN delle Q4472–4474.
+Le query sono riproducibili ma i conteggi possono cambiare con gli import. Ultima conclusione invariata: ANALYSIS_COMPLETED_WITH_DOCUMENTED_LIMITS.
