@@ -20,15 +20,15 @@ Il Database Manager deve:
 1. determinare la divisione reale di ogni partita playoff del GW001;
 2. correggere quanto già realizzato sui Results da IMC-DB-001-22, affinché ogni Result playoff abbia divisione e competition_key coerenti con la divisione reale;
 3. predisporre la stessa normalizzazione per tutti i Match Report playoff del GW001, inclusi quelli già caricati e quelli che arriveranno durante o dopo l'intervento;
-4. verificare la coerenza e la congruenza completa tra ogni Match Report e il relativo ResultResult;
+4. verificare la coerenza e la congruenza completa tra ogni Match Report e il relativo Result;
 5. garantire che Results, Match Report e rispettivi repository Site ricevano dati coerenti prima dei successivi utilizzi da parte dei minisiti.
 
 COLLEGAMENTO PRIMARIO
-La prima chiave autoritativa di collegamento tra Result eResult e Match Report è:
+La prima chiave autoritativa di collegamento tra Result e Match Report è:
 
 - sm_fixture_id.
 
-Il Database Manager deve partire da sm_fixture_id e verificare tutte le ulteriori corcorrispondendenzeze disponibili e pertinenti tra i due repository.
+Il Database Manager deve partire da sm_fixture_id e verificare tutte le ulteriori corrispondenze disponibili e pertinenti tra i due repository.
 
 Deve individuare autonomamente, leggendo lo schema e i dati reali, quali campi confrontare per certificare la congruenza. Il REQUEST non deve inventare né imporre una lista chiusa di campi.
 
